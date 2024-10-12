@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +28,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,8 +40,10 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,6 +51,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.DarkGray
@@ -55,12 +61,15 @@ import com.ayush.geeksforgeeks.ui.theme.MintGreen
 class LoginScreen : Screen {
     @Composable
     override fun Content() {
-        LoginContent()
+        val viewModel : AuthViewModel = hiltViewModel()
+        LoginContent(viewModel)
     }
 }
 
 @Composable
-private fun LoginContent() {
+private fun LoginContent(
+    viewModel: AuthViewModel
+) {
     val isDarkTheme = isSystemInDarkTheme()
     var isLoginMode by remember { mutableStateOf(true) }
     var username by remember { mutableStateOf("") }
@@ -71,6 +80,23 @@ private fun LoginContent() {
     val focusManager = LocalFocusManager.current
     val (usernameFocus, emailFocus, passwordFocus) = remember { FocusRequester.createRefs() }
 
+    val authState by viewModel.authState.collectAsState()
+    val context = LocalContext.current
+
+
+
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Success -> {
+                Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+            }
+            is AuthState.Error -> {
+                Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
+            }
+            else -> {} // Handle other states if needed
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -98,7 +124,14 @@ private fun LoginContent() {
                 focusManager = focusManager,
                 usernameFocus = usernameFocus,
                 emailFocus = emailFocus,
-                passwordFocus = passwordFocus
+                passwordFocus = passwordFocus,
+                onSubmitButtonClick = {
+                    if (isLoginMode) {
+                        viewModel.login(email, password)
+                    } else {
+                        viewModel.signUp(email, password)
+                    }
+                }
             )
         }
     }
@@ -106,7 +139,7 @@ private fun LoginContent() {
 @Composable
 private fun Logo() {
     Image(
-        painter = painterResource(id = R.drawable.pixelcut_export ),
+        painter = painterResource(id = R.drawable.geeksforgeeks_logo  ),
         contentDescription = "GeeksforGeeks Logo",
         modifier = Modifier.size(100.dp)
     )
@@ -144,7 +177,8 @@ private fun LoginCard(
     focusManager: FocusManager,
     usernameFocus: FocusRequester,
     emailFocus: FocusRequester,
-    passwordFocus: FocusRequester
+    passwordFocus: FocusRequester,
+    onSubmitButtonClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -202,7 +236,11 @@ private fun LoginCard(
                 ForgotPasswordText()
             }
 
-            LoginButton(isLoginMode, focusManager)
+            LoginButton(
+                isLoginMode,
+                focusManager,
+                onSubmitButtonClick
+            )
 
             ToggleModeText(isLoginMode, onModeChange, colors.text)
         }
@@ -233,7 +271,12 @@ private fun InputField(
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = GeeksForGeeksGreen,
-            unfocusedBorderColor = colors.text.copy(alpha = 0.5f)
+            unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
+            focusedLabelColor = GeeksForGeeksGreen,
+            unfocusedLabelColor = colors.text,
+            focusedTextColor = colors.text,
+            unfocusedTextColor = colors.text,
+            cursorColor = GeeksForGeeksGreen
         ),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
@@ -267,10 +310,15 @@ private fun ForgotPasswordText() {
 
 
 @Composable
-private fun LoginButton(isLoginMode: Boolean, focusManager: FocusManager) {
+private fun LoginButton(
+    isLoginMode: Boolean,
+    focusManager: FocusManager,
+    onSubmitButtonClick: () -> Unit
+) {
     Button(
         onClick = {
             focusManager.clearFocus()
+            onSubmitButtonClick()
         },
         modifier = Modifier
             .fillMaxWidth()
@@ -305,7 +353,9 @@ private fun ToggleModeText(isLoginMode: Boolean, onModeChange: (Boolean) -> Unit
 private data class ThemeColors(
     val background: Color,
     val card: Color,
-    val text: Color
+    val text: Color,
+    val focusedLabel: Color = GeeksForGeeksGreen,
+    val unfocusedLabel: Color = text
 )
 
 @Composable

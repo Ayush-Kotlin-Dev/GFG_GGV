@@ -34,6 +34,12 @@ object Dependencies {
     //Lottie
     const val lottie = "com.airbnb.android:lottie-compose:${Versions.lottie}"
 
+    //Firebase
+    const val firebaseAuth = "com.google.firebase:firebase-auth-ktx:${Versions.firebaseAuth}"
+    const val gmsPlayServices = "com.google.android.gms:play-services-auth:${Versions.firebaseGmsPlayServices}"
+    const val firebaseAuthKtx = "com.google.firebase:firebase-auth-ktx:23.0.0"
+    const val firebaseBom = "com.google.firebase:firebase-bom:33.4.0"
+    const val firebaseCore = "com.google.firebase:firebase-core:21.1.1"
 
 
 }
@@ -88,6 +94,15 @@ fun DependencyHandler.voyagerNavigator() {
 fun DependencyHandler.lottie() {
     implementation(Dependencies.lottie)
 }
+
+fun DependencyHandler.firebase() {
+    implementation(Dependencies.firebaseAuth)
+    implementation(Dependencies.gmsPlayServices)
+    implementation(Dependencies.firebaseAuthKtx)
+    implementation(platform(Dependencies.firebaseBom))
+    implementation(Dependencies.firebaseCore)
+}
+
 
 
 fun DependencyHandler.data() {

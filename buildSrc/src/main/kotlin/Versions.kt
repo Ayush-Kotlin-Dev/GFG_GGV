@@ -19,5 +19,8 @@ object Versions {
     const val voyagerVersion = "1.1.0-beta02"
     const val apollo = "4.0.0"
     const val lottie = "6.5.2"
+    const val firebaseAuth = "23.0.0"
+    const val firebaseGmsPlayServices = "21.2.0"
+    const val googleServices = "4.3.14"
 
 }

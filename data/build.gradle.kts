@@ -42,4 +42,5 @@ dependencies {
     serialization()
     preferenceDataStore()
     domain()
+    firebase()
 }

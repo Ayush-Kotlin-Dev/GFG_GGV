@@ -4,6 +4,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     kotlin("plugin.serialization") version "1.9.22"
     kotlin("kapt")
+    id("com.google.gms.google-services")
 }
 android {
     namespace = "com.ayush.geeksforgeeks"
@@ -64,4 +65,6 @@ dependencies {
     serialization()
     voyagerNavigator()
     lottie()
+    data()
+    firebase()
 }

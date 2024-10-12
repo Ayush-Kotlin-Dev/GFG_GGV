@@ -14,7 +14,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import cafe.adriel.voyager.navigator.Navigator
 import com.ayush.geeksforgeeks.auth.LoginScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
