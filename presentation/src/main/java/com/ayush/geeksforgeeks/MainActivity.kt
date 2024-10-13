@@ -4,15 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.navigator.Navigator
-import com.ayush.geeksforgeeks.auth.LoginScreen
+import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -24,10 +26,27 @@ class MainActivity : ComponentActivity() {
         setContent {
             GFGGGVTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Navigator(LoginScreen())
+                    val viewModel: MainActivityViewModel = hiltViewModel()
+                    val uiState by viewModel.uiState.collectAsState()
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        when (uiState) {
+                            MainActivityViewModel.UiState.Loading -> {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            }
+                            MainActivityViewModel.UiState.LoggedIn -> {
+                                Navigator(screen = ContainerApp())
+                            }
+                            MainActivityViewModel.UiState.NotLoggedIn -> {
+                                Navigator(screen = AuthScreen())
+                            }
+                            is MainActivityViewModel.UiState.Error -> {
+                                // Handle error state, maybe show a dialog or error message
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
-

@@ -43,7 +43,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -53,22 +52,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.geeksforgeeks.R
+import com.ayush.geeksforgeeks.home.HomeScreen
 import com.ayush.geeksforgeeks.ui.theme.DarkGray
 import com.ayush.geeksforgeeks.ui.theme.GeeksForGeeksGreen
 import com.ayush.geeksforgeeks.ui.theme.MintGreen
 
-class LoginScreen : Screen {
+class AuthScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel : AuthViewModel = hiltViewModel()
-        LoginContent(viewModel)
+        val navigator = LocalNavigator.currentOrThrow
+
+        LoginContent(viewModel,navigator)
     }
 }
 
 @Composable
 private fun LoginContent(
-    viewModel: AuthViewModel
+    viewModel: AuthViewModel,
+    navigator: Navigator
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     var isLoginMode by remember { mutableStateOf(true) }
@@ -83,18 +89,18 @@ private fun LoginContent(
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
 
-
-
-
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Success -> {
+                navigator.replaceAll(HomeScreen())
                 Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
             }
             is AuthState.Error -> {
                 Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
             }
-            else -> {} // Handle other states if needed
+            else -> {
+
+            } // Handle other states if needed
         }
     }
     Box(

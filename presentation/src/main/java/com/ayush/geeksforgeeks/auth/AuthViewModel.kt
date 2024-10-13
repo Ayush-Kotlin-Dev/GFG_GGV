@@ -2,16 +2,14 @@ package com.ayush.geeksforgeeks.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ayush.data.AuthRepository
-import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
@@ -47,8 +45,14 @@ class AuthViewModel @Inject constructor(
 
     fun getCurrentUser(): FirebaseUser? = authRepository.getCurrentUser()
 
+    fun isUserLoggedIn(): Boolean {
+        return authRepository.getCurrentUser() != null
+    }
+
     fun logout() {
-        authRepository.logout()
+        viewModelScope.launch {
+            authRepository.logout()
+        }
         _authState.value = AuthState.Idle
     }
 }
