@@ -36,6 +36,7 @@ import com.ayush.geeksforgeeks.tabs.DashboardTab
 import com.ayush.geeksforgeeks.tabs.HomeTab
 import com.ayush.geeksforgeeks.tabs.ProfileTab
 import com.ayush.geeksforgeeks.tabs.TaskTab
+import com.ayush.geeksforgeeks.ui.theme.GeeksForGeeksGreen
 
 class ContainerApp : Screen {
     @Composable
@@ -113,7 +114,7 @@ private fun RowScope.TabNavigationItem(tab: Tab) {
                     Icon(
                         painter = painter,
                         contentDescription = tab.options.title,
-                        tint = if (selected) Color.Red else Color.Gray,
+                        tint = if (selected) GeeksForGeeksGreen else Color.Gray,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -124,7 +125,7 @@ private fun RowScope.TabNavigationItem(tab: Tab) {
                 text = tab.options.title,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 fontSize = 10.sp,
-                color = if (selected) Color.Red else Color.Gray
+                color = if (selected) GeeksForGeeksGreen else Color.Gray
             )
         },
         colors = NavigationBarItemDefaults.colors(

@@ -2,6 +2,7 @@ package com.ayush.data.repository
 
 
 import android.util.Log
+import com.ayush.data.datastore.User
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserSettings
 import com.google.firebase.firestore.FirebaseFirestore
@@ -54,5 +55,17 @@ class UserRepository @Inject constructor(
             .set(userSettings)
             .await()
         userPreferences.setUserData(userSettings)
+    }
+
+    suspend fun getTeamMembers(): List<User> {
+        return try {
+            firestore.collection("users")
+                .whereEqualTo("role", "member")
+                .get()
+                .await()
+                .toObjects(User::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 }

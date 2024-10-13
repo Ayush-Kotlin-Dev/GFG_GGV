@@ -23,6 +23,8 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState
 
+    private val _userRole = MutableStateFlow<String?>(null)
+    val userRole: StateFlow<String?> = _userRole
     init {
         loadHomeData()
 //        taskRepository.seedDummyTasks()

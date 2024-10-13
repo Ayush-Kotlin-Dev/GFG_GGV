@@ -10,6 +10,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
+import com.ayush.geeksforgeeks.admin.AdminScreen
 import com.ayush.geeksforgeeks.home.HomeScreen
 
 class HomeTab(private val onNavigator: (Boolean) -> Unit) : Tab {
@@ -30,9 +31,9 @@ class HomeTab(private val onNavigator: (Boolean) -> Unit) : Tab {
 
     @Composable
     override fun Content() {
-        Navigator(HomeScreen()){ navigator ->
+        Navigator(AdminScreen()){ navigator ->
             LaunchedEffect(navigator.lastItem){
-                onNavigator(navigator.lastItem is HomeScreen)
+                onNavigator(navigator.lastItem is AdminScreen)
             }
             SlideTransition(navigator)
         }

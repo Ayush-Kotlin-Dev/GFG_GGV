@@ -33,7 +33,7 @@ class MainActivityViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val isLoggedIn = authRepository.isUserLoggedIn()
-                _uiState.value = if (isLoggedIn == true) {
+                _uiState.value = if (isLoggedIn) {
                     UiState.LoggedIn
                 } else {
                     UiState.NotLoggedIn

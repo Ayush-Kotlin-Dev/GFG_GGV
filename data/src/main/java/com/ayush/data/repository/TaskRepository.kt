@@ -59,4 +59,36 @@ class TaskRepository @Inject constructor(
             0 // Return 0 if there's an error
         }
     }
+
+    suspend fun getTasks(): List<Task> {
+        return try {
+            firestore.collection("tasks")
+                .get()
+                .await()
+                .toObjects(Task::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun addTask(task: Task) {
+        try {
+            firestore.collection("tasks")
+                .add(task)
+                .await()
+        } catch (e: Exception) {
+            // Handle or log error
+        }
+    }
+
+    suspend fun assignTask(taskId: String, userId: String) {
+        try {
+            firestore.collection("tasks")
+                .document(taskId)
+                .update("assignedTo", userId)
+                .await()
+        } catch (e: Exception) {
+            // Handle or log error
+        }
+    }
 }
