@@ -23,10 +23,28 @@ class UserRepository @Inject constructor(
                 .toObject(UserSettings::class.java)
 
             Log.d("UserRepository", "getCurrentUser: firebaseUser=$firebaseUser")
-            firebaseUser?.let { userPreferences.setUserData(it) }
+//            firebaseUser?.let { userPreferences.setUserData(it) }
             firebaseUser ?: localUser
         } else {
             throw IllegalStateException("No user logged in")
+        }
+    }
+
+    suspend fun getTopContributors(limit: Int = 5): List<UserSettings> {
+        return try {
+            val querySnapshot = firestore.collection("users")
+                .orderBy("totalCredits", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+
+            querySnapshot.documents.mapNotNull { document ->
+                document.toObject(UserSettings::class.java)
+            }
+        } catch (e: Exception) {
+            // Log the error or handle it as needed
+            println("Error getting top contributors: ${e.message}")
+            emptyList() // Return an empty list if there's an error
         }
     }
 

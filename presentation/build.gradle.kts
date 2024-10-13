@@ -67,4 +67,5 @@ dependencies {
     lottie()
     data()
     firebase()
+    implementation("com.patrykandpatrick.vico:compose:1.6.5")
 }

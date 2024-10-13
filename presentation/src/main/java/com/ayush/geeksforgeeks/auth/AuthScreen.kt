@@ -55,6 +55,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.ayush.geeksforgeeks.ContainerApp
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.home.HomeScreen
 import com.ayush.geeksforgeeks.ui.theme.DarkGray
@@ -92,7 +93,7 @@ private fun LoginContent(
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Success -> {
-                navigator.replaceAll(HomeScreen())
+                navigator.replaceAll(ContainerApp())
                 Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
             }
             is AuthState.Error -> {

@@ -25,7 +25,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadHomeData()
-        taskRepository.seedDummyTasks()
+//        taskRepository.seedDummyTasks()
     }
 
     private fun loadHomeData() {

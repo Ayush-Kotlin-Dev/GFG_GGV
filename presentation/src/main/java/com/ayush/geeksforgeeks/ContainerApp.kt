@@ -32,8 +32,10 @@ import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import com.ayush.geeksforgeeks.tabs.DashboardTab
 import com.ayush.geeksforgeeks.tabs.HomeTab
 import com.ayush.geeksforgeeks.tabs.ProfileTab
+import com.ayush.geeksforgeeks.tabs.TaskTab
 
 class ContainerApp : Screen {
     @Composable
@@ -72,9 +74,17 @@ class ContainerApp : Screen {
                             TabNavigationItem(HomeTab(onNavigator = {
                                 showBottomBar.value = it
                             }))
+                            TabNavigationItem(DashboardTab(onNavigator = {
+                                showBottomBar.value = it
+                            }))
+
+                            TabNavigationItem(TaskTab(onNavigator = {
+                                showBottomBar.value = it
+                            }))
                             TabNavigationItem(ProfileTab(onNavigator = {
                                 showBottomBar.value = it
                             }))
+
                         }
                     }
                 }

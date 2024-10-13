@@ -88,7 +88,7 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun isUserLoggedIn(): Boolean? {
+    suspend fun isUserLoggedIn(): Boolean {
         return userPreferences.userData.map { it.isLoggedIn }.first()
     }
 }

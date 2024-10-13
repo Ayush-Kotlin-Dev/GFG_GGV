@@ -1,7 +1,7 @@
 package com.ayush.data.repository
 
-
 import com.ayush.data.model.Task
+import com.ayush.data.model.TaskStatus
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
@@ -19,19 +19,44 @@ class TaskRepository @Inject constructor(
             .await()
             .toObjects(Task::class.java)
     }
-    fun seedDummyTasks() {
-        val dummyTasks = Task.generateDummyTasks(10) // Generate 20 dummy tasks
 
-        val batch = firestore.batch()
-        dummyTasks.forEach { task ->
-            val docRef = firestore.collection("tasks").document(task.id)
-            batch.set(docRef, task)
-        }
+    suspend fun getTasksForUser(userId: String): List<Task> {
+        return firestore.collection("tasks")
+            .whereEqualTo("assignedTo", userId)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .get()
+            .await()
+            .toObjects(Task::class.java)
+    }
 
-        batch.commit().addOnSuccessListener {
-            println("Successfully added dummy tasks to Firestore")
-        }.addOnFailureListener { e ->
-            println("Error adding dummy tasks to Firestore: ${e.message}")
+    suspend fun updateTaskStatus(taskId: String, newStatus: TaskStatus) {
+        firestore.collection("tasks")
+            .document(taskId)
+            .update("status", newStatus.name)
+            .await()
+    }
+
+    suspend fun getTaskById(taskId: String): Task? {
+        return firestore.collection("tasks")
+            .document(taskId)
+            .get()
+            .await()
+            .toObject(Task::class.java)
+    }
+
+    suspend fun getCompletedTasksCount(userId: String): Int {
+        return try {
+            val querySnapshot = firestore.collection("tasks")
+                .whereEqualTo("assignedTo", userId)
+                .whereEqualTo("status", "COMPLETED")
+                .get()
+                .await()
+
+            querySnapshot.size()
+        } catch (e: Exception) {
+            // Log the error or handle it as needed
+            println("Error getting completed tasks count: ${e.message}")
+            0 // Return 0 if there's an error
         }
     }
 }

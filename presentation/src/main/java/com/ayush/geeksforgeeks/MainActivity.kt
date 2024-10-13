@@ -6,9 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -23,31 +21,37 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+//        enableEdgeToEdge()
         setContent {
             GFGGGVTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val viewModel: MainActivityViewModel = hiltViewModel()
-                    val uiState by viewModel.uiState.collectAsState()
+                val viewModel: MainActivityViewModel = hiltViewModel()
+                val uiState by viewModel.uiState.collectAsState()
 
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        when (uiState) {
-                            MainActivityViewModel.UiState.Loading -> {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when (uiState) {
+                        MainActivityViewModel.UiState.Loading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
                             }
-                            MainActivityViewModel.UiState.LoggedIn -> {
-                                Navigator(screen = ContainerApp())
-                            }
-                            MainActivityViewModel.UiState.NotLoggedIn -> {
-                                Navigator(screen = AuthScreen())
-                            }
-                            is MainActivityViewModel.UiState.Error -> {
+                        }
+                        MainActivityViewModel.UiState.LoggedIn -> {
+                            Navigator(screen = ContainerApp())
+                        }
 
-                            }
+                        MainActivityViewModel.UiState.NotLoggedIn -> {
+                            Navigator(screen = AuthScreen())
+                        }
+
+                        is MainActivityViewModel.UiState.Error -> {
+
                         }
                     }
                 }
             }
+
         }
     }
 }
