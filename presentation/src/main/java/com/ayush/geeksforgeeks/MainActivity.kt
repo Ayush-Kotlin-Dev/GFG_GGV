@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
@@ -41,7 +42,7 @@ class MainActivity : ComponentActivity() {
                                 Navigator(screen = AuthScreen())
                             }
                             is MainActivityViewModel.UiState.Error -> {
-                                // Handle error state, maybe show a dialog or error message
+
                             }
                         }
                     }

@@ -1,6 +1,6 @@
 package com.ayush.data.di
 
-import com.ayush.data.AuthRepository
+import com.ayush.data.repository.AuthRepository
 import com.ayush.data.datastore.UserPreferences
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore

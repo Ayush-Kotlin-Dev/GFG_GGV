@@ -135,7 +135,7 @@ private fun LoginContent(
                     if (isLoginMode) {
                         viewModel.login(email, password)
                     } else {
-                        viewModel.signUp(email, password)
+                        viewModel.signUp(username , email, password)
                     }
                 }
             )

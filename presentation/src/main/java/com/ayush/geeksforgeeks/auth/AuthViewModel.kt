@@ -2,8 +2,7 @@ package com.ayush.geeksforgeeks.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ayush.data.AuthRepository
+import com.ayush.data.repository.AuthRepository
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,17 +13,18 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+
 ) : ViewModel() {
 
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    fun signUp(email: String, password: String) {
+    fun signUp(username : String , email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val result = authRepository.signUp(email, password)
+            val result = authRepository.signUp(username, email, password)
             _authState.value = result.fold(
                 onSuccess = { AuthState.Success(it) },
                 onFailure = { AuthState.Error(it.message ?: "Sign up failed") }
@@ -32,7 +32,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun login(email: String, password: String) {
+    fun login( email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             val result = authRepository.login(email, password)
@@ -41,12 +41,6 @@ class AuthViewModel @Inject constructor(
                 onFailure = { AuthState.Error(it.message ?: "Login failed") }
             )
         }
-    }
-
-    fun getCurrentUser(): FirebaseUser? = authRepository.getCurrentUser()
-
-    fun isUserLoggedIn(): Boolean {
-        return authRepository.getCurrentUser() != null
     }
 
     fun logout() {
