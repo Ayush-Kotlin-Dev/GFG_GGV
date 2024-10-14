@@ -27,7 +27,12 @@ class AdminViewModel @Inject constructor(
     private val _assignTaskDialogState = MutableStateFlow<Pair<Task, List<User>>?>(null)
     val assignTaskDialogState: StateFlow<Pair<Task, List<User>>?> = _assignTaskDialogState
 
-    init {
+//    init {
+//        loadTeamMembers()
+//        loadTasks()
+//    }
+
+    fun loadInitialData() {
         loadTeamMembers()
         loadTasks()
     }

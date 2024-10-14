@@ -60,7 +60,7 @@ class UserRepository @Inject constructor(
     suspend fun getTeamMembers(): List<User> {
         return try {
             firestore.collection("users")
-                .whereEqualTo("role", "member")
+                .whereEqualTo("role", "MEMBER")
                 .get()
                 .await()
                 .toObjects(User::class.java)

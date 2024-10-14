@@ -1,6 +1,5 @@
 package com.ayush.geeksforgeeks.admin
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,11 +15,15 @@ import com.ayush.data.model.Task
 class AdminScreen : Screen {
     @Composable
     override fun Content() {
-        val viewModel : AdminViewModel = hiltViewModel()
+        val viewModel: AdminViewModel = hiltViewModel()
         val teamMembers by viewModel.teamMembers.collectAsState()
         val tasks by viewModel.tasks.collectAsState()
 
         var showAddTaskDialog by remember { mutableStateOf(false) }
+
+        LaunchedEffect(Unit) {
+            viewModel.loadInitialData()
+        }
 
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Admin Panel", style = MaterialTheme.typography.headlineMedium)
@@ -56,7 +59,8 @@ class AdminScreen : Screen {
             )
         }
 
-        viewModel.assignTaskDialogState.value?.let { (task, members) ->
+        val assignTaskDialogState by viewModel.assignTaskDialogState.collectAsState()
+        assignTaskDialogState?.let { (task, members) ->
             AssignTaskDialog(
                 task = task,
                 teamMembers = members,
