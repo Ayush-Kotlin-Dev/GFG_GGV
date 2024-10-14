@@ -50,6 +50,12 @@ class AuthViewModel @Inject constructor(
         }
         _authState.value = AuthState.Idle
     }
+
+    suspend fun getUserRoleOnLogin(
+        email: String
+    ): UserRole {
+        return authRepository.getUserRole(email )
+    }
 }
 
 sealed class AuthState {

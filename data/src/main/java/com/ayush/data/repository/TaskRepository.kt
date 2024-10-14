@@ -1,5 +1,6 @@
 package com.ayush.data.repository
 
+import android.util.Log
 import com.ayush.data.model.Task
 import com.ayush.data.model.TaskStatus
 import com.google.firebase.firestore.FirebaseFirestore
@@ -71,18 +72,21 @@ class TaskRepository @Inject constructor(
         }
     }
 
-    suspend fun addTask(task: Task) {
-        try {
-            firestore.collection("tasks")
-                .add(task)
-                .await()
+    suspend fun addTask(task: Task): String {
+        return try {
+            val docRef = firestore.collection("tasks").document()
+            val taskWithId = task.copy(id = docRef.id)
+            docRef.set(taskWithId).await()
+            docRef.id
         } catch (e: Exception) {
-            // Handle or log error
+            Log.e("TaskRepository", "Error adding task: ${e.message}")
+            throw e
         }
     }
 
     suspend fun assignTask(taskId: String, userId: String) {
         try {
+            Log.d("TaskRepository", "Assigning task $taskId to user $userId")
             firestore.collection("tasks")
                 .document(taskId)
                 .update("assignedTo", userId)

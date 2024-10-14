@@ -1,6 +1,7 @@
 package com.ayush.geeksforgeeks
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.navigator.Navigator
+import com.ayush.data.datastore.UserRole
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -21,37 +23,30 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
         setContent {
             GFGGGVTheme {
                 val viewModel: MainActivityViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    when (uiState) {
+                    when (val state = uiState) {
                         MainActivityViewModel.UiState.Loading -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                         }
-                        MainActivityViewModel.UiState.LoggedIn -> {
-                            Navigator(screen = ContainerApp())
-                        }
-
                         MainActivityViewModel.UiState.NotLoggedIn -> {
                             Navigator(screen = AuthScreen())
                         }
-
-                        is MainActivityViewModel.UiState.Error -> {
-
+                        is MainActivityViewModel.UiState.LoggedInAsAdmin -> {
+                            Log.d("MainActivityH", "UserSettings for admin : ${state.userSettings.role}")
+                            Navigator(screen = ContainerApp(userRole = UserRole.TEAM_LEAD))
+                        }
+                        is MainActivityViewModel.UiState.LoggedInAsMember -> {
+                            Log.d("MainActivityH", "UserSettings Member: ${state.userSettings.role}")
+                            Navigator(screen = ContainerApp(userRole = UserRole.MEMBER))
                         }
                     }
                 }
             }
-
         }
     }
 }

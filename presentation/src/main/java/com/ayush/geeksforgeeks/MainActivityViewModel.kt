@@ -3,52 +3,41 @@ package com.ayush.geeksforgeeks
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cafe.adriel.voyager.core.screen.Screen
 import com.ayush.data.datastore.UserPreferences
-import com.ayush.data.repository.AuthRepository
-import com.ayush.data.repository.UserRepository
-import com.ayush.geeksforgeeks.auth.AuthScreen
-import com.ayush.geeksforgeeks.home.HomeScreen
+import com.ayush.data.datastore.UserRole
+import com.ayush.data.datastore.UserSettings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
-    val uiState: StateFlow<UiState> = _uiState
+    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
-        checkLoginStatus()
-    }
-
-    private fun checkLoginStatus() {
         viewModelScope.launch {
-            try {
-                val isLoggedIn = authRepository.isUserLoggedIn()
-                _uiState.value = if (isLoggedIn) {
-                    UiState.LoggedIn
-                } else {
-                    UiState.NotLoggedIn
+            userPreferences.userData.collect { userSettings ->
+                Log.d("MainActivityViewModel", "UserSettings: ${userSettings.role}")
+                _uiState.value = when {
+                    !userSettings.isLoggedIn -> UiState.NotLoggedIn
+                    userSettings.role == UserRole.TEAM_LEAD -> UiState.LoggedInAsAdmin(userSettings)
+                    else -> UiState.LoggedInAsMember(userSettings)
                 }
-                Log.d("MainActivityViewModel", "checkLoginStatus: isLoggedIn=$isLoggedIn")
-            } catch (e: Exception) {
-                _uiState.value = UiState.Error(e.message ?: "An error occurred")
             }
         }
     }
 
     sealed class UiState {
         object Loading : UiState()
-        object LoggedIn : UiState()
         object NotLoggedIn : UiState()
-        data class Error(val message: String) : UiState()
+        data class LoggedInAsAdmin(val userSettings: UserSettings) : UiState()
+        data class LoggedInAsMember(val userSettings: UserSettings) : UiState()
     }
 }

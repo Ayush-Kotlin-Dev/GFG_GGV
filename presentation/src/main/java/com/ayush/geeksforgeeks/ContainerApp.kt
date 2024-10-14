@@ -32,20 +32,23 @@ import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import com.ayush.data.datastore.UserRole
+import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.tabs.DashboardTab
 import com.ayush.geeksforgeeks.tabs.HomeTab
 import com.ayush.geeksforgeeks.tabs.ProfileTab
 import com.ayush.geeksforgeeks.tabs.TaskTab
 import com.ayush.geeksforgeeks.ui.theme.GeeksForGeeksGreen
 
-class ContainerApp : Screen {
+data class ContainerApp(private val userRole: UserRole) : Screen {
     @Composable
     override fun Content() {
         val showBottomBar = remember { mutableStateOf(true) }
         val initialTab = remember {
-            HomeTab(onNavigator = {
-                showBottomBar.value = it
-            })
+            HomeTab(
+                onNavigator = { showBottomBar.value = it },
+                userRole = userRole
+            )
         }
 
         TabNavigator(initialTab) { tabNavigator ->
@@ -74,7 +77,7 @@ class ContainerApp : Screen {
                         ) {
                             TabNavigationItem(HomeTab(onNavigator = {
                                 showBottomBar.value = it
-                            }))
+                            }, userRole = userRole))
                             TabNavigationItem(DashboardTab(onNavigator = {
                                 showBottomBar.value = it
                             }))

@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.admin
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.User
@@ -51,12 +52,19 @@ class AdminViewModel @Inject constructor(
 
     fun addTask(task: Task) {
         viewModelScope.launch {
-            taskRepository.addTask(task)
-            loadTasks() // Reload tasks after adding a new one
+            try {
+                val taskId = taskRepository.addTask(task)
+                Log.d("AdminViewModel", "Task added successfully with ID: $taskId")
+                loadTasks() // Reload tasks after adding a new one
+            } catch (e: Exception) {
+                Log.e("AdminViewModel", "Error adding task: ${e.message}")
+                // Handle the error, maybe update a UI state to show an error message
+            }
         }
     }
 
     fun showAssignTaskDialog(task: Task) {
+
         _assignTaskDialogState.value = Pair(task, _teamMembers.value)
     }
 
@@ -66,6 +74,7 @@ class AdminViewModel @Inject constructor(
 
     fun assignTask(taskId: String, userId: String) {
         viewModelScope.launch {
+            Log.d("AdminViewModel", "Assigning task $taskId to user $userId")
             taskRepository.assignTask(taskId, userId)
             loadTasks() // Reload tasks after assigning
         }

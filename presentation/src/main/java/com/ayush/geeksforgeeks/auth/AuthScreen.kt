@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.auth
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +69,7 @@ import com.ayush.geeksforgeeks.home.HomeScreen
 import com.ayush.geeksforgeeks.ui.theme.DarkGray
 import com.ayush.geeksforgeeks.ui.theme.GeeksForGeeksGreen
 import com.ayush.geeksforgeeks.ui.theme.MintGreen
+import kotlinx.coroutines.launch
 
 class AuthScreen : Screen {
     @Composable
@@ -94,7 +97,8 @@ private fun LoginContent(
     var expandedDomain by remember { mutableStateOf(false) }
     var expandedRole by remember { mutableStateOf(false) }
     val domains = listOf("Android", "Web", "iOS", "Backend", "ML/AI", "Cloud")
-    val roles = listOf("MEMBER", "LEAD")
+
+    val roles = listOf("MEMBER", "TEAM_LEAD")
 
     val colors = getThemeColors(isDarkTheme)
     val focusManager = LocalFocusManager.current
@@ -102,19 +106,24 @@ private fun LoginContent(
 
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var userRole by remember { mutableStateOf<UserRole?>(null) }
 
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Success -> {
-                navigator.replaceAll(ContainerApp())
-                Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+                coroutineScope.launch {
+                    userRole = viewModel.getUserRoleOnLogin(email)
+                    userRole?.let {
+                        navigator.replaceAll(ContainerApp(it))
+                        Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
             is AuthState.Error -> {
-                Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
             }
-            else -> {
-                // Handle other states if needed
-            }
+            else -> {}
         }
     }
 
@@ -160,7 +169,7 @@ private fun LoginContent(
                     if (isLoginMode) {
                         viewModel.login(email, password)
                     } else {
-                        viewModel.signUp(username, email, password, selectedDomain, selectedRole::class)
+                        viewModel.signUp(username, email, password, selectedDomain, UserRole.valueOf(selectedRole))
                     }
                 }
             )

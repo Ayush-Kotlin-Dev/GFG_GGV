@@ -18,6 +18,8 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
         private val USER_EMAIL = stringPreferencesKey("user_email")
         private val USER_PROFILE_PIC = stringPreferencesKey("user_profile_pic")
         private val IS_USER_LOGGED_IN = booleanPreferencesKey("is_user_logged_in")
+        private val USER_ROLE = stringPreferencesKey("user_role")
+        private val USER_DOMAIN_ID = stringPreferencesKey("user_domain_id")
     }
 
     val userData: Flow<UserSettings> = dataStore.data
@@ -34,18 +36,22 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
                 userId = preferences[USER_ID] ?: "",
                 email = preferences[USER_EMAIL] ?: "",
                 profilePicUrl = preferences[USER_PROFILE_PIC],
-                isLoggedIn = preferences[IS_USER_LOGGED_IN] ?: false
+                isLoggedIn = preferences[IS_USER_LOGGED_IN] ?: false,
+                role = UserRole.valueOf(preferences[USER_ROLE] ?: UserRole.MEMBER.toString()),
+                domainId = preferences[USER_DOMAIN_ID] ?: ""
             )
         }
 
     suspend fun setUserData(userSettings: UserSettings) {
-        Log.d("UserPreferences", "setUserData: $userSettings")
+        Log.d("UserPreferences", "UserPreferences: $userSettings")
         dataStore.edit { preferences ->
             preferences[USER_NAME] = userSettings.name
             preferences[USER_ID] = userSettings.userId
             preferences[USER_EMAIL] = userSettings.email
             userSettings.profilePicUrl?.let { preferences[USER_PROFILE_PIC] = it }
             preferences[IS_USER_LOGGED_IN] = userSettings.isLoggedIn
+            preferences[USER_ROLE] = userSettings.role.toString()
+            preferences[USER_DOMAIN_ID] = userSettings.domainId
         }
     }
 

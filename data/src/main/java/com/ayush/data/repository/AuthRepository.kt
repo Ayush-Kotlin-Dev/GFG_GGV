@@ -45,7 +45,7 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    private suspend fun saveUserData(username: String ? = "", user: FirebaseUser, isNewUser: Boolean, domain: String? = null, role: UserRole? = null) {
+    private suspend fun saveUserData(username: String ? = "", user: FirebaseUser, isNewUser: Boolean, domain: String? = null, role: UserRole? = UserRole.TEAM_LEAD) {
         val userSettings = UserSettings(
             name = username ?: user.displayName ?: "GFG User",
             userId = user.uid,
@@ -53,7 +53,7 @@ class AuthRepository @Inject constructor(
             profilePicUrl = user.photoUrl?.toString(),
             isLoggedIn = true,
             domainId = domain ?: "App",
-            role = role ?: UserRole.MEMBER
+            role = role ?: UserRole.TEAM_LEAD
         )
         userPreferences.setUserData(userSettings)
 
@@ -92,6 +92,28 @@ class AuthRepository @Inject constructor(
 
     suspend fun isUserLoggedIn(): Boolean {
         return userPreferences.userData.map { it.isLoggedIn }.first()
+    }
+    suspend fun getUserRole(
+        email : String
+    ): UserRole {
+        //get from firebase 
+        val querySnapshot = firestore.collection("users")
+            .whereEqualTo("email", email)
+            .get()
+            .await()
+
+        if (querySnapshot.documents.isNotEmpty()) {
+            val userDoc = querySnapshot.documents.first()
+            val roleString = userDoc.getString("role")
+            return when (roleString) {
+                "TEAM_LEAD" -> UserRole.TEAM_LEAD
+                "TEAM_MEMBER" -> UserRole.MEMBER
+                else -> UserRole.TEAM_LEAD // Default role if not found
+            }
+        } else {
+            // User not found, return default role
+            return UserRole.TEAM_LEAD
+        }
     }
 }
 

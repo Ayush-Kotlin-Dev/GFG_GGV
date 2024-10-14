@@ -24,7 +24,7 @@ class UserRepository @Inject constructor(
                 .toObject(UserSettings::class.java)
 
             Log.d("UserRepository", "getCurrentUser: firebaseUser=$firebaseUser")
-//            firebaseUser?.let { userPreferences.setUserData(it) }
+            firebaseUser?.let { userPreferences.setUserData(it) }
             firebaseUser ?: localUser
         } else {
             throw IllegalStateException("No user logged in")
