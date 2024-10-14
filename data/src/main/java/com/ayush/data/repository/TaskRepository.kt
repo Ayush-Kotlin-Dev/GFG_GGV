@@ -91,4 +91,19 @@ class TaskRepository @Inject constructor(
             // Handle or log error
         }
     }
+    fun seedDummyTasks() {
+        val dummyTasks = Task.generateDummyTasks(10) // Generate 20 dummy tasks
+
+        val batch = firestore.batch()
+        dummyTasks.forEach { task ->
+            val docRef = firestore.collection("tasks").document(task.id)
+            batch.set(docRef, task)
+        }
+
+        batch.commit().addOnSuccessListener {
+            println("Successfully added dummy tasks to Firestore")
+        }.addOnFailureListener { e ->
+            println("Error adding dummy tasks to Firestore: ${e.message}")
+        }
+    }
 }

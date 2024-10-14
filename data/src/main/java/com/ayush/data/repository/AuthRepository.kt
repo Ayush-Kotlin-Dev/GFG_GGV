@@ -4,6 +4,7 @@ import android.provider.ContactsContract.Data
 import android.util.Log
 import androidx.datastore.core.DataStore
 import com.ayush.data.datastore.UserPreferences
+import com.ayush.data.datastore.UserRole
 import com.ayush.data.datastore.UserSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -22,11 +23,11 @@ class AuthRepository @Inject constructor(
 
     val userData: Flow<UserSettings> = userPreferences.userData
 
-    suspend fun signUp(username : String , email: String, password: String): Result<FirebaseUser> {
+    suspend fun signUp(username: String, email: String, password: String, domain: String, role: UserRole): Result<FirebaseUser> {
         return try {
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             val user = result.user!!
-            saveUserData(username , user, isNewUser = true)
+            saveUserData(username, user, isNewUser = true, domain, role)
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
@@ -44,15 +45,16 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    private suspend fun saveUserData(username: String? = "", user: FirebaseUser, isNewUser: Boolean) {
+    private suspend fun saveUserData(username: String ? = "", user: FirebaseUser, isNewUser: Boolean, domain: String? = null, role: UserRole? = null) {
         val userSettings = UserSettings(
             name = username ?: user.displayName ?: "GFG User",
             userId = user.uid,
             email = user.email ?: "",
             profilePicUrl = user.photoUrl?.toString(),
-            isLoggedIn = true
+            isLoggedIn = true,
+            domainId = domain ?: "App",
+            role = role ?: UserRole.MEMBER
         )
-        Log.d("AuthRepository", "saveUserData: $userSettings")
         userPreferences.setUserData(userSettings)
 
         if (isNewUser) {

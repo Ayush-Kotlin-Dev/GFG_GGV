@@ -24,8 +24,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +60,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.ayush.data.datastore.UserRole
 import com.ayush.geeksforgeeks.ContainerApp
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.home.HomeScreen
@@ -65,10 +71,10 @@ import com.ayush.geeksforgeeks.ui.theme.MintGreen
 class AuthScreen : Screen {
     @Composable
     override fun Content() {
-        val viewModel : AuthViewModel = hiltViewModel()
+        val viewModel: AuthViewModel = hiltViewModel()
         val navigator = LocalNavigator.currentOrThrow
 
-        LoginContent(viewModel,navigator)
+        LoginContent(viewModel, navigator)
     }
 }
 
@@ -82,6 +88,13 @@ private fun LoginContent(
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    var selectedDomain by remember { mutableStateOf("") }
+    var selectedRole by remember { mutableStateOf("") }
+    var expandedDomain by remember { mutableStateOf(false) }
+    var expandedRole by remember { mutableStateOf(false) }
+    val domains = listOf("Android", "Web", "iOS", "Backend", "ML/AI", "Cloud")
+    val roles = listOf("MEMBER", "LEAD")
 
     val colors = getThemeColors(isDarkTheme)
     val focusManager = LocalFocusManager.current
@@ -100,10 +113,11 @@ private fun LoginContent(
                 Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
             }
             else -> {
-
-            } // Handle other states if needed
+                // Handle other states if needed
+            }
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -123,9 +137,19 @@ private fun LoginContent(
                 username = username,
                 email = email,
                 password = password,
+                selectedDomain = selectedDomain,
+                selectedRole = selectedRole,
+                expandedDomain = expandedDomain,
+                expandedRole = expandedRole,
+                domains = domains,
+                roles = roles,
                 onUsernameChange = { username = it },
                 onEmailChange = { email = it },
                 onPasswordChange = { password = it },
+                onDomainChange = { selectedDomain = it },
+                onRoleChange = { selectedRole = it },
+                onExpandedDomainChange = { expandedDomain = it },
+                onExpandedRoleChange = { expandedRole = it },
                 onModeChange = { isLoginMode = it },
                 colors = colors,
                 focusManager = focusManager,
@@ -136,49 +160,34 @@ private fun LoginContent(
                     if (isLoginMode) {
                         viewModel.login(email, password)
                     } else {
-                        viewModel.signUp(username , email, password)
+                        viewModel.signUp(username, email, password, selectedDomain, selectedRole::class)
                     }
                 }
             )
         }
     }
 }
-@Composable
-private fun Logo() {
-    Image(
-        painter = painterResource(id = R.drawable.geeksforgeeks_logo  ),
-        contentDescription = "GeeksforGeeks Logo",
-        modifier = Modifier.size(100.dp)
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-}
 
-@Composable
-private fun WelcomeText(textColor: Color) {
-    Text(
-        text = "Welcome",
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Bold,
-        color = textColor
-    )
-    Text(
-        text = "Please log in to continue",
-        fontSize = 16.sp,
-        color = textColor.copy(alpha = 0.7f),
-        lineHeight = 24.sp
-    )
-    Spacer(modifier = Modifier.height(24.dp))
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LoginCard(
     isLoginMode: Boolean,
     username: String,
     email: String,
     password: String,
+    selectedDomain: String,
+    selectedRole: String,
+    expandedDomain: Boolean,
+    expandedRole: Boolean,
+    domains: List<String>,
+    roles: List<String>,
     onUsernameChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
+    onDomainChange: (String) -> Unit,
+    onRoleChange: (String) -> Unit,
+    onExpandedDomainChange: (Boolean) -> Unit,
+    onExpandedRoleChange: (Boolean) -> Unit,
     onModeChange: (Boolean) -> Unit,
     colors: ThemeColors,
     focusManager: FocusManager,
@@ -215,6 +224,82 @@ private fun LoginCard(
                     nextFocusRequester = emailFocus,
                     focusManager = focusManager
                 )
+
+                ExposedDropdownMenuBox(
+                    expanded = expandedDomain,
+                    onExpandedChange = onExpandedDomainChange,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = selectedDomain,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Domain") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDomain) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GeeksForGeeksGreen,
+                            unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
+                            focusedLabelColor = GeeksForGeeksGreen,
+                            unfocusedLabelColor = colors.text,
+                            focusedTextColor = colors.text,
+                            unfocusedTextColor = colors.text
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedDomain,
+                        onDismissRequest = { onExpandedDomainChange(false) }
+                    ) {
+                        domains.forEach { domain ->
+                            DropdownMenuItem(
+                                text = { Text(domain) },
+                                onClick = {
+                                    onDomainChange(domain)
+                                    onExpandedDomainChange(false)
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = expandedRole,
+                    onExpandedChange = onExpandedRoleChange,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = selectedRole,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Role") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRole) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GeeksForGeeksGreen,
+                            unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
+                            focusedLabelColor = GeeksForGeeksGreen,
+                            unfocusedLabelColor = colors.text,
+                            focusedTextColor = colors.text,
+                            unfocusedTextColor = colors.text
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedRole,
+                        onDismissRequest = { onExpandedRoleChange(false) }
+                    ) {
+                        roles.forEach { role ->
+                            DropdownMenuItem(
+                                text = { Text(role) },
+                                onClick = {
+                                    onRoleChange(role)
+                                    onExpandedRoleChange(false)
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             InputField(
@@ -254,6 +339,32 @@ private fun LoginCard(
     }
 }
 
+@Composable
+private fun Logo() {
+    Image(
+        painter = painterResource(id = R.drawable.geeksforgeeks_logo),
+        contentDescription = "GeeksforGeeks Logo",
+        modifier = Modifier.size(100.dp)
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Composable
+private fun WelcomeText(textColor: Color) {
+    Text(
+        text = "Welcome",
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Bold,
+        color = textColor
+    )
+    Text(
+        text = "Please log in to continue",
+        fontSize = 16.sp,
+        color = textColor.copy(alpha = 0.7f),
+        lineHeight = 24.sp
+    )
+    Spacer(modifier = Modifier.height(24.dp))
+}
 
 @Composable
 private fun InputField(
@@ -314,7 +425,6 @@ private fun ForgotPasswordText() {
     }
     Spacer(modifier = Modifier.height(8.dp))
 }
-
 
 @Composable
 private fun LoginButton(
