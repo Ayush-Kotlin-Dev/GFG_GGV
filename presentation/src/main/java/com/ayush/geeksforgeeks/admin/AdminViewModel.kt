@@ -28,15 +28,12 @@ class AdminViewModel @Inject constructor(
     private val _assignTaskDialogState = MutableStateFlow<Pair<Task, List<User>>?>(null)
     val assignTaskDialogState: StateFlow<Pair<Task, List<User>>?> = _assignTaskDialogState
 
-//    init {
-//        loadTeamMembers()
-//        loadTasks()
-//    }
-
-    fun loadInitialData() {
+    init {
         loadTeamMembers()
         loadTasks()
     }
+
+
 
     private fun loadTeamMembers() {
         viewModelScope.launch {
@@ -53,11 +50,9 @@ class AdminViewModel @Inject constructor(
     fun addTask(task: Task) {
         viewModelScope.launch {
             try {
-                val taskId = taskRepository.addTask(task)
-                Log.d("AdminViewModel", "Task added successfully with ID: $taskId")
-                loadTasks() // Reload tasks after adding a new one
+                taskRepository.addTask(task)
+                loadTasks()
             } catch (e: Exception) {
-                Log.e("AdminViewModel", "Error adding task: ${e.message}")
                 // Handle the error, maybe update a UI state to show an error message
             }
         }

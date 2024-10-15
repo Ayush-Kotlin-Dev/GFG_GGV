@@ -21,10 +21,6 @@ class AdminScreen : Screen {
 
         var showAddTaskDialog by remember { mutableStateOf(false) }
 
-        LaunchedEffect(Unit) {
-            viewModel.loadInitialData()
-        }
-
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Admin Panel", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(16.dp))
