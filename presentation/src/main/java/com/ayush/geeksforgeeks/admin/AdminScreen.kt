@@ -133,6 +133,7 @@ fun TaskItem(task: Task, onAssign: (Task) -> Unit) {
                 if (task.assignedTo.isNotEmpty()) {
                     Text(text = "Assigned to: ${task.assignedTo}", style = MaterialTheme.typography.bodySmall)
                 }
+                Text(text = "Domain: ${task.domainId}", style = MaterialTheme.typography.bodySmall)
             }
             if (task.assignedTo.isEmpty()) {
                 Button(onClick = { onAssign(task) }) {
@@ -178,7 +179,8 @@ fun AddTaskDialog(onDismiss: () -> Unit, onTaskAdded: (Task) -> Unit) {
                 onTaskAdded(Task(
                     title = title,
                     description = description,
-                    credits = credits.toIntOrNull() ?: 0
+                    credits = credits.toIntOrNull() ?: 0,
+                    // The domainId will be set in the ViewModel
                 ))
             }) {
                 Text("Add Task")

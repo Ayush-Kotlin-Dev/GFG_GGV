@@ -61,13 +61,15 @@ class TaskRepository @Inject constructor(
         }
     }
 
-    suspend fun getTasks(): List<Task> {
+    suspend fun getTasks(domainId: String): List<Task> {
         return try {
             firestore.collection("tasks")
+                .whereEqualTo("domainId", domainId)
                 .get()
                 .await()
                 .toObjects(Task::class.java)
         } catch (e: Exception) {
+            Log.e("TaskRepository", "Error getting tasks: ${e.message}")
             emptyList()
         }
     }
@@ -91,7 +93,7 @@ class TaskRepository @Inject constructor(
                 .update("assignedTo", userId)
                 .await()
         } catch (e: Exception) {
-            // Handle or log error
+            Log.e("TaskRepository", "Error assigning task: ${e.message}")
         }
     }
     fun seedDummyTasks() {

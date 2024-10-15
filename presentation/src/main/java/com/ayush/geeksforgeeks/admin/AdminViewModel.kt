@@ -1,6 +1,5 @@
 package com.ayush.geeksforgeeks.admin
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.User
@@ -28,12 +27,15 @@ class AdminViewModel @Inject constructor(
     private val _assignTaskDialogState = MutableStateFlow<Pair<Task, List<User>>?>(null)
     val assignTaskDialogState: StateFlow<Pair<Task, List<User>>?> = _assignTaskDialogState
 
+    private var currentUserDomainId: String = ""
+
     init {
-        loadTeamMembers()
-        loadTasks()
+        viewModelScope.launch {
+            currentUserDomainId = userRepository.getCurrentUser().domainId
+            loadTeamMembers()
+            loadTasks()
+        }
     }
-
-
 
     private fun loadTeamMembers() {
         viewModelScope.launch {
@@ -43,14 +45,15 @@ class AdminViewModel @Inject constructor(
 
     private fun loadTasks() {
         viewModelScope.launch {
-            _tasks.value = taskRepository.getTasks()
+            _tasks.value = taskRepository.getTasks(currentUserDomainId)
         }
     }
 
     fun addTask(task: Task) {
         viewModelScope.launch {
             try {
-                taskRepository.addTask(task)
+                val taskWithDomain = task.copy(domainId = currentUserDomainId)
+                taskRepository.addTask(taskWithDomain)
                 loadTasks()
             } catch (e: Exception) {
                 // Handle the error, maybe update a UI state to show an error message
@@ -59,7 +62,6 @@ class AdminViewModel @Inject constructor(
     }
 
     fun showAssignTaskDialog(task: Task) {
-
         _assignTaskDialogState.value = Pair(task, _teamMembers.value)
     }
 
