@@ -69,9 +69,8 @@ class AdminViewModel @Inject constructor(
 
     fun assignTask(taskId: String, userId: String) {
         viewModelScope.launch {
-            Log.d("AdminViewModel", "Assigning task $taskId to user $userId")
             taskRepository.assignTask(taskId, userId)
-            loadTasks() // Reload tasks after assigning
+            loadTasks()
         }
     }
 }

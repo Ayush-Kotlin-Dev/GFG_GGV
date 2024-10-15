@@ -86,7 +86,6 @@ class TaskRepository @Inject constructor(
 
     suspend fun assignTask(taskId: String, userId: String) {
         try {
-            Log.d("TaskRepository", "Assigning task $taskId to user $userId")
             firestore.collection("tasks")
                 .document(taskId)
                 .update("assignedTo", userId)

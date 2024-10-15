@@ -56,16 +56,21 @@ class UserRepository @Inject constructor(
             .await()
         userPreferences.setUserData(userSettings)
     }
-
+    
     suspend fun getTeamMembers(): List<User> {
         return try {
+            val currentUser = getCurrentUser()
+            val leadDomainId = currentUser.domainId
             firestore.collection("users")
                 .whereEqualTo("role", "MEMBER")
+                .whereEqualTo("domainId", leadDomainId)
                 .get()
                 .await()
                 .toObjects(User::class.java)
         } catch (e: Exception) {
+            Log.e("UserRepository", "Error getting team members: ${e.message}")
             emptyList()
         }
     }
+
 }
