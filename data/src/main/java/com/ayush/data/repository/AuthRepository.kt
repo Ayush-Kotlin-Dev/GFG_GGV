@@ -1,8 +1,5 @@
 package com.ayush.data.repository
 
-import android.provider.ContactsContract.Data
-import android.util.Log
-import androidx.datastore.core.DataStore
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.datastore.UserSettings
@@ -23,7 +20,7 @@ class AuthRepository @Inject constructor(
 
     val userData: Flow<UserSettings> = userPreferences.userData
 
-    suspend fun signUp(username: String, email: String, password: String, domain: String, role: UserRole): Result<FirebaseUser> {
+    suspend fun signUp(username: String, email: String, password: String, domain: Int, role: UserRole): Result<FirebaseUser> {
         return try {
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             val user = result.user!!
@@ -45,14 +42,14 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    private suspend fun saveUserData(username: String ? = "", user: FirebaseUser, isNewUser: Boolean, domain: String? = null, role: UserRole? = UserRole.TEAM_LEAD) {
+    private suspend fun saveUserData(username: String ? = "", user: FirebaseUser, isNewUser: Boolean, domain: Int? = null, role: UserRole? = UserRole.TEAM_LEAD) {
         val userSettings = UserSettings(
             name = username ?: user.displayName ?: "GFG User",
             userId = user.uid,
             email = user.email ?: "",
             profilePicUrl = user.photoUrl?.toString(),
             isLoggedIn = true,
-            domainId = domain ?: "App",
+            domainId = domain ?: 0,
             role = role ?: UserRole.TEAM_LEAD
         )
         userPreferences.setUserData(userSettings)

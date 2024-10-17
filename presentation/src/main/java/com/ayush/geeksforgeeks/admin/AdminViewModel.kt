@@ -27,7 +27,7 @@ class AdminViewModel @Inject constructor(
     private val _assignTaskDialogState = MutableStateFlow<Pair<Task, List<User>>?>(null)
     val assignTaskDialogState: StateFlow<Pair<Task, List<User>>?> = _assignTaskDialogState
 
-    private var currentUserDomainId: String = ""
+    private var currentUserDomainId: Int = 0
 
     init {
         viewModelScope.launch {

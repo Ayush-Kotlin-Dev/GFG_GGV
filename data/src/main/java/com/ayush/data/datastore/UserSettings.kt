@@ -12,7 +12,7 @@ data class UserSettings(
     @field:JvmField
     val isLoggedIn:Boolean = false,
     val role: UserRole = UserRole.MEMBER,
-    val domainId: String = "",
+    val domainId: Int = 0,
     val totalCredits: Int = 0
 )
 
@@ -24,7 +24,7 @@ data class User(
     val email: String = "",
     val profilePicUrl: String? = null,
     val role: UserRole = UserRole.MEMBER,
-    val domainId: String = "",
+    val domainId: Int = 0,
     val totalCredits: Int = 0,
     val isLoggedIn: Boolean = false
 )

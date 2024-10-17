@@ -22,7 +22,7 @@ class AdminScreen : Screen {
         val tasks by viewModel.tasks.collectAsState()
 
         var showAddTaskDialog by remember { mutableStateOf(false) }
-        var selectedTab by remember { mutableStateOf(0) }
+        var selectedTab by remember { mutableIntStateOf(0) }
 
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Admin Panel", style = MaterialTheme.typography.headlineMedium)
@@ -41,9 +41,15 @@ class AdminScreen : Screen {
 
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) { Text("All") }
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) { Text("Un Assigned") }
-                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) { Text("In Progress") }
-                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }) { Text("Completed") }
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 }) { Text("Un Assigned") }
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 }) { Text("In Progress") }
+                Tab(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 }) { Text("Completed") }
             }
 
             TaskList(
@@ -90,6 +96,7 @@ class AdminScreen : Screen {
         }
     }
 }
+
 @Composable
 fun TaskList(tasks: List<Task>, onAssign: (Task) -> Unit) {
     LazyColumn {
@@ -98,6 +105,7 @@ fun TaskList(tasks: List<Task>, onAssign: (Task) -> Unit) {
         }
     }
 }
+
 @Composable
 fun TeamMemberItem(member: User) {
     Card(
@@ -176,12 +184,14 @@ fun AddTaskDialog(onDismiss: () -> Unit, onTaskAdded: (Task) -> Unit) {
         },
         confirmButton = {
             Button(onClick = {
-                onTaskAdded(Task(
-                    title = title,
-                    description = description,
-                    credits = credits.toIntOrNull() ?: 0,
-                    // The domainId will be set in the ViewModel
-                ))
+                onTaskAdded(
+                    Task(
+                        title = title,
+                        description = description,
+                        credits = credits.toIntOrNull() ?: 0,
+                        // The domainId will be set in the ViewModel
+                    )
+                )
             }) {
                 Text("Add Task")
             }

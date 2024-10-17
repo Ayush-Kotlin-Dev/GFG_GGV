@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -92,12 +93,18 @@ private fun LoginContent(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    var selectedDomain by remember { mutableStateOf("") }
+    var selectedDomain by remember { mutableIntStateOf(0) }
     var selectedRole by remember { mutableStateOf("") }
     var expandedDomain by remember { mutableStateOf(false) }
     var expandedRole by remember { mutableStateOf(false) }
-    val domains = listOf("Android", "Web", "iOS", "Backend", "ML/AI", "Cloud")
-
+    val domains = listOf(
+        1 to "Android",
+        2 to "Web",
+        3 to "iOS",
+        4 to "Backend",
+        5 to "ML/AI",
+        6 to "Cloud"
+    )
     val roles = listOf("MEMBER", "TEAM_LEAD")
 
     val colors = getThemeColors(isDarkTheme)
@@ -184,16 +191,16 @@ private fun LoginCard(
     username: String,
     email: String,
     password: String,
-    selectedDomain: String,
+    selectedDomain: Int,
     selectedRole: String,
     expandedDomain: Boolean,
     expandedRole: Boolean,
-    domains: List<String>,
+    domains: List<Pair<Int, String>>,
     roles: List<String>,
     onUsernameChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
-    onDomainChange: (String) -> Unit,
+    onDomainChange: (Int) -> Unit,
     onRoleChange: (String) -> Unit,
     onExpandedDomainChange: (Boolean) -> Unit,
     onExpandedRoleChange: (Boolean) -> Unit,
@@ -240,7 +247,7 @@ private fun LoginCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
-                        value = selectedDomain,
+                        value = domains.find { it.first == selectedDomain }?.second ?: "Select Domain",
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Domain") },
@@ -259,11 +266,11 @@ private fun LoginCard(
                         expanded = expandedDomain,
                         onDismissRequest = { onExpandedDomainChange(false) }
                     ) {
-                        domains.forEach { domain ->
+                        domains.forEach { (id, name) ->
                             DropdownMenuItem(
-                                text = { Text(domain) },
+                                text = { Text(name) },
                                 onClick = {
-                                    onDomainChange(domain)
+                                    onDomainChange(id)
                                     onExpandedDomainChange(false)
                                 }
                             )

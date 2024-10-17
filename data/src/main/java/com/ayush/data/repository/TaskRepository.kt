@@ -61,7 +61,7 @@ class TaskRepository @Inject constructor(
         }
     }
 
-    suspend fun getTasks(domainId: String): List<Task> {
+    suspend fun getTasks(domainId: Int): List<Task> {
         return try {
             firestore.collection("tasks")
                 .whereEqualTo("domainId", domainId)
@@ -97,18 +97,18 @@ class TaskRepository @Inject constructor(
         }
     }
     fun seedDummyTasks() {
-        val dummyTasks = Task.generateDummyTasks(10) // Generate 20 dummy tasks
+//        val dummyTasks = Task.generateDummyTasks(10) // Generate 20 dummy tasks
 
-        val batch = firestore.batch()
-        dummyTasks.forEach { task ->
-            val docRef = firestore.collection("tasks").document(task.id)
-            batch.set(docRef, task)
-        }
+//        val batch = firestore.batch()
+//        dummyTasks.forEach { task ->
+//            val docRef = firestore.collection("tasks").document(task.id)
+//            batch.set(docRef, task)
+//        }
 
-        batch.commit().addOnSuccessListener {
-            println("Successfully added dummy tasks to Firestore")
-        }.addOnFailureListener { e ->
-            println("Error adding dummy tasks to Firestore: ${e.message}")
-        }
+//        batch.commit().addOnSuccessListener {
+//            println("Successfully added dummy tasks to Firestore")
+//        }.addOnFailureListener { e ->
+//            println("Error adding dummy tasks to Firestore: ${e.message}")
+//        }
     }
 }

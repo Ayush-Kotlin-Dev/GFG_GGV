@@ -81,7 +81,7 @@ fun TaskItem(
 
 @Composable
 fun TaskStatusButtons(task: Task, onStatusChange: (String, TaskStatus) -> Unit) {
-    TaskStatus.values().forEach { status ->
+    TaskStatus.entries.forEach { status ->
         if (status != task.status) {
             Button(
                 onClick = { onStatusChange(task.id, status) },

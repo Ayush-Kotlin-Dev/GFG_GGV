@@ -19,7 +19,7 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
         private val USER_PROFILE_PIC = stringPreferencesKey("user_profile_pic")
         private val IS_USER_LOGGED_IN = booleanPreferencesKey("is_user_logged_in")
         private val USER_ROLE = stringPreferencesKey("user_role")
-        private val USER_DOMAIN_ID = stringPreferencesKey("user_domain_id")
+        private val USER_DOMAIN_ID = intPreferencesKey("user_domain_id")
     }
 
     val userData: Flow<UserSettings> = dataStore.data
@@ -38,7 +38,7 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
                 profilePicUrl = preferences[USER_PROFILE_PIC],
                 isLoggedIn = preferences[IS_USER_LOGGED_IN] ?: false,
                 role = UserRole.valueOf(preferences[USER_ROLE] ?: UserRole.MEMBER.toString()),
-                domainId = preferences[USER_DOMAIN_ID] ?: ""
+                domainId = preferences[USER_DOMAIN_ID] ?: 0
             )
         }
 

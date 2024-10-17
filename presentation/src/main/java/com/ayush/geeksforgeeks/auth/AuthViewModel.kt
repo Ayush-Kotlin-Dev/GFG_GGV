@@ -22,7 +22,7 @@ class AuthViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    fun signUp(username: String, email: String, password: String, domain: String, role: UserRole) {
+    fun signUp(username: String, email: String, password: String, domain: Int, role: UserRole) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             val result = authRepository.signUp(username, email, password, domain, role)

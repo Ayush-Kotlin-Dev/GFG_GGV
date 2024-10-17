@@ -51,7 +51,7 @@ class UserRepository @Inject constructor(
 
     suspend fun updateUser(userSettings: UserSettings) {
         firestore.collection("users")
-            .document(userSettings.userId)
+            .document(userSettings.userId.toString())
             .set(userSettings)
             .await()
         userPreferences.setUserData(userSettings)
