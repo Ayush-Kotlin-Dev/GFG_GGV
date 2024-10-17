@@ -111,4 +111,28 @@ class TaskRepository @Inject constructor(
 //            println("Error adding dummy tasks to Firestore: ${e.message}")
 //        }
     }
+
+    suspend fun deleteTask(taskId: String) {
+        try {
+            firestore.collection("tasks")
+                .document(taskId)
+                .delete()
+                .await()
+        } catch (e: Exception) {
+            Log.e("TaskRepository", "Error deleting task: ${e.message}")
+            throw e
+        }
+    }
+
+    suspend fun updateTask(task: Task) {
+        try {
+            firestore.collection("tasks")
+                .document(task.id)
+                .set(task)
+                .await()
+        } catch (e: Exception) {
+            Log.e("TaskRepository", "Error updating task: ${e.message}")
+            throw e
+        }
+    }
 }

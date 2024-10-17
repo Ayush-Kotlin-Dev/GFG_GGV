@@ -50,6 +50,7 @@ data class Task(
 enum class TaskStatus {
     PENDING,
     IN_PROGRESS,
-    COMPLETED
+    COMPLETED,
+    NEW
 }
 

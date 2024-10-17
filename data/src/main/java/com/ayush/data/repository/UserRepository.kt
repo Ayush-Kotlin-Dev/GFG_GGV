@@ -5,6 +5,7 @@ import android.util.Log
 import com.ayush.data.datastore.User
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserSettings
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
@@ -12,6 +13,7 @@ import javax.inject.Inject
 
 class UserRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
+    private val firebaseAuth: FirebaseAuth,
     private val userPreferences: UserPreferences
 ) {
     suspend fun getCurrentUser(): UserSettings {
@@ -71,6 +73,11 @@ class UserRepository @Inject constructor(
             Log.e("UserRepository", "Error getting team members: ${e.message}")
             emptyList()
         }
+    }
+
+    suspend fun logout() {
+        firebaseAuth.signOut()
+        userPreferences.clearUserData()
     }
 
 }

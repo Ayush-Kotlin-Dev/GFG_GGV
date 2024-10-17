@@ -46,6 +46,17 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun logOut() {
+        viewModelScope.launch {
+            try {
+                userRepository.logout()
+                _uiState.value = ProfileUiState.Error("User logged out")
+            } catch (e: Exception) {
+                _uiState.value = ProfileUiState.Error(e.message ?: "Failed to log out")
+            }
+        }
+    }
+
     sealed class ProfileUiState {
         object Loading : ProfileUiState()
         data class Success(val user: UserSettings) : ProfileUiState()
