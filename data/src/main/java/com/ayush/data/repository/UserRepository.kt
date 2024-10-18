@@ -1,12 +1,14 @@
 package com.ayush.data.repository
 
 
+import android.net.Uri
 import android.util.Log
 import com.ayush.data.datastore.User
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -53,7 +55,7 @@ class UserRepository @Inject constructor(
 
     suspend fun updateUser(userSettings: UserSettings) {
         firestore.collection("users")
-            .document(userSettings.userId.toString())
+            .document(userSettings.userId)
             .set(userSettings)
             .await()
         userPreferences.setUserData(userSettings)
@@ -79,5 +81,15 @@ class UserRepository @Inject constructor(
         firebaseAuth.signOut()
         userPreferences.clearUserData()
     }
+
+    suspend fun uploadProfileImage(uri: Uri): String {
+        val storageRef = FirebaseStorage.getInstance().reference
+        val imageRef = storageRef.child("profile_pics/${firebaseAuth.currentUser?.uid}")
+        val uploadTask = imageRef.putFile(uri)
+        uploadTask.await()
+        return imageRef.downloadUrl.await().toString()
+
+    }
+
 
 }

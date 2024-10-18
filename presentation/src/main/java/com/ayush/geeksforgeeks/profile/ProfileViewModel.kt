@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.profile
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserSettings
@@ -12,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
@@ -37,11 +38,34 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val currentUser = (uiState.value as? ProfileUiState.Success)?.user ?: return@launch
-                val updatedUser = currentUser.copy(name = name, profilePicUrl = profilePicUrl , isLoggedIn = true)
+                val updatedUser = currentUser.copy(
+                    name = name,
+                    profilePicUrl = profilePicUrl,
+                    isLoggedIn = true
+                )
                 userRepository.updateUser(updatedUser)
                 _uiState.value = ProfileUiState.Success(updatedUser)
             } catch (e: Exception) {
                 _uiState.value = ProfileUiState.Error(e.message ?: "Failed to update profile")
+            }
+        }
+    }
+
+    fun uploadProfilePicture(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = ProfileUiState.Loading
+                val imageUrl = userRepository.uploadProfileImage(uri)
+                val currentUser = when (val state = uiState.value) {
+                    is ProfileUiState.Success -> state.user
+                    else -> return@launch
+                }
+                val updatedUser = currentUser.copy(profilePicUrl = imageUrl)
+                userRepository.updateUser(updatedUser)
+                _uiState.value = ProfileUiState.Success(updatedUser)
+            } catch (e: Exception) {
+                _uiState.value =
+                    ProfileUiState.Error(e.message ?: "Failed to upload profile picture")
             }
         }
     }

@@ -38,6 +38,7 @@ android {
 }
 
 dependencies {
+    implementation("com.google.firebase:firebase-storage-ktx:21.0.1")
     hilt()
     serialization()
     preferenceDataStore()
