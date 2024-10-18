@@ -48,6 +48,7 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.DarkGray
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -66,10 +67,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.datastore.UserRole
 import com.ayush.geeksforgeeks.ContainerApp
 import com.ayush.geeksforgeeks.R
-import com.ayush.geeksforgeeks.home.HomeScreen
-import com.ayush.geeksforgeeks.ui.theme.DarkGray
-import com.ayush.geeksforgeeks.ui.theme.GeeksForGeeksGreen
-import com.ayush.geeksforgeeks.ui.theme.MintGreen
+import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
+import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 import kotlinx.coroutines.launch
 
 class AuthScreen : Screen {
@@ -254,9 +253,9 @@ private fun LoginCard(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDomain) },
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GeeksForGeeksGreen,
+                            focusedBorderColor = GFGStatusPendingText,
                             unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
-                            focusedLabelColor = GeeksForGeeksGreen,
+                            focusedLabelColor = GFGStatusPendingText,
                             unfocusedLabelColor = colors.text,
                             focusedTextColor = colors.text,
                             unfocusedTextColor = colors.text
@@ -292,9 +291,9 @@ private fun LoginCard(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRole) },
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GeeksForGeeksGreen,
+                            focusedBorderColor = GFGStatusPendingText,
                             unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
-                            focusedLabelColor = GeeksForGeeksGreen,
+                            focusedLabelColor = GFGStatusPendingText,
                             unfocusedLabelColor = colors.text,
                             focusedTextColor = colors.text,
                             unfocusedTextColor = colors.text
@@ -404,13 +403,13 @@ private fun InputField(
             .focusRequester(focusRequester),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = GeeksForGeeksGreen,
+            focusedBorderColor = GFGStatusPendingText,
             unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
-            focusedLabelColor = GeeksForGeeksGreen,
+            focusedLabelColor = GFGStatusPendingText,
             unfocusedLabelColor = colors.text,
             focusedTextColor = colors.text,
             unfocusedTextColor = colors.text,
-            cursorColor = GeeksForGeeksGreen
+            cursorColor = GFGStatusPendingText
         ),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
@@ -433,7 +432,7 @@ private fun ForgotPasswordText() {
     ) {
         Text(
             text = "Forgot Password?",
-            color = GeeksForGeeksGreen,
+            color = GFGStatusPendingText,
             modifier = Modifier
                 .padding(end = 8.dp)
                 .clickable { /* Add forgot password action here */ }
@@ -456,7 +455,7 @@ private fun LoginButton(
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = GeeksForGeeksGreen)
+        colors = ButtonDefaults.buttonColors(containerColor = GFGStatusPendingText)
     ) {
         Text(if (isLoginMode) "Login" else "Sign Up", color = Color.White)
     }
@@ -476,7 +475,7 @@ private fun ToggleModeText(isLoginMode: Boolean, onModeChange: (Boolean) -> Unit
         )
         Text(
             text = if (isLoginMode) "Sign Up" else "Login",
-            color = GeeksForGeeksGreen,
+            color = GFGStatusPendingText,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.clickable { onModeChange(!isLoginMode) }
         )
@@ -487,7 +486,7 @@ private data class ThemeColors(
     val background: Color,
     val card: Color,
     val text: Color,
-    val focusedLabel: Color = GeeksForGeeksGreen,
+    val focusedLabel: Color = GFGStatusPendingText,
     val unfocusedLabel: Color = text
 )
 
@@ -501,7 +500,7 @@ private fun getThemeColors(isDarkTheme: Boolean): ThemeColors {
         )
     } else {
         ThemeColors(
-            background = MintGreen,
+            background = GFGStatusPending,
             card = Color.White,
             text = Color.Black
         )

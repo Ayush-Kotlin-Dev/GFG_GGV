@@ -63,16 +63,13 @@ import cafe.adriel.voyager.core.screen.Screen
 import com.ayush.data.datastore.User
 import com.ayush.data.model.Task
 import com.ayush.data.model.TaskStatus
+import com.ayush.geeksforgeeks.ui.theme.GFGBackground
+import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
+import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
+import com.ayush.geeksforgeeks.ui.theme.GFGSecondary
+import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import java.util.UUID
 
-// Define GFG theme colors
-object GFGTheme {
-    val Primary = Color(0xFF2F8D46)
-    val Secondary = Color(0xFF4CAF50)
-    val Background = Color(0xFFF5F5F5)
-    val CardBackground = Color.White
-    val TextPrimary = Color(0xFF333333)
-}
 
 class AdminScreen : Screen {
     @Composable
@@ -89,7 +86,9 @@ class AdminScreen : Screen {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(GFGTheme.Background)
+                .background(
+                    GFGBackground
+                )
                 .padding(16.dp)
         ) {
             // Header Section
@@ -167,7 +166,7 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
             Text(
                 "GeeksForGeeks Admin Panel",
                 style = MaterialTheme.typography.headlineMedium,
-                color = GFGTheme.Primary,
+                color = GFGPrimary  ,
                 fontWeight = FontWeight.Bold
             )
 
@@ -175,7 +174,7 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = onShowStats,
-                colors = ButtonDefaults.buttonColors(containerColor = GFGTheme.Secondary)
+                colors = ButtonDefaults.buttonColors(containerColor = GFGSecondary)
             ) {
                 Icon(Icons.Default.Person, "Stats")
                 Spacer(Modifier.width(4.dp))
@@ -183,7 +182,7 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
             }
             Button(
                 onClick = onAddTask,
-                colors = ButtonDefaults.buttonColors(containerColor = GFGTheme.Primary)
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary )
             ) {
                 Icon(Icons.Default.Add, "Add Task")
                 Spacer(Modifier.width(4.dp))
@@ -206,7 +205,7 @@ fun TaskManagementSection(
     Column {
         TabRow(
             selectedTabIndex = selectedTab,
-            containerColor = GFGTheme.Primary
+            containerColor = GFGPrimary 
         ) {
             listOf("All", "Unassigned", "In Progress", "Completed").forEachIndexed { index, title ->
                 Tab(
@@ -261,7 +260,7 @@ fun EnhancedTaskItem(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .animateContentSize(),
-        colors = CardDefaults.cardColors(containerColor = GFGTheme.CardBackground)
+        colors = CardDefaults.cardColors(containerColor = GFGCardBackground)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -273,7 +272,7 @@ fun EnhancedTaskItem(
                     Text(
                         text = task.title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = GFGTheme.TextPrimary
+                        color = GFGTextPrimary
                     )
                     Text(
                         text = "Domain: ${task.domainId}",
@@ -316,7 +315,7 @@ fun EnhancedTaskItem(
                 } else {
                     Button(
                         onClick = { onAssign(task) },
-                        colors = ButtonDefaults.buttonColors(containerColor = GFGTheme.Primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary )
                     ) {
                         Text("Assign Task")
                     }
@@ -382,13 +381,13 @@ fun TaskStatusChip(status: TaskStatus) {
 fun TeamSection(teamMembers: List<User>, stats: Map<String, Int>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = GFGTheme.CardBackground)
+        colors = CardDefaults.cardColors(containerColor = GFGCardBackground)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 "Team Performance",
                 style = MaterialTheme.typography.titleLarge,
-                color = GFGTheme.Primary
+                color = GFGPrimary 
             )
             Spacer(modifier = Modifier.height(16.dp))
             LazyColumn {
@@ -432,7 +431,7 @@ fun EnhancedTeamMemberItem(member: User, completedTasks: Int) {
                 Text(
                     text = "$completedTasks tasks",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = GFGTheme.Primary
+                    color = GFGPrimary 
                 )
             }
         }
@@ -476,7 +475,7 @@ fun AddTaskDialog(
             Text(
                 "Add New Task",
                 style = MaterialTheme.typography.headlineSmall,
-                color = GFGTheme.Primary
+                color = GFGPrimary 
             )
         },
         text = {
@@ -546,7 +545,7 @@ fun AddTaskDialog(
                         )
                     )
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = GFGTheme.Primary)
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary )
             ) {
                 Text("Add Task")
             }
@@ -576,12 +575,12 @@ fun AssignTaskDialog(
                 Text(
                     "Assign Task",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = GFGTheme.Primary
+                    color = GFGPrimary 
                 )
                 Text(
                     task.title,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = GFGTheme.TextPrimary
+                    color = GFGTextPrimary
                 )
             }
         },
@@ -609,7 +608,7 @@ fun AssignTaskDialog(
                                 .border(
                                     width = 1.dp,
                                     color = if (selectedMember == member.userId)
-                                        GFGTheme.Primary
+                                        GFGPrimary 
                                     else
                                         Color.LightGray,
                                     shape = MaterialTheme.shapes.small
@@ -635,7 +634,7 @@ fun AssignTaskDialog(
                                 Icon(
                                     Icons.Default.Check,
                                     contentDescription = "Selected",
-                                    tint = GFGTheme.Primary
+                                    tint = GFGPrimary 
                                 )
                             }
                         }
@@ -662,7 +661,7 @@ fun AssignTaskDialog(
                     }
                     selectedMember?.let { onAssign(it) }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = GFGTheme.Primary)
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary )
             ) {
                 Text("Assign")
             }
