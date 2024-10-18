@@ -1,28 +1,68 @@
 package com.ayush.geeksforgeeks.admin
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import com.ayush.data.datastore.User
 import com.ayush.data.model.Task
 import com.ayush.data.model.TaskStatus
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 // Define GFG theme colors
@@ -118,17 +158,20 @@ class AdminScreen : Screen {
 
 @Composable
 fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "GeeksForGeeks Admin Panel",
-            style = MaterialTheme.typography.headlineMedium,
-            color = GFGTheme.Primary,
-            fontWeight = FontWeight.Bold
-        )
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "GeeksForGeeks Admin Panel",
+                style = MaterialTheme.typography.headlineMedium,
+                color = GFGTheme.Primary,
+                fontWeight = FontWeight.Bold
+            )
+
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = onShowStats,
@@ -148,6 +191,7 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
             }
         }
     }
+
 }
 
 @Composable
@@ -239,7 +283,7 @@ fun EnhancedTaskItem(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IconButton(onClick = { expanded = !expanded }) {
                         Icon(
-                            if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                             contentDescription = "Expand"
                         )
                     }
@@ -317,6 +361,7 @@ fun TaskStatusChip(status: TaskStatus) {
         TaskStatus.NEW -> Color(0xFFE3F2FD) to Color(0xFF1976D2)
         TaskStatus.IN_PROGRESS -> Color(0xFFFFF3E0) to Color(0xFFF57C00)
         TaskStatus.COMPLETED -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
+        TaskStatus.PENDING -> Color(0xFFE0F2F1) to Color(0xFF0F9D58)
     }
 
     Surface(
@@ -414,6 +459,7 @@ fun TaskStatsDialog(stats: Map<String, Int>, onDismiss: () -> Unit) {
         }
     )
 }
+
 @Composable
 fun AddTaskDialog(
     onDismiss: () -> Unit,
@@ -422,7 +468,6 @@ fun AddTaskDialog(
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var credits by remember { mutableStateOf("") }
-    var domainId by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -470,15 +515,6 @@ fun AddTaskDialog(
                     isError = showError && credits.isBlank()
                 )
 
-                OutlinedTextField(
-                    value = domainId,
-                    onValueChange = { domainId = it },
-                    label = { Text("Domain ID") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = showError && domainId.isBlank()
-                )
-
                 if (showError) {
                     Text(
                         "Please fill in all fields",
@@ -493,7 +529,8 @@ fun AddTaskDialog(
             Button(
                 onClick = {
                     if (title.isBlank() || description.isBlank() ||
-                        credits.isBlank() || domainId.isBlank()) {
+                        credits.isBlank()
+                    ) {
                         showError = true
                         return@Button
                     }
@@ -503,12 +540,9 @@ fun AddTaskDialog(
                             title = title,
                             description = description,
                             credits = credits.toInt(),
-                            domainId = domainId,
                             status = TaskStatus.NEW,
                             assignedTo = "",
-                            createdAt = LocalDateTime.now().format(
-                                DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                            )
+                            createdAt = com.google.firebase.Timestamp.now(),
                         )
                     )
                 },
