@@ -34,7 +34,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_18
     }
     kotlinOptions {
-        jvmTarget = "18"
+        freeCompilerArgs += listOf("-Xjvm-default=all")
     }
     buildFeatures {
         compose = true
@@ -68,4 +68,13 @@ dependencies {
     data()
     firebase()
     implementation("com.patrykandpatrick.vico:compose:1.6.5")
+}
+
+tasks.register("copyProguardRules", Copy::class) {
+    from("proguard-rules.pro")
+    into("$buildDir/intermediates/proguard-files/")
+}
+
+tasks.named("preBuild") {
+    dependsOn("copyProguardRules")
 }
