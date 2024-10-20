@@ -1,6 +1,5 @@
 package com.ayush.geeksforgeeks.dashboard
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserSettings
@@ -32,15 +31,15 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val user = userRepository.getCurrentUser()
-                val completedTasks = taskRepository.getCompletedTasksCount(user.userId)
                 val creditHistory = creditRepository.getUserCreditHistory(user.userId)
                 val topContributors = userRepository.getTopContributors(5)
+                val clubStats = getClubStats()
 
                 _uiState.value = DashboardUiState.Success(
                     user = user,
-                    completedTasks = completedTasks,
                     creditHistory = creditHistory,
-                    topContributors = topContributors
+                    topContributors = topContributors,
+                    clubStats = clubStats
                 )
             } catch (e: Exception) {
                 _uiState.value = DashboardUiState.Error(e.message ?: "An error occurred")
@@ -48,13 +47,25 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    private suspend fun getClubStats(): ClubStats {
+        val totalMembers = userRepository.getTotalMembersCount()
+        val activeProjects = taskRepository.getActiveProjectsCount()
+        val totalCredits = creditRepository.getTotalClubCredits()
+
+        return ClubStats(
+            totalMembers = totalMembers,
+            activeProjects = activeProjects,
+            totalCredits = totalCredits
+        )
+    }
+
     sealed class DashboardUiState {
         object Loading : DashboardUiState()
         data class Success(
             val user: UserSettings,
-            val completedTasks: Int,
             val creditHistory: List<CreditLog>,
-            val topContributors: List<UserSettings>
+            val topContributors: List<UserSettings>,
+            val clubStats: ClubStats
         ) : DashboardUiState()
         data class Error(val message: String) : DashboardUiState()
     }

@@ -135,4 +135,19 @@ class TaskRepository @Inject constructor(
             throw e
         }
     }
+
+    suspend fun getActiveProjectsCount(): Int {
+        return try {
+            val querySnapshot = firestore.collection("tasks")
+                .whereEqualTo("status", TaskStatus.IN_PROGRESS.name)
+                .get()
+                .await()
+
+            querySnapshot.size()
+        } catch (e: Exception) {
+            // Log the error or handle it as needed
+            println("Error getting active projects count: ${e.message}")
+            0 // Return 0 if there's an error
+        }
+    }
 }

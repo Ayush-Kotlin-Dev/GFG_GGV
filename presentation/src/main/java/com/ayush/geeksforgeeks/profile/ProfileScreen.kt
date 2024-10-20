@@ -1,39 +1,58 @@
 package com.ayush.geeksforgeeks.profile
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
-import coil.compose.rememberAsyncImagePainter
-import com.ayush.data.datastore.UserRole
 import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.dashboard.ErrorMessage
 import com.ayush.geeksforgeeks.dashboard.LoadingIndicator
+import com.ayush.geeksforgeeks.ui.theme.GFGBackground
+import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
+import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 
 class ProfileScreen : Screen {
     @Composable
@@ -46,8 +65,6 @@ class ProfileScreen : Screen {
             is ProfileViewModel.ProfileUiState.Loading -> LoadingIndicator()
             is ProfileViewModel.ProfileUiState.Success -> ProfileContent(
                 state.user,
-                viewModel::updateProfile,
-                viewModel::uploadProfilePicture,
                 onLogout = {
                     viewModel.logOut()
                     navigator?.push(AuthScreen())
@@ -61,173 +78,43 @@ class ProfileScreen : Screen {
 @Composable
 fun ProfileContent(
     user: UserSettings,
-    onUpdateProfile: (String, String?) -> Unit,
-    onUpdateProfilePicture: (Uri) -> Unit,
     onLogout: () -> Unit
 ) {
-    var isEditing by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf(user.name) }
     var showLogoutDialog by remember { mutableStateOf(false) }
-    var showRoleInfo by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null) {
-            onUpdateProfilePicture(uri)
-        }
-    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(GFGBackground)
     ) {
         // Profile Header
-        Box(
+        ProfileHeader(user)
+
+        // Menu Items
+        ProfileMenuItem(Icons.Default.Person, "Profile")
+        ProfileMenuItem(Icons.Default.Settings, "Setting")
+        ProfileMenuItem(Icons.Default.Email, "Contact")
+        ProfileMenuItem(Icons.Default.Share, "Share App")
+        ProfileMenuItem(Icons.Default.Info, "Help")
+        ProfileMenuItem(Icons.Rounded.FavoriteBorder, "About Us ")
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Sign Out Button
+        TextButton(
+            onClick = { showLogoutDialog = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp)
+                .padding(16.dp)
         ) {
             Text(
-                text = "Profile",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                "Sign Out",
+                color = GFGPrimary,
+                style = MaterialTheme.typography.bodyLarge
             )
-        }
-
-        // Profile Picture Section
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(bottom = 24.dp)
-        ) {
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = user.profilePicUrl ?: R.drawable.ic_launcher_foreground,
-                ),
-                contentDescription = "Profile Picture",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    .clickable { imagePicker.launch("image/*") },
-                contentScale = ContentScale.Crop
-            )
-
-            IconButton(
-                onClick = { imagePicker.launch("image/*") },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    .size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Change Picture",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-
-        // User Info Section
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()
-            ) {
-                if (isEditing) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Name") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    ProfileInfoRow(
-                        icon = Icons.Default.Person,
-                        label = "Name",
-                        value = user.name
-                    )
-                }
-
-                ProfileInfoRow(
-                    icon = Icons.Default.Email,
-                    label = "Email",
-                    value = user.email
-                )
-
-                Row(
-                    modifier = Modifier.clickable { showRoleInfo = true },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    ProfileInfoRow(
-                        icon = Icons.Default.Person,
-                        label = "Role",
-                        value = user.role.toString()
-                    )
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "Role Info",
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
-
-                ProfileInfoRow(
-                    icon = Icons.AutoMirrored.Filled.List,
-                    label = "Domain ID",
-                    value = user.domainId.toString()
-                )
-
-                ProfileInfoRow(
-                    icon = Icons.AutoMirrored.Filled.Send,
-                    label = "Total Credits",
-                    value = user.totalCredits.toString()
-                )
-            }
-        }
-
-        // Action Buttons
-        Button(
-            onClick = {
-                if (isEditing) {
-                    onUpdateProfile(name, user.profilePicUrl)
-                }
-                isEditing = !isEditing
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        ) {
-            Icon(
-                imageVector = if (isEditing) Icons.Default.Add else Icons.Default.Edit,
-                contentDescription = if (isEditing) "Save" else "Edit",
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text(if (isEditing) "Save Changes" else "Edit Profile")
-        }
-
-        OutlinedButton(
-            onClick = { showLogoutDialog = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = "Logout",
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text("Logout")
         }
     }
 
-    // Dialogs
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -235,36 +122,12 @@ fun ProfileContent(
             text = { Text("Are you sure you want to logout?") },
             confirmButton = {
                 TextButton(onClick = onLogout) {
-                    Text("Yes, Logout")
+                    Text("Yes, Logout", color = GFGPrimary)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    if (showRoleInfo) {
-        AlertDialog(
-            onDismissRequest = { showRoleInfo = false },
-            title = { Text("Role Information") },
-            text = {
-                Column {
-                    Text("Your current role: ${user.role}")
-                    Text(
-                        when (user.role) {
-                            UserRole.ADMIN -> "As an admin, you have full access to all features."
-                            UserRole.TEAM_LEAD -> "As a team lead, you can manage your team members."
-                            UserRole.MEMBER -> "As a member, you can participate in team activities."
-                        }
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showRoleInfo = false }) {
-                    Text("Got it")
+                    Text("Cancel", color = GFGPrimary)
                 }
             }
         )
@@ -272,32 +135,63 @@ fun ProfileContent(
 }
 
 @Composable
-private fun ProfileInfoRow(
-    icon: ImageVector,
-    label: String,
-    value: String
-) {
+fun ProfileHeader(user: UserSettings) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.pixelcut_export),
+            contentDescription = "Profile Picture",
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = user.name,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = GFGTextPrimary
+        )
+        Text(
+            text = user.email,
+            style = MaterialTheme.typography.bodyMedium,
+            color = GFGTextPrimary.copy(alpha = 0.7f)
+        )
+    }
+}
+
+@Composable
+fun ProfileMenuItem(icon: ImageVector, title: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.padding(end = 12.dp)
+            tint = GFGPrimary,
+            modifier = Modifier.size(24.dp)
         )
-        Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = GFGTextPrimary
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = null,
+            tint = GFGTextPrimary.copy(alpha = 0.5f),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
+

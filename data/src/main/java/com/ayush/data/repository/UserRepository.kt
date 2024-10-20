@@ -91,5 +91,19 @@ class UserRepository @Inject constructor(
 
     }
 
+    suspend fun getTotalMembersCount(): Int {
+        return try {
+            val querySnapshot = firestore.collection("users")
+                .get()
+                .await()
+
+            querySnapshot.size()
+        } catch (e: Exception) {
+            // Log the error or handle it as needed
+            println("Error getting total members count: ${e.message}")
+            0 // Return 0 if there's an error
+        }
+    }
+
 
 }
