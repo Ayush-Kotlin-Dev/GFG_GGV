@@ -47,7 +47,6 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
         val initialTab = remember {
             HomeTab(
                 onNavigator = { showBottomBar.value = it },
-                userRole = userRole
             )
         }
 
@@ -77,14 +76,14 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
                         ) {
                             TabNavigationItem(HomeTab(onNavigator = {
                                 showBottomBar.value = it
-                            }, userRole = userRole))
+                            }))
                             TabNavigationItem(DashboardTab(onNavigator = {
                                 showBottomBar.value = it
                             }))
 
                             TabNavigationItem(TaskTab(onNavigator = {
                                 showBottomBar.value = it
-                            }))
+                            }, userRole = userRole))
                             TabNavigationItem(ProfileTab(onNavigator = {
                                 showBottomBar.value = it
                             }))

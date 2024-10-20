@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">GFG GGV</string>
+    <string name="app_logo">GeeksforGeeks Logo</string>
+    <!-- Navigation -->
+    <string name="notifications">Notifications</string>
+    <string name="profile">Profile</string>
+
+    <!-- Section Titles -->
+    <string name="latest_announcements">Latest Announcements</string>
+    <string name="upcoming_events">Upcoming Events</string>
+    <string name="recent_activities">Recent Activities</string>
+
+    <string name="welcome_message">Welcome to GeeksforGeeks!</string>
+    <string name="coding_club">Coding Club</string>
+    <string name="quick_stats">Quick Stats</string>
+    <!-- Content Descriptions -->
+    <string name="user_avatar_desc">Profile picture of %1$s</string>
+    <string name="event_image_desc">Image for %1$s</string>
+
+    <!-- Actions -->
+    <string name="view_all">View All</string>
+    <string name="register_now">Register Now</string>
+    <string name="learn_more">Learn More</string>
+
+    <!-- Time -->
+    <string name="time_hours_ago">%1$d hours ago</string>
+    <string name="time_minutes_ago">%1$d minutes ago</string>
+    <string name="time_just_now">Just now</string>
+
+    <!-- Notifications -->
+    <string name="notification_count">%1$d</string>
 </resources>

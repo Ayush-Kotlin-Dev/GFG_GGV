@@ -3,7 +3,9 @@ package com.ayush.geeksforgeeks.taskdetail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.model.Task
+import com.ayush.data.model.TaskStatus
 import com.ayush.data.repository.TaskRepository
+import com.ayush.geeksforgeeks.task.TasksViewModel.TasksUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +34,15 @@ class TaskDetailViewModel @Inject constructor(
             }
         }
     }
-
+    fun updateTaskStatus(taskId: String, newStatus: TaskStatus) {
+        viewModelScope.launch {
+            try {
+                taskRepository.updateTaskStatus(taskId, newStatus)
+            } catch (e: Exception) {
+                _taskState.value = TaskState.Error(e.message ?: "Failed to update task status")
+            }
+        }
+    }
     sealed class TaskState {
         object Loading : TaskState()
         data class Success(val task: Task) : TaskState()

@@ -40,17 +40,6 @@ class TasksViewModel @Inject constructor(
         }
     }
 
-    fun updateTaskStatus(taskId: String, newStatus: TaskStatus) {
-        viewModelScope.launch {
-            try {
-                taskRepository.updateTaskStatus(taskId, newStatus)
-                loadTasks() // Reload tasks after update
-            } catch (e: Exception) {
-                _uiState.value = TasksUiState.Error(e.message ?: "Failed to update task status")
-            }
-        }
-    }
-
     sealed class TasksUiState {
         object Loading : TasksUiState()
         data class Success(val tasks: List<Task>) : TasksUiState()

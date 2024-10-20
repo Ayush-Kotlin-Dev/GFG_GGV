@@ -37,11 +37,9 @@ class MainActivity : ComponentActivity() {
                             Navigator(screen = AuthScreen())
                         }
                         is MainActivityViewModel.UiState.LoggedInAsAdmin -> {
-                            Log.d("MainActivityH", "UserSettings for admin : ${state.userSettings.role}")
                             Navigator(screen = ContainerApp(userRole = UserRole.TEAM_LEAD))
                         }
                         is MainActivityViewModel.UiState.LoggedInAsMember -> {
-                            Log.d("MainActivityH", "UserSettings Member: ${state.userSettings.role}")
                             Navigator(screen = ContainerApp(userRole = UserRole.MEMBER))
                         }
                     }
