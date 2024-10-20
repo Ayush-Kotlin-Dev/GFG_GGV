@@ -39,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -57,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -164,7 +166,7 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "GeeksForGeeks Admin Panel",
+                "Team Lead Panel",
                 style = MaterialTheme.typography.headlineMedium,
                 color = GFGPrimary  ,
                 fontWeight = FontWeight.Bold
@@ -203,17 +205,25 @@ fun TaskManagementSection(
     onUpdateStatus: (Task, TaskStatus) -> Unit
 ) {
     Column {
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = selectedTab,
-            containerColor = GFGPrimary 
+            containerColor = GFGPrimary,
+            edgePadding = 0.dp
         ) {
             listOf("All", "Unassigned", "In Progress", "Completed").forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
                     onClick = { onTabSelected(index) },
-                    text = { Text(title) },
+                    text = {
+                        Text(
+                            text = title,
+                            maxLines = 1,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
                     selectedContentColor = Color.White,
-                    unselectedContentColor = Color.White.copy(alpha = 0.7f)
+                    unselectedContentColor = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 12.dp)
                 )
             }
         }
@@ -274,10 +284,6 @@ fun EnhancedTaskItem(
                         style = MaterialTheme.typography.titleMedium,
                         color = GFGTextPrimary
                     )
-                    Text(
-                        text = "Domain: ${task.domainId}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IconButton(onClick = { expanded = !expanded }) {
@@ -334,6 +340,7 @@ fun EnhancedTaskItem(
                                     when (task.status) {
                                         TaskStatus.NEW -> TaskStatus.IN_PROGRESS
                                         TaskStatus.IN_PROGRESS -> TaskStatus.COMPLETED
+                                        TaskStatus.PENDING -> TaskStatus.IN_PROGRESS
                                         else -> task.status
                                     }
                                 )
@@ -524,6 +531,7 @@ fun AddTaskDialog(
                 }
             }
         },
+        containerColor = GFGBackground,
         confirmButton = {
             Button(
                 onClick = {
@@ -584,6 +592,7 @@ fun AssignTaskDialog(
                 )
             }
         },
+        containerColor = GFGBackground,
         text = {
             Column(
                 modifier = Modifier
@@ -607,14 +616,14 @@ fun AssignTaskDialog(
                                 .fillMaxWidth()
                                 .border(
                                     width = 1.dp,
-                                    color = if (selectedMember == member.userId)
-                                        GFGPrimary 
+                                    color = if (selectedMember == member.name)
+                                        GFGPrimary
                                     else
                                         Color.LightGray,
                                     shape = MaterialTheme.shapes.small
                                 )
                                 .clip(MaterialTheme.shapes.small)
-                                .clickable { selectedMember = member.userId }
+                                .clickable { selectedMember = member.name }
                                 .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically

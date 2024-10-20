@@ -35,6 +35,22 @@ class TaskRepository @Inject constructor(
             .document(taskId)
             .update("status", newStatus.name)
             .await()
+        val task = getTaskById(taskId)
+        task?.let { t ->
+            if (newStatus == TaskStatus.COMPLETED) {
+                val assignedUserId = t.assignedTo
+                if (assignedUserId != null) {
+                    val userRef = firestore.collection("users").document(assignedUserId)
+                    firestore.runTransaction { transaction ->
+                        val userSnapshot = transaction.get(userRef)
+                        val currentCompletedTasks = userSnapshot.getLong("completedTasks") ?: 0
+                        transaction.update(userRef, "completedTasks", currentCompletedTasks + 1)
+                    }.await()
+                }
+            }
+        }
+
+        
     }
 
     suspend fun getTaskById(taskId: String): Task? {

@@ -15,10 +15,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import com.ayush.geeksforgeeks.R
+import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,12 +41,17 @@ class HomeScreenEvent : Screen {
     override fun Content() {
         val viewModel: HomeScreenViewModel = hiltViewModel()
         val uiState by viewModel.uiState.collectAsState()
+        val context = LocalContext.current
 
         HomeScreen(
             viewModel = viewModel,
             onNotificationClick = {},
             onProfileClick = {},
-            onEventClick = {}
+            onEventClick = { event ->
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(event.formLink))
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }
         )
     }
 }
@@ -64,7 +72,7 @@ fun HomeScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 },
                 actions = {
@@ -107,12 +115,14 @@ private fun WelcomeSection(clubStats: ClubStats) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .background(GFGLightGray)
             .padding(16.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(GFGLightGray)
                 .padding(16.dp)
         ) {
             Row(
@@ -143,9 +153,9 @@ private fun WelcomeSection(clubStats: ClubStats) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItem(value = clubStats.yearsActive.toString(), label = "Years Active")
-                StatItem(value = clubStats.studentsBenefited.toString(), label = "Students Benefited")
-                StatItem(value = clubStats.activeMembers.toString(), label = "Active Members")
+                StatItem(value = clubStats.yearsActive.toString(), label = "  Years \n  Active")
+                StatItem(value = clubStats.studentsBenefited.toString(), label = "Students \nBenefited")
+                StatItem(value = clubStats.activeMembers.toString(), label = "Active \nMembers")
             }
         }
     }
@@ -255,12 +265,16 @@ private fun QuickStatsSection(quickStats: QuickStats) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .background(GFGLightGray)
+
             .padding(16.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(GFGLightGray)
+
                 .padding(16.dp)
         ) {
             Text(
@@ -333,7 +347,7 @@ private fun ActivityItem(activity: RecentActivity) {
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape),
-            contentScale = ContentScale.Crop
+//            contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
