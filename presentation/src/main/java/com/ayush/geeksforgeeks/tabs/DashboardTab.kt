@@ -2,7 +2,6 @@ package com.ayush.geeksforgeeks.tabs
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -11,7 +10,6 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.ayush.geeksforgeeks.dashboard.DashboardScreen
-import com.ayush.geeksforgeeks.profile.ProfileScreen
 
 class DashboardTab(private val onNavigator: (Boolean) -> Unit) : Tab {
 

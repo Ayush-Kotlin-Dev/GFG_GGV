@@ -33,7 +33,6 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import com.ayush.data.datastore.UserRole
-import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.tabs.DashboardTab
 import com.ayush.geeksforgeeks.tabs.HomeTab
 import com.ayush.geeksforgeeks.tabs.ProfileTab
@@ -95,6 +94,7 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
         }
     }
 }
+
 @Composable
 private fun RowScope.TabNavigationItem(tab: Tab) {
     val tabNavigator = LocalTabNavigator.current

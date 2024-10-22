@@ -1,6 +1,5 @@
 package com.ayush.geeksforgeeks.tabs
 
-import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.Composable

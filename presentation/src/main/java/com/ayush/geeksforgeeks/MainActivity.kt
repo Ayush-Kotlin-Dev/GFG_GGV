@@ -1,10 +1,8 @@
 package com.ayush.geeksforgeeks
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,12 +31,15 @@ class MainActivity : ComponentActivity() {
                         MainActivityViewModel.UiState.Loading -> {
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                         }
+
                         MainActivityViewModel.UiState.NotLoggedIn -> {
                             Navigator(screen = AuthScreen())
                         }
+
                         is MainActivityViewModel.UiState.LoggedInAsAdmin -> {
                             Navigator(screen = ContainerApp(userRole = UserRole.TEAM_LEAD))
                         }
+
                         is MainActivityViewModel.UiState.LoggedInAsMember -> {
                             Navigator(screen = ContainerApp(userRole = UserRole.MEMBER))
                         }

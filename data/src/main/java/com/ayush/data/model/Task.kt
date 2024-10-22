@@ -1,10 +1,7 @@
 package com.ayush.data.model
 
-import kotlinx.serialization.Serializable
-import java.util.UUID
-import kotlin.random.Random
 import com.google.firebase.Timestamp
-
+import kotlinx.serialization.Serializable
 
 
 @Serializable
