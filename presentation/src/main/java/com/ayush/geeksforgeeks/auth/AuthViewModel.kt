@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.auth
 
+import android.os.Bundle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,11 +10,9 @@ import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
-import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -41,24 +40,34 @@ class AuthViewModel @Inject constructor(
 
     private var currentAuthJob: Job? = null
 
-    // Saved state handle to persist form data
-    var email by savedStateHandle.delegate("email", "")
+    var email by mutableStateOf(savedStateHandle.get<String>("email") ?: "")
         private set
-    var password by savedStateHandle.delegate("password", "")
+    var password by mutableStateOf(savedStateHandle.get<String>("password") ?: "")
         private set
-    var username by savedStateHandle.delegate("username", "")
+    var username by mutableStateOf(savedStateHandle.get<String>("username") ?: "")
         private set
+
+    init {
+        viewModelScope.launch {
+            savedStateHandle.setSavedStateProvider("email") { Bundle().apply { putString("email", email) } }
+            savedStateHandle.setSavedStateProvider("password") { Bundle().apply { putString("password", password) } }
+            savedStateHandle.setSavedStateProvider("username") { Bundle().apply { putString("username", username) } }
+        }
+    }
 
     fun updateEmail(newEmail: String) {
         email = newEmail
+        savedStateHandle["email"] = newEmail
     }
 
     fun updatePassword(newPassword: String) {
         password = newPassword
+        savedStateHandle["password"] = newPassword
     }
 
     fun updateUsername(newUsername: String) {
         username = newUsername
+        savedStateHandle["username"] = newUsername
     }
 
     fun signUp(domain: Int, role: UserRole) {
