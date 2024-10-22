@@ -63,6 +63,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.datastore.UserRole
+import com.ayush.data.repository.AuthState
 import com.ayush.geeksforgeeks.ContainerApp
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
@@ -86,9 +87,6 @@ private fun LoginContent(
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     var isLoginMode by remember { mutableStateOf(true) }
-    var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
 
     var selectedDomain by remember { mutableIntStateOf(0) }
     var selectedRole by remember { mutableStateOf("") }
@@ -117,7 +115,7 @@ private fun LoginContent(
         when (authState) {
             is AuthState.Success -> {
                 coroutineScope.launch {
-                    userRole = viewModel.getUserRoleOnLogin(email)
+                    userRole = viewModel.getUserRoleOnLogin()
                     userRole?.let {
                         navigator.replaceAll(ContainerApp(it))
                         Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
@@ -145,20 +143,21 @@ private fun LoginContent(
         ) {
             Logo()
             WelcomeText(colors.text)
+
             LoginCard(
                 isLoginMode = isLoginMode,
-                username = username,
-                email = email,
-                password = password,
+                username = viewModel.username,
+                email = viewModel.email,
+                password = viewModel.password,
                 selectedDomain = selectedDomain,
                 selectedRole = selectedRole,
                 expandedDomain = expandedDomain,
                 expandedRole = expandedRole,
                 domains = domains,
                 roles = roles,
-                onUsernameChange = { username = it },
-                onEmailChange = { email = it },
-                onPasswordChange = { password = it },
+                onUsernameChange = viewModel::updateUsername,
+                onEmailChange = viewModel::updateEmail,
+                onPasswordChange = viewModel::updatePassword,
                 onDomainChange = { selectedDomain = it },
                 onRoleChange = { selectedRole = it },
                 onExpandedDomainChange = { expandedDomain = it },
@@ -171,15 +170,17 @@ private fun LoginContent(
                 passwordFocus = passwordFocus,
                 onSubmitButtonClick = {
                     if (isLoginMode) {
-                        viewModel.login(email, password)
+                        viewModel.login()
                     } else {
-                        viewModel.signUp(username, email, password, selectedDomain, UserRole.valueOf(selectedRole))
+                        viewModel.signUp(domains[selectedDomain].first, UserRole.valueOf(selectedRole))
                     }
                 }
             )
         }
     }
 }
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
