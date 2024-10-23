@@ -24,11 +24,15 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,6 +58,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.auth.AuthScreen
+import com.ayush.geeksforgeeks.common.AboutUsContent
 import com.ayush.geeksforgeeks.dashboard.ErrorMessage
 import com.ayush.geeksforgeeks.dashboard.LoadingIndicator
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
@@ -93,7 +98,7 @@ fun ProfileContent(
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showHelpDialog by remember { mutableStateOf(false) }
-    var showAboutUsDialog by remember { mutableStateOf(false) }
+    var showAboutUsBottomSheet by remember { mutableStateOf(false) }
     var showContactDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -111,7 +116,7 @@ fun ProfileContent(
         }
         ProfileMenuItem(Icons.Default.Share, "Share App")
         ProfileMenuItem(Icons.Default.Info, "Help") { showHelpDialog = true }
-        ProfileMenuItem(Icons.Rounded.FavoriteBorder, "About Us " ) { showAboutUsDialog = true }
+        ProfileMenuItem(Icons.Rounded.FavoriteBorder, "About Us") { showAboutUsBottomSheet = true }
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -166,6 +171,13 @@ fun ProfileContent(
                 val intent = Intent(Intent.ACTION_SENDTO, uri)
                 context.startActivity(intent)
                 showContactDialog = false
+            },
+            onWhatsApp = {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://wa.me/+916264450423")
+                }
+                context.startActivity(intent)
+                showContactDialog = false
             }
         )
     }
@@ -174,15 +186,16 @@ fun ProfileContent(
         HelpDialog(user = user, onDismiss = { showHelpDialog = false })
     }
 
-    if (showAboutUsDialog) {
-        AboutUsDialog(onDismiss = { showAboutUsDialog = false })
+    if (showAboutUsBottomSheet) {
+        AboutUsBottomSheet(onDismiss = { showAboutUsBottomSheet = false })
     }
 }
 @Composable
 fun ContactDialog(
     onDismiss: () -> Unit,
     onCall: () -> Unit,
-    onEmail: () -> Unit
+    onEmail: () -> Unit,
+    onWhatsApp: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -199,8 +212,7 @@ fun ContactDialog(
             }
         },
         containerColor = GFGBackground,
-
-        )
+    )
 }
 @Composable
 fun ProfileHeader(user: UserSettings) {
@@ -313,28 +325,22 @@ fun HelpDialog(user: UserSettings, onDismiss: () -> Unit) {
         )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutUsDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("About Us" , color = GFGPrimary) },
-        text = {
-            Text(
-                "GeeksforGeeks Student Chapter GGV is a university-based community " +
-                        "that aims to promote technology learning, coding skills, and " +
-                        "career development among students. We organize workshops, coding " +
-                        "competitions, and provide resources to help students excel in " +
-                        "their tech careers."
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close", color = GFGPrimary)
-            }
-        },
-        containerColor = GFGBackground,
+fun AboutUsBottomSheet(onDismiss: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = false
+    )
+    val scope = rememberCoroutineScope()
 
-        )
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = GFGBackground,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        AboutUsContent(onClose = { scope.launch { sheetState.hide() } })
+    }
 }
 
 suspend fun submitQuery(name: String, email: String, query: String) {

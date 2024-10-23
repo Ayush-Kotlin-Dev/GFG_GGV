@@ -19,3 +19,4 @@ val GFGStatusPending = Color(0xFFE0F2F1)
 val GFGStatusPendingText = Color(0xFF0F9D58)
 
 val GFGLightGray = Color(0xFFF0F0F0)
+val GFGBlack = Color(0xFF000000)

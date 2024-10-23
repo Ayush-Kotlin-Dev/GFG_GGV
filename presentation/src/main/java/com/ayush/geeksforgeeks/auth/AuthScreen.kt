@@ -46,7 +46,6 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.DarkGray
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -66,6 +65,8 @@ import com.ayush.data.datastore.UserRole
 import com.ayush.data.repository.AuthState
 import com.ayush.geeksforgeeks.ContainerApp
 import com.ayush.geeksforgeeks.R
+import com.ayush.geeksforgeeks.ui.theme.GFGBackground
+import com.ayush.geeksforgeeks.ui.theme.GFGBlack
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 import kotlinx.coroutines.launch
@@ -85,7 +86,6 @@ private fun LoginContent(
     viewModel: AuthViewModel,
     navigator: Navigator
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
     var isLoginMode by remember { mutableStateOf(true) }
 
     var selectedDomain by remember { mutableIntStateOf(0) }
@@ -102,7 +102,6 @@ private fun LoginContent(
     )
     val roles = listOf("MEMBER", "TEAM_LEAD")
 
-    val colors = getThemeColors(isDarkTheme)
     val focusManager = LocalFocusManager.current
     val (usernameFocus, emailFocus, passwordFocus) = remember { FocusRequester.createRefs() }
 
@@ -132,7 +131,7 @@ private fun LoginContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
+            .background(GFGStatusPending)
     ) {
         Column(
             modifier = Modifier
@@ -142,7 +141,7 @@ private fun LoginContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Logo()
-            WelcomeText(colors.text)
+            WelcomeText(textColor = GFGBlack)
 
             LoginCard(
                 isLoginMode = isLoginMode,
@@ -163,7 +162,6 @@ private fun LoginContent(
                 onExpandedDomainChange = { expandedDomain = it },
                 onExpandedRoleChange = { expandedRole = it },
                 onModeChange = { isLoginMode = it },
-                colors = colors,
                 focusManager = focusManager,
                 usernameFocus = usernameFocus,
                 emailFocus = emailFocus,
@@ -203,7 +201,6 @@ private fun LoginCard(
     onExpandedDomainChange: (Boolean) -> Unit,
     onExpandedRoleChange: (Boolean) -> Unit,
     onModeChange: (Boolean) -> Unit,
-    colors: ThemeColors,
     focusManager: FocusManager,
     usernameFocus: FocusRequester,
     emailFocus: FocusRequester,
@@ -213,7 +210,7 @@ private fun LoginCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.card)
+        colors = CardDefaults.cardColors(containerColor = GFGBackground)
     ) {
         Column(
             modifier = Modifier
@@ -224,7 +221,7 @@ private fun LoginCard(
                 text = if (isLoginMode) "Login" else "Sign Up",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = colors.text
+                color = GFGBlack
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -233,7 +230,6 @@ private fun LoginCard(
                     value = username,
                     onValueChange = onUsernameChange,
                     label = "Username",
-                    colors = colors,
                     focusRequester = usernameFocus,
                     nextFocusRequester = emailFocus,
                     focusManager = focusManager
@@ -253,11 +249,11 @@ private fun LoginCard(
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = GFGStatusPendingText,
-                            unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
+                            unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
                             focusedLabelColor = GFGStatusPendingText,
-                            unfocusedLabelColor = colors.text,
-                            focusedTextColor = colors.text,
-                            unfocusedTextColor = colors.text
+                            unfocusedLabelColor = GFGBlack,
+                            focusedTextColor = GFGBlack,
+                            unfocusedTextColor = GFGBlack
                         )
                     )
                     ExposedDropdownMenu(
@@ -291,11 +287,11 @@ private fun LoginCard(
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = GFGStatusPendingText,
-                            unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
+                            unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
                             focusedLabelColor = GFGStatusPendingText,
-                            unfocusedLabelColor = colors.text,
-                            focusedTextColor = colors.text,
-                            unfocusedTextColor = colors.text
+                            unfocusedLabelColor = GFGBlack,
+                            focusedTextColor = GFGBlack,
+                            unfocusedTextColor = GFGBlack
                         )
                     )
                     ExposedDropdownMenu(
@@ -320,7 +316,6 @@ private fun LoginCard(
                 value = email,
                 onValueChange = onEmailChange,
                 label = "Email",
-                colors = colors,
                 focusRequester = emailFocus,
                 nextFocusRequester = passwordFocus,
                 focusManager = focusManager,
@@ -332,7 +327,6 @@ private fun LoginCard(
                 onValueChange = onPasswordChange,
                 label = "Password",
                 isPassword = true,
-                colors = colors,
                 focusRequester = passwordFocus,
                 focusManager = focusManager,
                 imeAction = ImeAction.Done
@@ -348,7 +342,7 @@ private fun LoginCard(
                 onSubmitButtonClick
             )
 
-            ToggleModeText(isLoginMode, onModeChange, colors.text)
+            ToggleModeText(isLoginMode, onModeChange)
         }
     }
 }
@@ -386,7 +380,6 @@ private fun InputField(
     onValueChange: (String) -> Unit,
     label: String,
     isPassword: Boolean = false,
-    colors: ThemeColors,
     focusRequester: FocusRequester,
     nextFocusRequester: FocusRequester? = null,
     focusManager: FocusManager,
@@ -403,11 +396,11 @@ private fun InputField(
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = GFGStatusPendingText,
-            unfocusedBorderColor = colors.text.copy(alpha = 0.5f),
+            unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
             focusedLabelColor = GFGStatusPendingText,
-            unfocusedLabelColor = colors.text,
-            focusedTextColor = colors.text,
-            unfocusedTextColor = colors.text,
+            unfocusedLabelColor = GFGBlack,
+            focusedTextColor = GFGBlack,
+            unfocusedTextColor = GFGBlack,
             cursorColor = GFGStatusPendingText
         ),
         keyboardOptions = KeyboardOptions(
@@ -462,7 +455,7 @@ private fun LoginButton(
 }
 
 @Composable
-private fun ToggleModeText(isLoginMode: Boolean, onModeChange: (Boolean) -> Unit, textColor: Color) {
+private fun ToggleModeText(isLoginMode: Boolean, onModeChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -470,7 +463,7 @@ private fun ToggleModeText(isLoginMode: Boolean, onModeChange: (Boolean) -> Unit
     ) {
         Text(
             text = if (isLoginMode) "Don't have an account? " else "Already have an account? ",
-            color = textColor.copy(alpha = 0.7f)
+            color = GFGBlack.copy(alpha = 0.7f)
         )
         Text(
             text = if (isLoginMode) "Sign Up" else "Login",
@@ -481,27 +474,3 @@ private fun ToggleModeText(isLoginMode: Boolean, onModeChange: (Boolean) -> Unit
     }
 }
 
-private data class ThemeColors(
-    val background: Color,
-    val card: Color,
-    val text: Color,
-    val focusedLabel: Color = GFGStatusPendingText,
-    val unfocusedLabel: Color = text
-)
-
-@Composable
-private fun getThemeColors(isDarkTheme: Boolean): ThemeColors {
-    return if (isDarkTheme) {
-        ThemeColors(
-            background = Color.Black,
-            card = DarkGray,
-            text = Color.White
-        )
-    } else {
-        ThemeColors(
-            background = GFGStatusPending,
-            card = Color.White,
-            text = Color.Black
-        )
-    }
-}
