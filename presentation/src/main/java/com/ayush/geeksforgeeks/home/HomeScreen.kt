@@ -20,30 +20,36 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -51,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,9 +65,6 @@ import cafe.adriel.voyager.core.screen.Screen
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-
 
 class HomeScreenEvent : Screen {
     @Composable
@@ -74,7 +78,10 @@ class HomeScreenEvent : Screen {
             onNotificationClick = {},
             onProfileClick = {},
             onEventClick = { event ->
-                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(event.formLink))
+                val intent = android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse(event.formLink)
+                )
                 intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             }
@@ -82,7 +89,6 @@ class HomeScreenEvent : Screen {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeScreenViewModel = hiltViewModel(),
@@ -94,126 +100,269 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                },
-                actions = {
-                    IconButton(onClick = onNotificationClick) {
-                        BadgedBox(
-                            badge = { Badge { Text("3") } }
-                        ) {
-                            Icon(
-                                Icons.Filled.Notifications,
-                                contentDescription = stringResource(R.string.notifications)
-                            )
-                        }
-                    }
-                    IconButton(onClick = onProfileClick) {
-                        Icon(
-                            Icons.Filled.AccountCircle,
-                            contentDescription = stringResource(R.string.profile)
-                        )
-                    }
-                }
+            HomeTopBar(
+                onNotificationClick = onNotificationClick,
+                onProfileClick = onProfileClick
             )
         }
-    ) { innerPadding ->
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item { WelcomeSection(clubStats = uiState.clubStats) }
-            item { EventsPager(events = uiState.events, onEventClick = onEventClick) }
-            item { QuickStatsSection(quickStats = uiState.quickStats) }
-            item { RecentActivities(activities = uiState.recentActivities) }
+            item {
+                HeaderSection(clubStats = uiState.clubStats)
+            }
+
+            item {
+                MetricsCardRow(quickStats = uiState.quickStats)
+            }
+
+            item {
+                FeaturedEventCard(
+                    events = uiState.events,
+                    onEventClick = onEventClick
+                )
+            }
+
+            item {
+                ActivitySection(activities = uiState.recentActivities)
+            }
+
+            item {
+                AchievementsSection()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeTopBar(
+    onNotificationClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.geeksforgeeks_logo),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Student Chapter",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        },
+        actions = {
+            NotificationIcon(
+                badgeCount = 3,
+                onClick = onNotificationClick
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    )
+}
+
+@Composable
+private fun HeaderSection(clubStats: ClubStats) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.inverseSurface
+                        )
+                    )
+                )
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "Welcome to GFG",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            StatsRow(clubStats = clubStats)
         }
     }
 }
 
 @Composable
-private fun WelcomeSection(clubStats: ClubStats) {
-    Card(
+private fun StatsRow(clubStats: ClubStats) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        StatCounter(
+            count = clubStats.yearsActive,
+            label = "Years\nActive",
+            icon = Icons.Filled.Star
+        )
+        StatCounter(
+            count = clubStats.studentsBenefited,
+            label = "Students\nBenefited",
+            icon = Icons.Filled.ThumbUp
+        )
+        StatCounter(
+            count = clubStats.activeMembers,
+            label = "Active\nMembers",
+            icon = Icons.Filled.Person
+        )
+    }
+}
+
+@Composable
+private fun StatCounter(
+    count: Int,
+    label: String,
+    icon: ImageVector
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(24.dp)
+        )
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onPrimary,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun MetricsCardRow(quickStats: QuickStats) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(GFGLightGray)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        MetricCard(
+            modifier = Modifier.weight(1f),
+            title = "Projects",
+            value = quickStats.ongoingProjects.toString(),
+            icon = Icons.Filled.Build,
+            color = MaterialTheme.colorScheme.tertiary
+        )
+        MetricCard(
+            modifier = Modifier.weight(1f),
+            title = "Members",
+            value = quickStats.activeMembers.toString(),
+            icon = Icons.Filled.Person,
+            color = MaterialTheme.colorScheme.secondary
+        )
+        MetricCard(
+            modifier = Modifier.weight(1f),
+            title = "Events",
+            value = quickStats.recentAchievements.toString(),
+            icon = Icons.Filled.Star,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun MetricCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: String,
+    icon: ImageVector,
+    color: Color
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = GFGLightGray
+        ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(GFGLightGray)
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.geeksforgeeks_logo),
-                    contentDescription = "GFG Logo",
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.welcome_message),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = stringResource(R.string.coding_club),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = GFGPrimary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                StatItem(value = clubStats.yearsActive.toString(), label = "  Years \n  Active")
-                StatItem(value = clubStats.studentsBenefited.toString(), label = "Students \nBenefited")
-                StatItem(value = clubStats.activeMembers.toString(), label = "Active \nMembers")
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun EventsPager(events: List<Event>, onEventClick: (Event) -> Unit) {
+private fun FeaturedEventCard(
+    events: List<Event>,
+    onEventClick: (Event) -> Unit
+) {
     val pagerState = rememberPagerState(pageCount = { events.size })
-    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(3000)
-            coroutineScope.launch {
-                pagerState.animateScrollToPage((pagerState.currentPage + 1) % events.size)
-            }
-        }
-    }
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(
-            text = stringResource(R.string.upcoming_events),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ) {
+        SectionHeader(
+            title = "Featured Events",
+            action = "View All"
         )
-        Spacer(modifier = Modifier.height(8.dp))
+
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier
-                .height(200.dp)
-                .fillMaxWidth()
+            modifier = Modifier.height(200.dp)
         ) { page ->
             EventCard(event = events[page], onClick = { onEventClick(events[page]) })
         }
@@ -287,75 +436,171 @@ private fun EventCard(event: Event, onClick: () -> Unit) {
 }
 
 @Composable
-private fun QuickStatsSection(quickStats: QuickStats) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(GFGLightGray)
-
-            .padding(16.dp),
-        shape = RoundedCornerShape(16.dp)
+private fun AchievementsSection() {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(GFGLightGray)
+        SectionHeader(
+            title = "Recent Achievements",
+            action = "View All"
+        )
 
-                .padding(16.dp)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = GFGLightGray
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = stringResource(R.string.quick_stats),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                QuickStatItem(Icons.Default.Person, quickStats.activeMembers.toString(), "Active Members")
-                QuickStatItem(Icons.Default.Build, quickStats.ongoingProjects.toString(), "Ongoing Projects")
-                QuickStatItem(Icons.Default.Star, quickStats.recentAchievements.toString(), "Achievements")
+                AchievementItem(
+                    icon = Icons.Filled.Star,
+                    title = "SIH 2024 Winner",
+                    description = "Team won Smart India Hackathon",
+                    date = "March 2024",
+                    iconTint = MaterialTheme.colorScheme.primary
+                )
+
+                Divider()
+
+                AchievementItem(
+                    icon = Icons.Filled.Star,
+                    title = "CodeJam Champions",
+                    description = "1st place in regional coding competition",
+                    date = "February 2024",
+                    iconTint = MaterialTheme.colorScheme.tertiary
+                )
+
+                Divider()
+
+                AchievementItem(
+                    icon = Icons.Filled.Person,
+                    title = "Community Growth",
+                    description = "Reached 1000+ active members",
+                    date = "January 2024",
+                    iconTint = MaterialTheme.colorScheme.secondary
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    OutlinedButton(
+                        onClick = { },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Show More Achievements")
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun QuickStatItem(icon: ImageVector, value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = GFGPrimary,
-            modifier = Modifier.size(32.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall
-        )
+private fun AchievementItem(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    date: String,
+    iconTint: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = iconTint.copy(alpha = 0.1f),
+            modifier = Modifier.size(48.dp)
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = date,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
+
+        IconButton(onClick = { }) {
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowRight,
+                contentDescription = "View achievement details",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
+
 @Composable
-private fun RecentActivities(activities: List<RecentActivity>) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(
-            text = stringResource(R.string.recent_activities),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+private fun ActivitySection(activities: List<RecentActivity>) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ) {
+        SectionHeader(
+            title = "Recent Activities",
+            action = "See All"
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        activities.forEach { activity ->
-            ActivityItem(activity)
-            if (activity != activities.last()) {
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = GFGLightGray
+            ),
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                activities.forEach { activity ->
+                    ActivityItem(activity = activity)
+                    if (activity != activities.last()) {
+                        Divider(
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -395,18 +640,50 @@ private fun ActivityItem(activity: RecentActivity) {
     }
 }
 
+
 @Composable
-private fun StatItem(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun SectionHeader(
+    title: String,
+    action: String? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
-            text = value,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = GFGPrimary
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
         )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium
-        )
+        if (action != null) {
+            TextButton(onClick = { }) {
+                Text(text = action)
+            }
+        }
     }
 }
+
+@Composable
+private fun NotificationIcon(
+    badgeCount: Int,
+    onClick: () -> Unit
+) {
+    IconButton(onClick = onClick) {
+        BadgedBox(
+            badge = {
+                Badge {
+                    Text(badgeCount.toString())
+                }
+            }
+        ) {
+            Icon(
+                Icons.Filled.Notifications,
+                contentDescription = "Notifications"
+            )
+        }
+    }
+}
+

@@ -44,9 +44,7 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
     override fun Content() {
         val showBottomBar = remember { mutableStateOf(true) }
         val initialTab = remember {
-            HomeTab(
-                onNavigator = { showBottomBar.value = it },
-            )
+            HomeTab
         }
 
         TabNavigator(initialTab) {
@@ -73,9 +71,7 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
                             containerColor = Color.White,
                             contentColor = Color.Black
                         ) {
-                            TabNavigationItem(HomeTab(onNavigator = {
-                                showBottomBar.value = it
-                            }))
+                            TabNavigationItem(HomeTab)
                             TabNavigationItem(DashboardTab(onNavigator = {
                                 showBottomBar.value = it
                             }))

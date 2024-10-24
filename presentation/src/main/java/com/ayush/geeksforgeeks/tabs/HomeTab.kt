@@ -12,9 +12,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.ayush.geeksforgeeks.home.HomeScreenEvent
 
-class HomeTab(
-    private val onNavigator: (Boolean) -> Unit,
-) : Tab {
+object  HomeTab: Tab {
     override val options: TabOptions
         @Composable
         get() {
@@ -33,9 +31,9 @@ class HomeTab(
     @Composable
     override fun Content() {
         Navigator(HomeScreenEvent()) { navigator ->
-            LaunchedEffect(navigator) {
-                onNavigator(true)
-            }
+//            LaunchedEffect(navigator) {
+//                onNavigator(true)
+//            }
             SlideTransition(navigator)
         }
     }

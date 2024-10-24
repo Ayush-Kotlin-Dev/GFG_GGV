@@ -130,7 +130,6 @@ fun ProfileContent(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Sign Out Button
         TextButton(
             onClick = { showLogoutDialog = true },
             modifier = Modifier

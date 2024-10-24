@@ -41,6 +41,15 @@ data class Event(
     val description: String
 )
 
+data class RecentAchievement(
+    val icon : Int,
+    val id: Int,
+    val title: String,
+    val description: String,
+    val date : String,
+    val imageRes: Int
+)
+
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor() : ViewModel() {
     private val _uiState = MutableStateFlow(HomeScreenState())
@@ -124,6 +133,17 @@ object SampleData {
             description = "Annual Hackathon event scheduled for August 15-17. Register now!",
             type = InfoType.EVENT
         )
+    )
+
+    val recentAchievements = listOf(
+        RecentAchievement(
+            icon = R.drawable.coding,
+            id = 1,
+            title = "Won Sih 2024 Hackathon",
+            description = "Our team won the Smart India Hackathon 2024.",
+            date = "2 hours ago",
+            imageRes = R.drawable.sih
+        ),
     )
 }
 
