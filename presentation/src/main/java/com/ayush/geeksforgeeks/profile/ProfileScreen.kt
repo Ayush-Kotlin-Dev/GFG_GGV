@@ -101,6 +101,8 @@ fun ProfileContent(
     var showAboutUsBottomSheet by remember { mutableStateOf(false) }
     var showContactDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val appLink = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/tag/GFG"
+
 
     Column(
         modifier = Modifier
@@ -114,7 +116,15 @@ fun ProfileContent(
         ProfileMenuItem(Icons.Default.Email, "Contact") {
             showContactDialog = true
         }
-        ProfileMenuItem(Icons.Default.Share, "Share App")
+        ProfileMenuItem(Icons.Default.Share, "Share App") {
+            val sendIntent: Intent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, "Check out this app of our coding club : $appLink")
+                type = "text/plain"
+            }
+            val shareIntent = Intent.createChooser(sendIntent, null)
+            context.startActivity(shareIntent)
+        }
         ProfileMenuItem(Icons.Default.Info, "Help") { showHelpDialog = true }
         ProfileMenuItem(Icons.Rounded.FavoriteBorder, "About Us") { showAboutUsBottomSheet = true }
 

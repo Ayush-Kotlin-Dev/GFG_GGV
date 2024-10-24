@@ -93,12 +93,17 @@ private fun LoginContent(
     var expandedDomain by remember { mutableStateOf(false) }
     var expandedRole by remember { mutableStateOf(false) }
     val domains = listOf(
-        1 to "Android",
-        2 to "Web",
-        3 to "iOS",
-        4 to "Backend",
-        5 to "ML/AI",
-        6 to "Cloud"
+        1 to "App dev",
+        2 to "Web dev ",
+        3 to "IoT",
+        4 to "Cyber Security",
+        5 to "Cp/Dsa ",
+        6 to "Ai/Ml",
+        7 to "Game dev",
+        8 to "Design & Branding",
+        9 to "Content",
+        10 to "Event",
+        11 to "Marketing & Pr",
     )
     val roles = listOf("MEMBER", "TEAM_LEAD")
 

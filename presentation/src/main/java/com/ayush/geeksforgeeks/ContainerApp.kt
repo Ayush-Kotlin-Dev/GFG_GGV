@@ -49,7 +49,7 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
             )
         }
 
-        TabNavigator(initialTab) { tabNavigator ->
+        TabNavigator(initialTab) {
             Scaffold(
                 content = { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
