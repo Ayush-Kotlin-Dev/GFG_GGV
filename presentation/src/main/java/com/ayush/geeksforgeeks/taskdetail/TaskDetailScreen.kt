@@ -1,40 +1,10 @@
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.MailOutline
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -47,12 +17,12 @@ import com.ayush.data.model.TaskStatus
 import com.ayush.geeksforgeeks.taskdetail.TaskDetailViewModel
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 data class TaskDetailScreen(
     val taskId: String,
     val onNavigateBack: () -> Unit,
-)  : Screen {
+) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -91,27 +61,21 @@ data class TaskDetailScreen(
 }
 
 @Composable
-fun LoadingScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+private fun LoadingScreen() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(color = GFGPrimary)
     }
 }
 
 @Composable
-fun ErrorScreen(message: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+private fun ErrorScreen(message: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text = "Error: $message", color = MaterialTheme.colorScheme.error)
     }
 }
 
 @Composable
-fun TaskDetailContent(
+private fun TaskDetailContent(
     task: Task,
     onStatusUpdate: (TaskStatus) -> Unit,
     modifier: Modifier = Modifier
@@ -133,7 +97,7 @@ fun TaskDetailContent(
 }
 
 @Composable
-fun TaskHeader(task: Task) {
+private fun TaskHeader(task: Task) {
     Text(
         text = task.title,
         style = MaterialTheme.typography.headlineMedium,
@@ -155,7 +119,7 @@ fun TaskHeader(task: Task) {
 }
 
 @Composable
-fun TaskDescription(description: String) {
+private fun TaskDescription(description: String) {
     Text(
         text = "Description",
         style = MaterialTheme.typography.titleMedium,
@@ -166,8 +130,8 @@ fun TaskDescription(description: String) {
 }
 
 @Composable
-fun TaskMetadata(task: Task) {
-    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+private fun TaskMetadata(task: Task) {
+    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
 
     Column {
         MetadataItem(Icons.Default.MailOutline, "Domain", "Domain ${task.domainId}")
@@ -178,7 +142,7 @@ fun TaskMetadata(task: Task) {
 }
 
 @Composable
-fun MetadataItem(icon: ImageVector, label: String, value: String) {
+private fun MetadataItem(icon: ImageVector, label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -200,9 +164,9 @@ fun MetadataItem(icon: ImageVector, label: String, value: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskStatusUpdate(currentStatus: TaskStatus, onStatusUpdate: (TaskStatus) -> Unit) {
+private fun TaskStatusUpdate(currentStatus: TaskStatus, onStatusUpdate: (TaskStatus) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    val statusOptions = TaskStatus.values()
+    val statusOptions = remember { TaskStatus.entries.toTypedArray() }
 
     Column {
         Text(
