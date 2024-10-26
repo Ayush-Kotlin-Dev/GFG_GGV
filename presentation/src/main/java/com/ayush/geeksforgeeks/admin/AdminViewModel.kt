@@ -1,5 +1,8 @@
 package com.ayush.geeksforgeeks.admin
 
+import android.app.Application
+import android.content.Intent
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.User
@@ -12,13 +15,19 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import java.io.File
+import java.io.FileOutputStream
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
 class AdminViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val application: Application
 ) : ViewModel() {
 
     private val _teamMembers = MutableStateFlow<List<User>>(emptyList())
@@ -164,5 +173,72 @@ class AdminViewModel @Inject constructor(
                 e.printStackTrace()
             }
         }
+    }
+
+    fun generateWeeklyReport() {
+        viewModelScope.launch {
+            try {
+                val workbook = XSSFWorkbook()
+                val sheet = workbook.createSheet("Weekly Report")
+
+                // Create header row
+                val headerRow = sheet.createRow(0)
+                headerRow.createCell(0).setCellValue("Name")
+                headerRow.createCell(1).setCellValue("Role")
+                headerRow.createCell(2).setCellValue("Completed Tasks")
+                headerRow.createCell(3).setCellValue("Task Titles")
+                headerRow.createCell(4).setCellValue("Completed Credits")
+
+                // Populate data
+                var rowNum = 1
+                teamMembers.value.forEach { member ->
+                    val row = sheet.createRow(rowNum++)
+                    row.createCell(0).setCellValue(member.name)
+                    row.createCell(1).setCellValue(member.role.toString())
+
+                    val completedTasks =
+                        tasks.value.filter { it.assignedTo == member.userId && it.status == TaskStatus.COMPLETED }
+                    row.createCell(2).setCellValue(completedTasks.size.toDouble())
+
+                    val taskTitles = completedTasks.joinToString(", ") { it.title }
+                    row.createCell(3).setCellValue(taskTitles)
+
+                    row.createCell(4).setCellValue(completedTasks.sumOf { it.credits }.toDouble())
+                }
+
+                // Save the workbook
+                val fileName =
+                    "WeeklyReport_${LocalDate.now().format(DateTimeFormatter.ISO_DATE)}.xlsx"
+                val file = File(application.getExternalFilesDir(null), fileName)
+                FileOutputStream(file).use { outputStream ->
+                    workbook.write(outputStream)
+                }
+                workbook.close()
+
+                // Share the file
+                shareFile(file)
+            } catch (e: Exception) {
+                // Handle error
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun shareFile(file: File) {
+        val uri = FileProvider.getUriForFile(
+            application,
+            "${application.packageName}.fileprovider",
+            file
+        )
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        val chooser = Intent.createChooser(intent, "Share Weekly Report")
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        application.startActivity(chooser)
     }
 }

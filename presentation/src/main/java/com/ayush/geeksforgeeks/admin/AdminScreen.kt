@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -94,7 +95,8 @@ class AdminScreen : Screen {
             // Header Section
             AdminHeader(
                 onAddTask = { showAddTaskDialog = true },
-                onShowStats = { showStatsDialog = true }
+                onShowStats = { showStatsDialog = true },
+                onGenerateReport = { viewModel.generateWeeklyReport() }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -156,7 +158,7 @@ class AdminScreen : Screen {
 }
 
 @Composable
-fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
+fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport: () -> Unit) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -166,10 +168,9 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
             Text(
                 "Team Lead Panel",
                 style = MaterialTheme.typography.headlineMedium,
-                color = GFGPrimary  ,
+                color = GFGPrimary,
                 fontWeight = FontWeight.Bold
             )
-
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
@@ -182,16 +183,25 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit) {
             }
             Button(
                 onClick = onAddTask,
-                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary )
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
             ) {
                 Icon(Icons.Default.Add, "Add Task")
                 Spacer(Modifier.width(4.dp))
                 Text("New Task")
             }
+            Button(
+                onClick = onGenerateReport,
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
+            ) {
+                Icon(Icons.Default.PlayArrow, "Generate Report")
+                Spacer(Modifier.width(4.dp))
+                Text("Generate Report")
+            }
         }
     }
-
 }
+
+
 
 @Composable
 fun TaskManagementSection(
