@@ -191,24 +191,35 @@ class AdminViewModel @Inject constructor(
 
                 // Populate data
                 var rowNum = 1
-                teamMembers.value.forEach { member ->
+                // Get the current values from StateFlow instead of using .value directly
+                val currentTeamMembers = teamMembers.value
+                val currentTasks = tasks.value
+
+                currentTeamMembers.forEach { member ->
                     val row = sheet.createRow(rowNum++)
                     row.createCell(0).setCellValue(member.name)
                     row.createCell(1).setCellValue(member.role.toString())
 
-                    val completedTasks =
-                        tasks.value.filter { it.assignedTo == member.userId && it.status == TaskStatus.COMPLETED }
+                    // Filter tasks correctly using member.userId instead of member.name
+                    val completedTasks = currentTasks.filter { task ->
+                        task.assignedTo == member.userId &&
+                                task.status == TaskStatus.COMPLETED
+                    }
+
+                    // Set completed tasks count
                     row.createCell(2).setCellValue(completedTasks.size.toDouble())
 
+                    // Get task titles and join them
                     val taskTitles = completedTasks.joinToString(", ") { it.title }
                     row.createCell(3).setCellValue(taskTitles)
 
-                    row.createCell(4).setCellValue(completedTasks.sumOf { it.credits }.toDouble())
+                    // Calculate total credits
+                    val totalCredits = completedTasks.sumOf { it.credits }
+                    row.createCell(4).setCellValue(totalCredits.toDouble())
                 }
 
                 // Save the workbook
-                val fileName =
-                    "WeeklyReport_${LocalDate.now().format(DateTimeFormatter.ISO_DATE)}.xlsx"
+                val fileName = "WeeklyReport_${LocalDate.now().format(DateTimeFormatter.ISO_DATE)}.xlsx"
                 val file = File(application.getExternalFilesDir(null), fileName)
                 FileOutputStream(file).use { outputStream ->
                     workbook.write(outputStream)
