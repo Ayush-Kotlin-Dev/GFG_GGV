@@ -63,8 +63,10 @@ class UserRepository @Inject constructor(
     
     suspend fun getTeamMembers(): List<User> {
         return try {
+
             val currentUser = getCurrentUser()
             val leadDomainId = currentUser.domainId
+            Log.d("UserRepository", "getTeamMembers: leadDomainId=$leadDomainId")
             firestore.collection("users")
                 .whereEqualTo("role", "MEMBER")
                 .whereEqualTo("domainId", leadDomainId)
@@ -82,6 +84,7 @@ class UserRepository @Inject constructor(
         userPreferences.clearUserData()
     }
 
+    //TODO
     suspend fun uploadProfileImage(uri: Uri): String {
         val storageRef = FirebaseStorage.getInstance().reference
         val imageRef = storageRef.child("profile_pics/${firebaseAuth.currentUser?.uid}")

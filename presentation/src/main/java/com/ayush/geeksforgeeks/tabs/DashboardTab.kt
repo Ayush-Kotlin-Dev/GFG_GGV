@@ -35,8 +35,6 @@ class DashboardTab(
     override fun Content() {
         Navigator(screen = DashboardScreen()){ Navigator ->
             SlideTransition(navigator = Navigator)
-
-
         }
     }
 }

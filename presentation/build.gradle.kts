@@ -72,6 +72,7 @@ dependencies {
     implementation ("org.apache.poi:poi:5.2.4")
     implementation("androidx.core:core-splashscreen:1.0.1")
 
+
 }
 
 tasks.register("copyProguardRules", Copy::class) {

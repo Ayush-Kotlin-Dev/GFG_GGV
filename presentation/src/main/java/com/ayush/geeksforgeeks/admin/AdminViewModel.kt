@@ -2,6 +2,7 @@ package com.ayush.geeksforgeeks.admin
 
 import android.app.Application
 import android.content.Intent
+import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,8 +19,12 @@ import kotlinx.coroutines.launch
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileOutputStream
+import java.io.FileWriter
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import javax.inject.Inject
 
@@ -44,60 +49,65 @@ class AdminViewModel @Inject constructor(
 
     private var currentUserDomainId: Int = 0
 
+
     init {
         viewModelScope.launch {
-            currentUserDomainId = userRepository.getCurrentUser().domainId
-            loadTeamMembers()
-            loadTasks()
+            loadData()
+        }
+    }
+
+    private suspend fun loadData() {
+        try {
+            Log.d("AdminViewModel", "Starting loadData()")
+            val currentUser = userRepository.getCurrentUser()
+            currentUserDomainId = currentUser.domainId
+            Log.d("AdminViewModel", "Current user domain ID: $currentUserDomainId")
+
+            val teamMembers = userRepository.getTeamMembers()
+            Log.d("AdminViewModel", "Loaded ${teamMembers.size} team members")
+            _teamMembers.value = teamMembers
+
+            val tasks = taskRepository.getTasks(currentUserDomainId)
+            Log.d("AdminViewModel", "Loaded ${tasks.size} tasks")
+            _tasks.value = tasks
+
             updateTaskStats()
-        }
-    }
-
-    private fun loadTeamMembers() {
-        viewModelScope.launch {
-            try {
-                _teamMembers.value = userRepository.getTeamMembers()
-            } catch (e: Exception) {
-                // Handle error - could emit to a UI state
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun loadTasks() {
-        viewModelScope.launch {
-            try {
-                _tasks.value = taskRepository.getTasks(currentUserDomainId)
-                updateTaskStats()
-            } catch (e: Exception) {
-                // Handle error
-                e.printStackTrace()
-            }
+        } catch (e: Exception) {
+            Log.e("AdminViewModel", "Error in loadData(): ${e.message}", e)
         }
     }
 
     private fun updateTaskStats() {
-        viewModelScope.launch {
-            val allTasks = _tasks.value
-            val stats = mutableMapOf<String, Int>()
+        val allTasks = _tasks.value
+        val allMembers = _teamMembers.value
+        val stats = mutableMapOf<String, Int>()
 
-            // Overall statistics
-            stats["total"] = allTasks.size
-            stats["completed"] = allTasks.count { it.status == TaskStatus.COMPLETED }
-            stats["inProgress"] = allTasks.count { it.status == TaskStatus.IN_PROGRESS }
-            stats["pending"] = allTasks.count { it.status == TaskStatus.PENDING }
-            stats["unassigned"] = allTasks.count { it.assignedTo.isEmpty() }
+        Log.d(
+            "AdminViewModel",
+            "Updating stats. Tasks: ${allTasks.size}, Members: ${allMembers.size}"
+        )
 
-            // Per-user statistics
-            _teamMembers.value.forEach { member ->
-                val completedTasks = allTasks.count {
-                    it.assignedTo == member.userId && it.status == TaskStatus.COMPLETED
-                }
-                stats[member.userId] = completedTasks
+        // Overall statistics
+        stats["total"] = allTasks.size
+        stats["completed"] = allTasks.count { it.status == TaskStatus.COMPLETED }
+        stats["inProgress"] = allTasks.count { it.status == TaskStatus.IN_PROGRESS }
+        stats["pending"] = allTasks.count { it.status == TaskStatus.PENDING }
+        stats["unassigned"] = allTasks.count { it.assignedTo.isEmpty() }
+
+        // Per-user statistics
+        allMembers.forEach { member ->
+            val completedTasks = allTasks.count { task ->
+                task.assignedTo == member.userId && task.status == TaskStatus.COMPLETED
             }
-
-            _taskStats.value = stats
+            Log.d(
+                "AdminViewModel",
+                "Stats for ${member.name} (${member.userId}): $completedTasks completed tasks"
+            )
+            stats[member.userId] = completedTasks
         }
+
+        _taskStats.value = stats
+        Log.d("AdminViewModel", "Final stats: $stats")
     }
 
     fun addTask(task: Task) {
@@ -108,13 +118,12 @@ class AdminViewModel @Inject constructor(
                     createdAt = Timestamp.now(),
                     updatedAt = Timestamp.now(),
                     status = TaskStatus.PENDING,
-                    dueDate = Timestamp(Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000)) // 1 week from now
+                    dueDate = Timestamp(Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000))
                 )
                 taskRepository.addTask(newTask)
-                loadTasks()
+                loadData()
             } catch (e: Exception) {
-                // Handle error
-                e.printStackTrace()
+                Log.e("AdminViewModel", "Error adding task: ${e.message}", e)
             }
         }
     }
@@ -131,10 +140,9 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 taskRepository.assignTask(taskId, userId)
-                loadTasks()
+                loadData()
             } catch (e: Exception) {
-                // Handle error
-                e.printStackTrace()
+                Log.e("AdminViewModel", "Error assigning task: ${e.message}", e)
             }
         }
     }
@@ -143,23 +151,20 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 taskRepository.updateTaskStatus(taskId, newStatus)
-                loadTasks()
+                loadData()
             } catch (e: Exception) {
-                // Handle error
-                e.printStackTrace()
+                Log.e("AdminViewModel", "Error updating task status: ${e.message}", e)
             }
         }
     }
 
     fun deleteTask(task: Task) {
-        // Add this method to your TaskRepository
         viewModelScope.launch {
             try {
                 taskRepository.deleteTask(task.id)
-                loadTasks()
+                loadData()
             } catch (e: Exception) {
-                // Handle error
-                e.printStackTrace()
+                Log.e("AdminViewModel", "Error deleting task: ${e.message}", e)
             }
         }
     }
@@ -175,64 +180,102 @@ class AdminViewModel @Inject constructor(
         }
     }
 
+
     fun generateWeeklyReport() {
         viewModelScope.launch {
             try {
-                val workbook = XSSFWorkbook()
-                val sheet = workbook.createSheet("Weekly Report")
-
-                // Create header row
-                val headerRow = sheet.createRow(0)
-                headerRow.createCell(0).setCellValue("Name")
-                headerRow.createCell(1).setCellValue("Role")
-                headerRow.createCell(2).setCellValue("Completed Tasks")
-                headerRow.createCell(3).setCellValue("Task Titles")
-                headerRow.createCell(4).setCellValue("Completed Credits")
-
-                // Populate data
-                var rowNum = 1
-                // Get the current values from StateFlow instead of using .value directly
                 val currentTeamMembers = teamMembers.value
                 val currentTasks = tasks.value
+                val oneWeekAgo = Instant.now().minus(7, ChronoUnit.DAYS)
 
-                currentTeamMembers.forEach { member ->
-                    val row = sheet.createRow(rowNum++)
-                    row.createCell(0).setCellValue(member.name)
-                    row.createCell(1).setCellValue(member.role.toString())
-
-                    // Filter tasks correctly using member.userId instead of member.name
-                    val completedTasks = currentTasks.filter { task ->
-                        task.assignedTo == member.userId &&
-                                task.status == TaskStatus.COMPLETED
-                    }
-
-                    // Set completed tasks count
-                    row.createCell(2).setCellValue(completedTasks.size.toDouble())
-
-                    // Get task titles and join them
-                    val taskTitles = completedTasks.joinToString(", ") { it.title }
-                    row.createCell(3).setCellValue(taskTitles)
-
-                    // Calculate total credits
-                    val totalCredits = completedTasks.sumOf { it.credits }
-                    row.createCell(4).setCellValue(totalCredits.toDouble())
-                }
-
-                // Save the workbook
                 val fileName = "WeeklyReport_${LocalDate.now().format(DateTimeFormatter.ISO_DATE)}.xlsx"
                 val file = File(application.getExternalFilesDir(null), fileName)
-                FileOutputStream(file).use { outputStream ->
-                    workbook.write(outputStream)
+
+                val workbook = XSSFWorkbook()
+
+                currentTeamMembers.forEach { member ->
+                    val sheet = workbook.createSheet(member.name)
+                    var rowNum = 0
+
+                    // Add member info
+                    var row = sheet.createRow(rowNum++)
+                    row.createCell(0).setCellValue("Name:")
+                    row.createCell(1).setCellValue(member.name)
+
+                    row = sheet.createRow(rowNum++)
+                    row.createCell(0).setCellValue("Role:")
+                    row.createCell(1).setCellValue(member.role.toString())
+
+                    rowNum++ // Empty row for spacing
+
+                    // Create header row for tasks
+                    row = sheet.createRow(rowNum++)
+                    val headers = listOf("Task Title", "Status", "Credits", "Due Date", "Updated At")
+                    headers.forEachIndexed { index, header ->
+                        row.createCell(index).setCellValue(header)
+                    }
+
+                    // Add task data
+                    val memberTasks = currentTasks.filter { task ->
+                        task.assignedTo == member.userId &&
+                                isWithinLastWeek(task.updatedAt, oneWeekAgo)
+                    }
+
+                    memberTasks.forEach { task ->
+                        row = sheet.createRow(rowNum++)
+                        row.createCell(0).setCellValue(task.title)
+                        row.createCell(1).setCellValue(task.status.toString())
+                        row.createCell(2).setCellValue(task.credits.toDouble())
+                        row.createCell(3).setCellValue(formatTimestamp(task.dueDate))
+                        row.createCell(4).setCellValue(formatTimestamp(task.updatedAt))
+                    }
+
+                    rowNum++ // Empty row for spacing
+
+                    // Add summary
+                    row = sheet.createRow(rowNum++)
+                    row.createCell(0).setCellValue("Total Tasks:")
+                    row.createCell(1).setCellValue(memberTasks.size.toDouble())
+
+                    row = sheet.createRow(rowNum++)
+                    row.createCell(0).setCellValue("Completed Tasks:")
+                    row.createCell(1).setCellValue(memberTasks.count { it.status == TaskStatus.COMPLETED }.toDouble())
+
+                    row = sheet.createRow(rowNum)
+                    row.createCell(0).setCellValue("Total Credits:")
+                    row.createCell(1).setCellValue(memberTasks.sumOf { it.credits }.toDouble())
+
+                    // Instead of auto-sizing, set a fixed column width
+                    for (i in 0..4) {
+                        sheet.setColumnWidth(i, 15 * 256) // 15 characters wide
+                    }
+                }
+
+                FileOutputStream(file).use { fileOut ->
+                    workbook.write(fileOut)
                 }
                 workbook.close()
 
                 // Share the file
                 shareFile(file)
+
+                Log.d("AdminViewModel", "Weekly report generated successfully")
             } catch (e: Exception) {
-                // Handle error
-                e.printStackTrace()
+                Log.e("AdminViewModel", "Error generating weekly report: ${e.message}", e)
             }
         }
+    }
+
+    private fun isWithinLastWeek(timestamp: Timestamp, oneWeekAgo: Instant): Boolean {
+        val instant = Instant.ofEpochSecond(timestamp.seconds, timestamp.nanoseconds.toLong())
+        return instant.isAfter(oneWeekAgo)
+    }
+
+    private fun formatTimestamp(timestamp: Timestamp): String {
+        val instant = Instant.ofEpochSecond(timestamp.seconds, timestamp.nanoseconds.toLong())
+        val zoneId = ZoneId.systemDefault()
+        val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' h:mm:ss a z")
+        return instant.atZone(zoneId).format(formatter)
     }
 
     private fun shareFile(file: File) {

@@ -301,8 +301,6 @@ fun TaskManagementSection(
     }
 }
 
-
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EnhancedTaskItem(
@@ -366,18 +364,20 @@ fun EnhancedTaskItem(
                         style = MaterialTheme.typography.bodyMedium,
                         color = GFGTextPrimary.copy(alpha = 0.7f)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (task.assignedTo.isNotEmpty()) {
+                        Text(
+                            "Assigned to: ${task.assignedTo}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (task.assignedTo.isNotEmpty()) {
-                            Text(
-                                "Assigned to: ${task.assignedTo}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        } else {
+                        if (task.assignedTo.isEmpty()) {
                             OutlinedButton(
                                 onClick = { onAssign(task) },
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = GFGPrimary)
@@ -388,15 +388,13 @@ fun EnhancedTaskItem(
                         if (task.status != TaskStatus.COMPLETED && task.assignedTo.isNotEmpty()) {
                             OutlinedButton(
                                 onClick = {
-                                    onUpdateStatus(
-                                        task,
-                                        when (task.status) {
-                                            TaskStatus.NEW -> TaskStatus.IN_PROGRESS
-                                            TaskStatus.IN_PROGRESS -> TaskStatus.COMPLETED
-                                            TaskStatus.PENDING -> TaskStatus.IN_PROGRESS
-                                            else -> task.status
-                                        }
-                                    )
+                                    val newStatus = when (task.status) {
+                                        TaskStatus.NEW -> TaskStatus.IN_PROGRESS
+                                        TaskStatus.IN_PROGRESS -> TaskStatus.COMPLETED
+                                        TaskStatus.PENDING -> TaskStatus.IN_PROGRESS
+                                        else -> TaskStatus.COMPLETED
+                                    }
+                                    onUpdateStatus(task, newStatus)
                                 },
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = GFGPrimary)
                             ) {
@@ -404,7 +402,8 @@ fun EnhancedTaskItem(
                                     when (task.status) {
                                         TaskStatus.NEW -> "Start Task"
                                         TaskStatus.IN_PROGRESS -> "Mark Complete"
-                                        else -> "Update Status"
+                                        TaskStatus.PENDING -> "Start Task"
+                                        else -> "Mark Complete"
                                     }
                                 )
                             }
@@ -476,7 +475,7 @@ fun TeamSection(teamMembers: List<User>, stats: Map<String, Int>) {
                 teamMembers.forEach { member ->
                     EnhancedTeamMemberItem(
                         member = member,
-                        completedTasks = stats[member.userId] ?: 0
+                        completedTasks = stats[member.userId] ?: 77
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -692,14 +691,14 @@ fun AssignTaskDialog(
                                 .fillMaxWidth()
                                 .border(
                                     width = 1.dp,
-                                    color = if (selectedMember == member.name)
+                                    color = if (selectedMember == member.userId)
                                         GFGPrimary
                                     else
                                         Color.LightGray,
                                     shape = MaterialTheme.shapes.small
                                 )
                                 .clip(MaterialTheme.shapes.small)
-                                .clickable { selectedMember = member.name }
+                                .clickable { selectedMember = member.userId }
                                 .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically

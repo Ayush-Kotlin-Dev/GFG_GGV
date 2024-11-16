@@ -17,7 +17,7 @@ import com.ayush.geeksforgeeks.task.TasksScreen
 
 class TaskTab(
     @Transient
-    public val onNavigator: (Boolean) -> Unit,
+    val onNavigator: (Boolean) -> Unit,
     val userRole: UserRole
 ) : Tab {
     override val options: TabOptions
@@ -39,13 +39,12 @@ class TaskTab(
                 )
             }
         }
-
+    val initialScreen = when (userRole) {
+        UserRole.TEAM_LEAD -> AdminScreen()
+        else -> TasksScreen()
+    }
     @Composable
     override fun Content() {
-        val initialScreen = when (userRole) {
-            UserRole.TEAM_LEAD -> AdminScreen()
-            else -> TasksScreen()
-        }
         Navigator(initialScreen) { navigator ->
             LaunchedEffect(navigator.lastItem) {
                 onNavigator(navigator.lastItem == initialScreen)
