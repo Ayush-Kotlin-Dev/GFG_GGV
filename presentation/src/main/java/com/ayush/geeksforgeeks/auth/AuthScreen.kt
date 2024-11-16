@@ -62,6 +62,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.datastore.UserRole
+import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
 import com.ayush.geeksforgeeks.ContainerApp
 import com.ayush.geeksforgeeks.R
@@ -88,29 +89,12 @@ private fun LoginContent(
 ) {
     var isLoginMode by remember { mutableStateOf(true) }
 
-    var selectedDomain by remember { mutableIntStateOf(0) }
-    var selectedRole by remember { mutableStateOf("") }
-    var expandedDomain by remember { mutableStateOf(false) }
-    var expandedRole by remember { mutableStateOf(false) }
-    val domains = listOf(
-        1 to "App dev",
-        2 to "Web dev ",
-        3 to "IoT",
-        4 to "Cyber Security",
-        5 to "Cp/Dsa ",
-        6 to "Ai/Ml",
-        7 to "Game dev",
-        8 to "Design & Branding",
-        9 to "Content",
-        10 to "Event",
-        11 to "Marketing & Pr",
-    )
-    val roles = listOf("MEMBER", "TEAM_LEAD")
-
     val focusManager = LocalFocusManager.current
-    val (usernameFocus, emailFocus, passwordFocus) = remember { FocusRequester.createRefs() }
+    val (emailFocus, passwordFocus) = remember { FocusRequester.createRefs() }
 
     val authState by viewModel.authState.collectAsState()
+    val teams by viewModel.teams.collectAsState()
+    val teamMembers by viewModel.teamMembers.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var userRole by remember { mutableStateOf<UserRole?>(null) }
@@ -150,32 +134,25 @@ private fun LoginContent(
 
             LoginCard(
                 isLoginMode = isLoginMode,
-                username = viewModel.username,
                 email = viewModel.email,
                 password = viewModel.password,
-                selectedDomain = selectedDomain,
-                selectedRole = selectedRole,
-                expandedDomain = expandedDomain,
-                expandedRole = expandedRole,
-                domains = domains,
-                roles = roles,
-                onUsernameChange = viewModel::updateUsername,
+                teams = teams,
+                teamMembers = teamMembers,
+                selectedTeam = viewModel.selectedTeam,
+                selectedMember = viewModel.selectedMember,
                 onEmailChange = viewModel::updateEmail,
                 onPasswordChange = viewModel::updatePassword,
-                onDomainChange = { selectedDomain = it },
-                onRoleChange = { selectedRole = it },
-                onExpandedDomainChange = { expandedDomain = it },
-                onExpandedRoleChange = { expandedRole = it },
+                onTeamSelect = viewModel::selectTeam,
+                onMemberSelect = viewModel::selectMember,
                 onModeChange = { isLoginMode = it },
                 focusManager = focusManager,
-                usernameFocus = usernameFocus,
                 emailFocus = emailFocus,
                 passwordFocus = passwordFocus,
                 onSubmitButtonClick = {
                     if (isLoginMode) {
                         viewModel.login()
                     } else {
-                        viewModel.signUp(domains[selectedDomain].first, UserRole.valueOf(selectedRole))
+                        viewModel.signUp()
                     }
                 }
             )
@@ -183,31 +160,22 @@ private fun LoginContent(
     }
 }
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LoginCard(
     isLoginMode: Boolean,
-    username: String,
     email: String,
     password: String,
-    selectedDomain: Int,
-    selectedRole: String,
-    expandedDomain: Boolean,
-    expandedRole: Boolean,
-    domains: List<Pair<Int, String>>,
-    roles: List<String>,
-    onUsernameChange: (String) -> Unit,
+    teams: List<AuthRepository.Team>,
+    teamMembers: List<AuthRepository.TeamMember>,
+    selectedTeam: AuthRepository.Team?,
+    selectedMember: AuthRepository.TeamMember?,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
-    onDomainChange: (Int) -> Unit,
-    onRoleChange: (String) -> Unit,
-    onExpandedDomainChange: (Boolean) -> Unit,
-    onExpandedRoleChange: (Boolean) -> Unit,
+    onTeamSelect: (AuthRepository.Team) -> Unit,
+    onMemberSelect: (AuthRepository.TeamMember) -> Unit,
     onModeChange: (Boolean) -> Unit,
     focusManager: FocusManager,
-    usernameFocus: FocusRequester,
     emailFocus: FocusRequester,
     passwordFocus: FocusRequester,
     onSubmitButtonClick: () -> Unit
@@ -231,26 +199,20 @@ private fun LoginCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (!isLoginMode) {
-                InputField(
-                    value = username,
-                    onValueChange = onUsernameChange,
-                    label = "Username",
-                    focusRequester = usernameFocus,
-                    nextFocusRequester = emailFocus,
-                    focusManager = focusManager
-                )
+                var expandedTeam by remember { mutableStateOf(false) }
+                var expandedMember by remember { mutableStateOf(false) }
 
                 ExposedDropdownMenuBox(
-                    expanded = expandedDomain,
-                    onExpandedChange = onExpandedDomainChange,
+                    expanded = expandedTeam,
+                    onExpandedChange = { expandedTeam = it },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
-                        value = domains.find { it.first == selectedDomain }?.second ?: "Select Domain",
+                        value = selectedTeam?.name ?: "Select Team",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Domain") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDomain) },
+                        label = { Text("Team") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTeam) },
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = GFGStatusPendingText,
@@ -262,15 +224,15 @@ private fun LoginCard(
                         )
                     )
                     ExposedDropdownMenu(
-                        expanded = expandedDomain,
-                        onDismissRequest = { onExpandedDomainChange(false) }
+                        expanded = expandedTeam,
+                        onDismissRequest = { expandedTeam = false }
                     ) {
-                        domains.forEach { (id, name) ->
+                        teams.forEach { team ->
                             DropdownMenuItem(
-                                text = { Text(name) },
+                                text = { Text(team.name) },
                                 onClick = {
-                                    onDomainChange(id)
-                                    onExpandedDomainChange(false)
+                                    onTeamSelect(team)
+                                    expandedTeam = false
                                 }
                             )
                         }
@@ -278,43 +240,45 @@ private fun LoginCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
 
-                ExposedDropdownMenuBox(
-                    expanded = expandedRole,
-                    onExpandedChange = onExpandedRoleChange,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        value = selectedRole,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Role") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRole) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GFGStatusPendingText,
-                            unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
-                            focusedLabelColor = GFGStatusPendingText,
-                            unfocusedLabelColor = GFGBlack,
-                            focusedTextColor = GFGBlack,
-                            unfocusedTextColor = GFGBlack
-                        )
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandedRole,
-                        onDismissRequest = { onExpandedRoleChange(false) }
+                if (selectedTeam != null) {
+                    ExposedDropdownMenuBox(
+                        expanded = expandedMember,
+                        onExpandedChange = { expandedMember = it },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        roles.forEach { role ->
-                            DropdownMenuItem(
-                                text = { Text(role) },
-                                onClick = {
-                                    onRoleChange(role)
-                                    onExpandedRoleChange(false)
-                                }
+                        OutlinedTextField(
+                            value = selectedMember?.name ?: "Select Your Name",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Your Name") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMember) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = GFGStatusPendingText,
+                                unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
+                                focusedLabelColor = GFGStatusPendingText,
+                                unfocusedLabelColor = GFGBlack,
+                                focusedTextColor = GFGBlack,
+                                unfocusedTextColor = GFGBlack
                             )
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedMember,
+                            onDismissRequest = { expandedMember = false }
+                        ) {
+                            teamMembers.forEach { member ->
+                                DropdownMenuItem(
+                                    text = { Text("${member.name} (${member.role})") },
+                                    onClick = {
+                                        onMemberSelect(member)
+                                        expandedMember = false
+                                    }
+                                )
+                            }
                         }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
             InputField(
@@ -352,6 +316,7 @@ private fun LoginCard(
     }
 }
 
+// ... (rest of the composables remain the same)
 @Composable
 private fun Logo() {
     Image(

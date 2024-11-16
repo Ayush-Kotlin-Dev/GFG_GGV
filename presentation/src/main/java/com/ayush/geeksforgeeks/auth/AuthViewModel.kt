@@ -28,7 +28,6 @@ fun <T> SavedStateHandle.delegate(key: String, defaultValue: T): ReadWriteProper
             set(key, value)
         }
     }
-
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
@@ -44,14 +43,23 @@ class AuthViewModel @Inject constructor(
         private set
     var password by mutableStateOf(savedStateHandle.get<String>("password") ?: "")
         private set
-    var username by mutableStateOf(savedStateHandle.get<String>("username") ?: "")
+
+    private val _teams = MutableStateFlow<List<AuthRepository.Team>>(emptyList())
+    val teams = _teams.asStateFlow()
+
+    private val _teamMembers = MutableStateFlow<List<AuthRepository.TeamMember>>(emptyList())
+    val teamMembers = _teamMembers.asStateFlow()
+
+    var selectedTeam by mutableStateOf<AuthRepository.Team?>(null)
+        private set
+    var selectedMember by mutableStateOf<AuthRepository.TeamMember?>(null)
         private set
 
     init {
         viewModelScope.launch {
             savedStateHandle.setSavedStateProvider("email") { Bundle().apply { putString("email", email) } }
             savedStateHandle.setSavedStateProvider("password") { Bundle().apply { putString("password", password) } }
-            savedStateHandle.setSavedStateProvider("username") { Bundle().apply { putString("username", username) } }
+            loadTeams()
         }
     }
 
@@ -65,22 +73,47 @@ class AuthViewModel @Inject constructor(
         savedStateHandle["password"] = newPassword
     }
 
-    fun updateUsername(newUsername: String) {
-        username = newUsername
-        savedStateHandle["username"] = newUsername
+    fun selectTeam(team: AuthRepository.Team) {
+        selectedTeam = team
+        viewModelScope.launch {
+            loadTeamMembers(team.id)
+        }
     }
 
-    fun signUp(domain: Int, role: UserRole) {
+    fun selectMember(member: AuthRepository.TeamMember) {
+        selectedMember = member
+        updateEmail(member.email)
+    }
+
+    private fun loadTeams() {
+        viewModelScope.launch {
+            try {
+                _teams.value = authRepository.getTeams()
+            } catch (e: Exception) {
+                // Handle error, maybe set an error state
+            }
+        }
+    }
+
+    private fun loadTeamMembers(teamId: String) {
+        viewModelScope.launch {
+            try {
+                _teamMembers.value = authRepository.getTeamMembers(teamId)
+            } catch (e: Exception) {
+                // Handle error, maybe set an error state
+            }
+        }
+    }
+
+    fun signUp() {
         currentAuthJob?.cancel()
         currentAuthJob = viewModelScope.launch {
             _authState.value = AuthState.Loading
 
             val result = authRepository.signUp(
-                username = username,
+                teamId = selectedTeam?.id ?: "",
                 email = email,
-                password = password,
-                domain = domain,
-                role = role
+                password = password
             )
 
             _authState.value = result.fold(
@@ -105,7 +138,8 @@ class AuthViewModel @Inject constructor(
     private fun clearFormData() {
         email = ""
         password = ""
-        username = ""
+        selectedTeam = null
+        selectedMember = null
     }
 
     suspend fun getUserRoleOnLogin(): UserRole =
@@ -116,4 +150,3 @@ class AuthViewModel @Inject constructor(
         currentAuthJob?.cancel()
     }
 }
-

@@ -73,6 +73,11 @@ import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import java.util.UUID
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.unit.DpOffset
 
 class AdminScreen : Screen {
     @Composable
@@ -296,6 +301,9 @@ fun TaskManagementSection(
     }
 }
 
+
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EnhancedTaskItem(
     task: Task,
@@ -304,12 +312,23 @@ fun EnhancedTaskItem(
     onUpdateStatus: (Task, TaskStatus) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    var menuOffset by remember { mutableStateOf(DpOffset.Zero) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .animateContentSize(),
+            .animateContentSize()
+            .combinedClickable(
+                onClick = { expanded = !expanded },
+                onLongClick = {
+                    if (task.status != TaskStatus.COMPLETED) {
+                        showMenu = true
+                    }
+                },
+                onLongClickLabel = "More options"
+            ),
         colors = CardDefaults.cardColors(containerColor = GFGCardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -366,35 +385,28 @@ fun EnhancedTaskItem(
                                 Text("Assign Task")
                             }
                         }
-                        if (task.status != TaskStatus.COMPLETED) {
-                            Row {
-                                if (task.assignedTo.isNotEmpty()) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            onUpdateStatus(
-                                                task,
-                                                when (task.status) {
-                                                    TaskStatus.NEW -> TaskStatus.IN_PROGRESS
-                                                    TaskStatus.IN_PROGRESS -> TaskStatus.COMPLETED
-                                                    TaskStatus.PENDING -> TaskStatus.IN_PROGRESS
-                                                    else -> task.status
-                                                }
-                                            )
-                                        },
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = GFGPrimary)
-                                    ) {
-                                        Text(
-                                            when (task.status) {
-                                                TaskStatus.NEW -> "Start Task"
-                                                TaskStatus.IN_PROGRESS -> "Mark Complete"
-                                                else -> "Update Status"
-                                            }
-                                        )
+                        if (task.status != TaskStatus.COMPLETED && task.assignedTo.isNotEmpty()) {
+                            OutlinedButton(
+                                onClick = {
+                                    onUpdateStatus(
+                                        task,
+                                        when (task.status) {
+                                            TaskStatus.NEW -> TaskStatus.IN_PROGRESS
+                                            TaskStatus.IN_PROGRESS -> TaskStatus.COMPLETED
+                                            TaskStatus.PENDING -> TaskStatus.IN_PROGRESS
+                                            else -> task.status
+                                        }
+                                    )
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = GFGPrimary)
+                            ) {
+                                Text(
+                                    when (task.status) {
+                                        TaskStatus.NEW -> "Start Task"
+                                        TaskStatus.IN_PROGRESS -> "Mark Complete"
+                                        else -> "Update Status"
                                     }
-                                }
-                                IconButton(onClick = { onDelete(task) }) {
-                                    Icon(Icons.Default.Delete, "Delete", tint = Color.Red)
-                                }
+                                )
                             }
                         }
                     }
@@ -402,8 +414,28 @@ fun EnhancedTaskItem(
             }
         }
     }
-}
 
+    DropdownMenu(
+        expanded = showMenu,
+        onDismissRequest = { showMenu = false },
+        offset = menuOffset
+    ) {
+        DropdownMenuItem(
+            text = { Text("Edit") },
+            onClick = {
+                // TODO: Implement edit functionality
+                showMenu = false
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Delete") },
+            onClick = {
+                onDelete(task)
+                showMenu = false
+            }
+        )
+    }
+}
 @Composable
 fun TaskStatusChip(status: TaskStatus) {
     val (backgroundColor, textColor) = when (status) {

@@ -34,24 +34,22 @@ class AuthRepository @Inject constructor(
         .flowOn(ioDispatcher)
         .distinctUntilChanged()
 
-    private val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@(.+)\$".toRegex()
-
-
     suspend fun signUp(
-        username: String,
+        teamId: String,
         email: String,
-        password: String,
-        domain: Int,
-        role: UserRole
+        password: String
     ): Result<FirebaseUser> = withContext(ioDispatcher) {
         try {
-            require(email.isNotBlank() && EMAIL_REGEX.matches(email)) { "Invalid email" }
-            require(password.isNotBlank()) { "Password cannot be empty" }
-            require(username.isNotBlank()) { "Username cannot be empty" }
+            val memberDoc = firestore.collection("teams").document(teamId)
+                .collection("members").document(email).get().await()
+
+            require(memberDoc.exists()) { "Member not found in the selected team" }
 
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             result.user?.let { user ->
-                saveUserData(username, user, isNewUser = true, domain, role)
+                val name = memberDoc.getString("name") ?: "Unknown"
+                val role = UserRole.valueOf(memberDoc.getString("role") ?: UserRole.MEMBER.name)
+                saveUserData(name, user, isNewUser = true, teamId = teamId, role = role)
                 Result.success(user)
             } ?: Result.failure(IllegalStateException("User creation failed"))
         } catch (e: Exception) {
@@ -59,15 +57,8 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun login(
-        email: String,
-        password: String
-    ): Result<FirebaseUser> = withContext(ioDispatcher) {
-        
+    suspend fun login(email: String, password: String): Result<FirebaseUser> = withContext(ioDispatcher) {
         try {
-            require(email.isNotBlank()  && EMAIL_REGEX.matches(email) ) { "Invalid email" }
-            require(password.isNotBlank()) { "Password cannot be empty" }
-
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
             result.user?.let { user ->
                 saveUserData(user = user, isNewUser = false)
@@ -82,8 +73,8 @@ class AuthRepository @Inject constructor(
         username: String = "",
         user: FirebaseUser,
         isNewUser: Boolean,
-        domain: Int? = null,
-        role: UserRole = UserRole.TEAM_LEAD
+        teamId: String? = null,
+        role: UserRole = UserRole.MEMBER
     ) = withContext(ioDispatcher) {
         val userSettings = UserSettings(
             name = username.takeIf { it.isNotBlank() } ?: user.displayName ?: "GFG User",
@@ -91,7 +82,7 @@ class AuthRepository @Inject constructor(
             email = user.email.orEmpty(),
             profilePicUrl = user.photoUrl?.toString(),
             isLoggedIn = true,
-            domainId = domain ?: 0,
+            domainId = teamId?.toIntOrNull() ?: 0,
             role = role
         )
 
@@ -115,15 +106,32 @@ class AuthRepository @Inject constructor(
                 .await()
 
             querySnapshot.documents.firstOrNull()?.let { doc ->
-                when (doc.getString("role")) {
-                    "TEAM_LEAD" -> UserRole.TEAM_LEAD
-                    "TEAM_MEMBER" -> UserRole.MEMBER
-                    else -> UserRole.TEAM_LEAD
-                }
-            } ?: UserRole.TEAM_LEAD
+                UserRole.valueOf(doc.getString("role") ?: UserRole.MEMBER.name)
+            } ?: UserRole.MEMBER
         } catch (e: Exception) {
-            UserRole.TEAM_LEAD
+            UserRole.MEMBER
         }
     }
 
+    suspend fun getTeams(): List<Team> = withContext(ioDispatcher) {
+        val snapshot = firestore.collection("teams").get().await()
+        snapshot.documents.map { doc ->
+            Team(doc.id, doc.getString("name") ?: "")
+        }
+    }
+
+    suspend fun getTeamMembers(teamId: String): List<TeamMember> = withContext(ioDispatcher) {
+        val snapshot = firestore.collection("teams").document(teamId)
+            .collection("members").get().await()
+        snapshot.documents.map { doc ->
+            TeamMember(
+                name = doc.getString("name") ?: "",
+                email = doc.id,
+                role = UserRole.valueOf(doc.getString("role") ?: UserRole.MEMBER.name)
+            )
+        }
+    }
+
+    data class Team(val id: String, val name: String)
+    data class TeamMember(val name: String, val email: String, val role: UserRole)
 }
