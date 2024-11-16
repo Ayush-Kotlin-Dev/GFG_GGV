@@ -6,6 +6,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -73,7 +74,6 @@ import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import java.util.UUID
 
-
 class AdminScreen : Screen {
     @Composable
     override fun Content() {
@@ -89,40 +89,45 @@ class AdminScreen : Screen {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    GFGBackground
-                )
+                .background(GFGBackground)
                 .padding(16.dp)
         ) {
-            // Header Section
-            AdminHeader(
-                onAddTask = { showAddTaskDialog = true },
-                onShowStats = { showStatsDialog = true },
-                onGenerateReport = { viewModel.generateWeeklyReport() }
-            )
+            LazyColumn {
+                item {
+                    AdminHeader(
+                        onAddTask = { showAddTaskDialog = true },
+                        onShowStats = { showStatsDialog = true },
+                        onGenerateReport = { viewModel.generateWeeklyReport() }
+                    )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-            // Task Management Section
-            TaskManagementSection(
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
-                tasks = when (selectedTab) {
-                    0 -> tasks
-                    1 -> tasks.filter { it.assignedTo.isEmpty() }
-                    2 -> tasks.filter { it.status == TaskStatus.IN_PROGRESS }
-                    3 -> tasks.filter { it.status == TaskStatus.COMPLETED }
-                    else -> emptyList()
-                },
-                onAssign = { viewModel.showAssignTaskDialog(it) },
-                onDelete = { viewModel.deleteTask(it) },
-                onUpdateStatus = { task, status -> viewModel.updateTaskStatus(task.id, status) }
-            )
+                item {
+                    TaskManagementSection(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it },
+                        tasks = when (selectedTab) {
+                            0 -> tasks
+                            1 -> tasks.filter { it.assignedTo.isEmpty() }
+                            2 -> tasks.filter { it.status == TaskStatus.IN_PROGRESS }
+                            3 -> tasks.filter { it.status == TaskStatus.COMPLETED }
+                            else -> emptyList()
+                        },
+                        onAssign = { viewModel.showAssignTaskDialog(it) },
+                        onDelete = { viewModel.deleteTask(it) },
+                        onUpdateStatus = { task, status -> viewModel.updateTaskStatus(task.id, status) }
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
 
-            // Team Section
-            TeamSection(teamMembers, stats)
+                item {
+                    TeamSection(teamMembers, stats)
+                }
+            }
         }
 
         // Dialogs
@@ -178,9 +183,13 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Button(
+            OutlinedButton(
                 onClick = onShowStats,
-                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = GFGPrimary,
+                    containerColor = Color.Transparent
+                ),
+                border = BorderStroke(1.dp, GFGPrimary),
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(vertical = 12.dp)
             ) {
@@ -188,9 +197,13 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport
                 Spacer(Modifier.width(4.dp))
                 Text("Stats", maxLines = 1)
             }
-            Button(
+            OutlinedButton(
                 onClick = onAddTask,
-                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = GFGPrimary,
+                    containerColor = Color.Transparent
+                ),
+                border = BorderStroke(1.dp, GFGPrimary),
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(vertical = 12.dp)
             ) {
@@ -202,9 +215,13 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
+        OutlinedButton(
             onClick = onGenerateReport,
-            colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = GFGPrimary,
+                containerColor = Color.Transparent
+            ),
+            border = BorderStroke(1.dp, GFGPrimary),
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
@@ -217,7 +234,6 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport
         }
     }
 }
-
 
 @Composable
 fun TaskManagementSection(
@@ -267,8 +283,8 @@ fun TaskManagementSection(
             }
         }
 
-        LazyColumn {
-            items(tasks) { task ->
+        Column {
+            tasks.forEach { task ->
                 EnhancedTaskItem(
                     task = task,
                     onAssign = onAssign,
@@ -294,7 +310,8 @@ fun EnhancedTaskItem(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .animateContentSize(),
-        colors = CardDefaults.cardColors(containerColor = GFGCardBackground)
+        colors = CardDefaults.cardColors(containerColor = GFGCardBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -302,81 +319,83 @@ fun EnhancedTaskItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = task.title,
                         style = MaterialTheme.typography.titleMedium,
                         color = GFGTextPrimary
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TaskStatusChip(task.status)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("${task.credits} Credits", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(onClick = { expanded = !expanded }) {
-                        Icon(
-                            if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Expand"
-                        )
-                    }
-                    if (task.status != TaskStatus.COMPLETED) {
-                        IconButton(onClick = { onDelete(task) }) {
-                            Icon(Icons.Default.Delete, "Delete", tint = Color.Red)
-                        }
-                    }
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Expand"
+                    )
                 }
             }
 
-            if (expanded) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(task.description)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TaskStatusChip(task.status)
-                    Text("Credits: ${task.credits}", style = MaterialTheme.typography.bodyMedium)
-                }
-
-                if (task.assignedTo.isNotEmpty()) {
+            AnimatedVisibility(visible = expanded) {
+                Column(modifier = Modifier.padding(top = 8.dp)) {
                     Text(
-                        "Assigned to: ${task.assignedTo}",
-                        style = MaterialTheme.typography.bodyMedium
+                        task.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GFGTextPrimary.copy(alpha = 0.7f)
                     )
-                } else {
-                    Button(
-                        onClick = { onAssign(task) },
-                        colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
-                    ) {
-                        Text("Assign Task")
-                    }
-                }
-
-                // Status Update Buttons
-                if (task.assignedTo.isNotEmpty() && task.status != TaskStatus.COMPLETED) {
+                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        OutlinedButton(
-                            onClick = {
-                                onUpdateStatus(
-                                    task,
-                                    when (task.status) {
-                                        TaskStatus.NEW -> TaskStatus.IN_PROGRESS
-                                        TaskStatus.IN_PROGRESS -> TaskStatus.COMPLETED
-                                        TaskStatus.PENDING -> TaskStatus.IN_PROGRESS
-                                        else -> task.status
-                                    }
-                                )
-                            }
-                        ) {
+                        if (task.assignedTo.isNotEmpty()) {
                             Text(
-                                when (task.status) {
-                                    TaskStatus.NEW -> "Start Task"
-                                    TaskStatus.IN_PROGRESS -> "Mark Complete"
-                                    else -> "Update Status"
-                                }
+                                "Assigned to: ${task.assignedTo}",
+                                style = MaterialTheme.typography.bodyMedium
                             )
+                        } else {
+                            OutlinedButton(
+                                onClick = { onAssign(task) },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = GFGPrimary)
+                            ) {
+                                Text("Assign Task")
+                            }
+                        }
+                        if (task.status != TaskStatus.COMPLETED) {
+                            Row {
+                                if (task.assignedTo.isNotEmpty()) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            onUpdateStatus(
+                                                task,
+                                                when (task.status) {
+                                                    TaskStatus.NEW -> TaskStatus.IN_PROGRESS
+                                                    TaskStatus.IN_PROGRESS -> TaskStatus.COMPLETED
+                                                    TaskStatus.PENDING -> TaskStatus.IN_PROGRESS
+                                                    else -> task.status
+                                                }
+                                            )
+                                        },
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = GFGPrimary)
+                                    ) {
+                                        Text(
+                                            when (task.status) {
+                                                TaskStatus.NEW -> "Start Task"
+                                                TaskStatus.IN_PROGRESS -> "Mark Complete"
+                                                else -> "Update Status"
+                                            }
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = { onDelete(task) }) {
+                                    Icon(Icons.Default.Delete, "Delete", tint = Color.Red)
+                                }
+                            }
                         }
                     }
                 }
@@ -397,12 +416,12 @@ fun TaskStatusChip(status: TaskStatus) {
     Surface(
         color = backgroundColor,
         shape = MaterialTheme.shapes.small,
-        modifier = Modifier.padding(4.dp)
+        modifier = Modifier.padding(vertical = 4.dp)
     ) {
         Text(
             text = status.toString(),
             color = textColor,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }
@@ -421,12 +440,13 @@ fun TeamSection(teamMembers: List<User>, stats: Map<String, Int>) {
                 color = GFGPrimary
             )
             Spacer(modifier = Modifier.height(16.dp))
-            LazyColumn {
-                items(teamMembers) { member ->
+            Column {
+                teamMembers.forEach { member ->
                     EnhancedTeamMemberItem(
                         member = member,
                         completedTasks = stats[member.userId] ?: 0
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
