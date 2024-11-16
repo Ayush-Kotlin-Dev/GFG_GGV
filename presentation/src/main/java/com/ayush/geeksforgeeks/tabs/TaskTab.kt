@@ -15,10 +15,10 @@ import com.ayush.geeksforgeeks.admin.AdminScreen
 import com.ayush.geeksforgeeks.task.TasksScreen
 
 
-data class TaskTab(
-    val onNavigator: (Boolean) -> Unit,
-    private val userRole: UserRole
-
+class TaskTab(
+    @Transient
+    public val onNavigator: (Boolean) -> Unit,
+    val userRole: UserRole
 ) : Tab {
     override val options: TabOptions
         @Composable
@@ -29,7 +29,7 @@ data class TaskTab(
                 else -> "My Tasks"
             }
 
-            val icon = rememberVectorPainter(Icons.Default.MailOutline )
+            val icon = rememberVectorPainter(Icons.Default.MailOutline)
 
             return remember {
                 TabOptions(
@@ -46,8 +46,8 @@ data class TaskTab(
             UserRole.TEAM_LEAD -> AdminScreen()
             else -> TasksScreen()
         }
-        Navigator(initialScreen){ navigator ->
-            LaunchedEffect(navigator.lastItem){
+        Navigator(initialScreen) { navigator ->
+            LaunchedEffect(navigator.lastItem) {
                 onNavigator(navigator.lastItem == initialScreen)
             }
             SlideTransition(navigator)

@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Email
@@ -25,11 +29,15 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -107,26 +115,39 @@ fun ProfileContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(GFGBackground)
+            .verticalScroll(rememberScrollState())
+            .background(Color(0xFFF5F5F5))
     ) {
         ProfileHeader(user)
 
-        ProfileMenuItem(Icons.Default.Person, "Profile")
-        ProfileMenuItem(Icons.Default.Settings, "Setting")
-        ProfileMenuItem(Icons.Default.Email, "Contact") {
-            showContactDialog = true
-        }
-        ProfileMenuItem(Icons.Default.Share, "Share App") {
-            val sendIntent: Intent = Intent().apply {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, "Check out this app of our coding club : $appLink")
-                type = "text/plain"
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column {
+                ProfileMenuItem(Icons.Default.Person, "Profile")
+                ProfileMenuItem(Icons.Default.Settings, "Setting")
+                ProfileMenuItem(Icons.Default.Email, "Contact") {
+                    showContactDialog = true
+                }
+                ProfileMenuItem(Icons.Default.Share, "Share App") {
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, "Check out this app of our coding club : $appLink")
+                        type = "text/plain"
+                    }
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
+                }
+                ProfileMenuItem(Icons.Default.Info, "Help") { showHelpDialog = true }
+                ProfileMenuItem(Icons.Rounded.FavoriteBorder, "About Us") { showAboutUsBottomSheet = true }
             }
-            val shareIntent = Intent.createChooser(sendIntent, null)
-            context.startActivity(shareIntent)
         }
-        ProfileMenuItem(Icons.Default.Info, "Help") { showHelpDialog = true }
-        ProfileMenuItem(Icons.Rounded.FavoriteBorder, "About Us") { showAboutUsBottomSheet = true }
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -138,11 +159,12 @@ fun ProfileContent(
         ) {
             Text(
                 "Sign Out",
-                color = GFGPrimary,
+                color = Color.Red,
                 style = MaterialTheme.typography.bodyLarge
             )
         }
     }
+
 
     if (showLogoutDialog) {
         AlertDialog(
@@ -264,35 +286,48 @@ fun ProfileHeader(user: UserSettings) {
 fun ProfileMenuItem(
     icon: ImageVector,
     title: String,
-    onClick: () -> Unit  = { }
+    onClick: () -> Unit = { }
 ) {
-    Row(
+    Surface(
         modifier = Modifier
-            .clickable { onClick() }
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clickable(onClick = onClick),
+        color = Color.White
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = GFGPrimary,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            color = GFGTextPrimary
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
-            tint = GFGTextPrimary.copy(alpha = 0.5f),
-            modifier = Modifier.size(20.dp)
-        )
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFFF0F0F0), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color(0xFF4CAF50),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Black,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = Color.Gray,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
+    Divider(color = Color.LightGray, thickness = 0.5.dp)
 }
 
 @Composable

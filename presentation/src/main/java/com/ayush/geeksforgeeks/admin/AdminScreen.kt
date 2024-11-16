@@ -12,12 +12,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,7 +31,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -56,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -64,10 +66,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import com.ayush.data.datastore.User
 import com.ayush.data.model.Task
 import com.ayush.data.model.TaskStatus
+import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
-import com.ayush.geeksforgeeks.ui.theme.GFGSecondary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import java.util.UUID
 
@@ -159,48 +161,62 @@ class AdminScreen : Screen {
 
 @Composable
 fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport: () -> Unit) {
-    Column {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp)
+    ) {
+        Text(
+            "Team Lead Panel",
+            style = MaterialTheme.typography.headlineMedium,
+            color = GFGPrimary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                "Team Lead Panel",
-                style = MaterialTheme.typography.headlineMedium,
-                color = GFGPrimary,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = onShowStats,
-                colors = ButtonDefaults.buttonColors(containerColor = GFGSecondary)
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary),
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 12.dp)
             ) {
-                Icon(Icons.Default.Person, "Stats")
+                Icon(Icons.Default.Person, "Stats", modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Stats")
+                Text("Stats", maxLines = 1)
             }
             Button(
                 onClick = onAddTask,
-                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary),
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 12.dp)
             ) {
-                Icon(Icons.Default.Add, "Add Task")
+                Icon(Icons.Default.Add, "Add Task", modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("New Task")
+                Text("New Task", maxLines = 1)
             }
-            Button(
-                onClick = onGenerateReport,
-                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
-            ) {
-                Icon(Icons.Default.PlayArrow, "Generate Report")
-                Spacer(Modifier.width(4.dp))
-                Text("Generate Report")
-            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = onGenerateReport,
+            colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary),
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 12.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.word_image),
+                contentDescription = "Generate Report"
+            )
+            Spacer(Modifier.width(4.dp))
+            Text("Generate Report")
         }
     }
 }
-
 
 
 @Composable
@@ -329,7 +345,7 @@ fun EnhancedTaskItem(
                 } else {
                     Button(
                         onClick = { onAssign(task) },
-                        colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary )
+                        colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
                     ) {
                         Text("Assign Task")
                     }
@@ -402,7 +418,7 @@ fun TeamSection(teamMembers: List<User>, stats: Map<String, Int>) {
             Text(
                 "Team Performance",
                 style = MaterialTheme.typography.titleLarge,
-                color = GFGPrimary 
+                color = GFGPrimary
             )
             Spacer(modifier = Modifier.height(16.dp))
             LazyColumn {
@@ -446,7 +462,7 @@ fun EnhancedTeamMemberItem(member: User, completedTasks: Int) {
                 Text(
                     text = "$completedTasks tasks",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = GFGPrimary 
+                    color = GFGPrimary
                 )
             }
         }
@@ -490,7 +506,7 @@ fun AddTaskDialog(
             Text(
                 "Add New Task",
                 style = MaterialTheme.typography.headlineSmall,
-                color = GFGPrimary 
+                color = GFGPrimary
             )
         },
         text = {
@@ -561,7 +577,7 @@ fun AddTaskDialog(
                         )
                     )
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary )
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
             ) {
                 Text("Add Task")
             }
@@ -591,7 +607,7 @@ fun AssignTaskDialog(
                 Text(
                     "Assign Task",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = GFGPrimary 
+                    color = GFGPrimary
                 )
                 Text(
                     task.title,
@@ -651,7 +667,7 @@ fun AssignTaskDialog(
                                 Icon(
                                     Icons.Default.Check,
                                     contentDescription = "Selected",
-                                    tint = GFGPrimary 
+                                    tint = GFGPrimary
                                 )
                             }
                         }
@@ -678,7 +694,7 @@ fun AssignTaskDialog(
                     }
                     selectedMember?.let { onAssign(it) }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary )
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
             ) {
                 Text("Assign")
             }

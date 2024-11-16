@@ -70,6 +70,8 @@ dependencies {
     implementation("com.patrykandpatrick.vico:compose:1.6.5")
     implementation ("org.apache.poi:poi-ooxml:5.2.4")
     implementation ("org.apache.poi:poi:5.2.4")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
 }
 
 tasks.register("copyProguardRules", Copy::class) {

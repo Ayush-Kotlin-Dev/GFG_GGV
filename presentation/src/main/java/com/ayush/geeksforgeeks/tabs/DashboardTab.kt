@@ -11,7 +11,9 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.ayush.geeksforgeeks.dashboard.DashboardScreen
 
-class DashboardTab(private val onNavigator: (Boolean) -> Unit) : Tab {
+class DashboardTab(
+     onNavigator: (Boolean) -> Unit
+) : Tab {
 
     override val options: TabOptions
         @Composable
@@ -33,6 +35,7 @@ class DashboardTab(private val onNavigator: (Boolean) -> Unit) : Tab {
     override fun Content() {
         Navigator(screen = DashboardScreen()){ Navigator ->
             SlideTransition(navigator = Navigator)
+
 
         }
     }
