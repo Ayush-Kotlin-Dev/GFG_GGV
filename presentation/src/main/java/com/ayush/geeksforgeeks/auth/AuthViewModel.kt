@@ -13,6 +13,7 @@ import com.ayush.data.repository.AuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -85,6 +86,21 @@ class AuthViewModel @Inject constructor(
         updateEmail(member.email)
     }
 
+    private val _resetPasswordState = MutableStateFlow<ResetPasswordState>(ResetPasswordState.Idle)
+    val resetPasswordState: StateFlow<ResetPasswordState> = _resetPasswordState
+
+    fun sendPasswordResetEmail(email: String) {
+        viewModelScope.launch {
+            _resetPasswordState.value = ResetPasswordState.Loading
+            try {
+                authRepository.sendPasswordResetEmail(email)
+                _resetPasswordState.value = ResetPasswordState.Success
+            } catch (e: Exception) {
+                _resetPasswordState.value = ResetPasswordState.Error(e.message ?: "Unknown error occurred")
+            }
+        }
+    }
+
     private fun loadTeams() {
         viewModelScope.launch {
             try {
@@ -149,4 +165,11 @@ class AuthViewModel @Inject constructor(
         super.onCleared()
         currentAuthJob?.cancel()
     }
+}
+
+sealed class ResetPasswordState {
+    object Idle : ResetPasswordState()
+    object Loading : ResetPasswordState()
+    object Success : ResetPasswordState()
+    data class Error(val message: String) : ResetPasswordState()
 }

@@ -188,7 +188,7 @@ fun ProfileContent(
             onDismiss = { showContactDialog = false },
             onCall = {
                 val intent = Intent(Intent.ACTION_DIAL).apply {
-                    data = Uri.parse("tel:+916264450423")
+                    data = Uri.parse("tel:+917408047420")
                 }
                 context.startActivity(intent)
                 showContactDialog = false

@@ -3,9 +3,17 @@ package com.ayush.geeksforgeeks.task
 
 import TaskDetailScreen
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,29 +25,38 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,6 +72,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.model.Task
 import com.ayush.data.model.TaskStatus
+import com.ayush.geeksforgeeks.admin.TaskStatusChip
 import com.ayush.geeksforgeeks.common.formatDate
 import com.ayush.geeksforgeeks.dashboard.ErrorMessage
 import com.ayush.geeksforgeeks.dashboard.LoadingIndicator
@@ -76,299 +94,197 @@ class TasksScreen : Screen {
         val uiState by viewModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
 
-        Scaffold(
-            topBar = { TaskScreenTopBar() }
-        ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(GFGBackground)
+                .padding(16.dp)
+        ) {
+            TaskScreenHeader()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             when (val state = uiState) {
                 is TasksViewModel.TasksUiState.Loading -> LoadingIndicator()
                 is TasksViewModel.TasksUiState.Success -> {
                     TaskScreenContent(
-                        modifier = Modifier.padding(paddingValues),
                         tasks = state.tasks,
-                        onTaskClick = { navigator.push(TaskDetailScreen(it.id , navigator::pop)) }
+                        onTaskClick = { navigator.push(TaskDetailScreen(it.id, navigator::pop)) }
                     )
                 }
-
                 is TasksViewModel.TasksUiState.Error -> ErrorMessage(state.message)
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskScreenTopBar() {
-    TopAppBar(
-        title = {
-            Text(
-                text = "Task Board",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    color = GFGTextPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = GFGCardBackground
-        )
+fun TaskScreenHeader() {
+    Text(
+        "Task Board",
+        style = MaterialTheme.typography.headlineMedium,
+        color = GFGPrimary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(bottom = 16.dp)
     )
 }
 
 @Composable
 fun TaskScreenContent(
-    modifier: Modifier = Modifier,
     tasks: List<Task>,
     onTaskClick: (Task) -> Unit
 ) {
-    val (recentTasks, otherTasks) = tasks.partition {
-        it.status == TaskStatus.PENDING || it.status == TaskStatus.IN_PROGRESS
-    }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
-    val pendingTasks = recentTasks.filter { it.status == TaskStatus.PENDING }
-    val inProgressTasks = recentTasks.filter { it.status == TaskStatus.IN_PROGRESS }
-    val completedTasks = otherTasks.filter { it.status == TaskStatus.COMPLETED }
-
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(GFGBackground),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            TaskStatusOverview(tasks)
-        }
-
-        if (pendingTasks.isNotEmpty()) {
-            item {
-                TaskSection(
-                    title = "Pending Tasks",
-                    icon = Icons.Default.Settings,
-                    tasks = pendingTasks,
-                    onTaskClick = onTaskClick
-                )
-            }
-        }
-
-        if (inProgressTasks.isNotEmpty()) {
-            item {
-                TaskSection(
-                    title = "In Progress",
-                    icon = Icons.Default.Refresh,
-                    tasks = inProgressTasks,
-                    onTaskClick = onTaskClick
-                )
-            }
-        }
-
-        if (completedTasks.isNotEmpty()) {
-            item {
-                TaskSection(
-                    title = "Completed",
-                    icon = Icons.Default.CheckCircle,
-                    tasks = completedTasks,
-                    onTaskClick = onTaskClick
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun TaskStatusOverview(tasks: List<Task>) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = GFGCardBackground)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Overview",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = GFGTextPrimary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatusCount(
-                    "Pending",
-                    tasks.count { it.status == TaskStatus.PENDING },
-                    GFGStatusPending
-                )
-                StatusCount(
-                    "In Progress",
-                    tasks.count { it.status == TaskStatus.IN_PROGRESS },
-                    GFGStatusInProgress
-                )
-                StatusCount(
-                    "Completed",
-                    tasks.count { it.status == TaskStatus.COMPLETED },
-                    GFGStatusCompleted
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun StatusCount(label: String, count: Int, backgroundColor: Color) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .background(backgroundColor, RoundedCornerShape(8.dp))
-            .padding(8.dp)
-    ) {
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = GFGTextPrimary
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = GFGTextPrimary
+    Column {
+        TaskManagementSection(
+            selectedTab = selectedTab,
+            onTabSelected = { selectedTab = it },
+            tasks = when (selectedTab) {
+                0 -> tasks
+                1 -> tasks.filter { it.status == TaskStatus.PENDING }
+                2 -> tasks.filter { it.status == TaskStatus.IN_PROGRESS }
+                3 -> tasks.filter { it.status == TaskStatus.COMPLETED }
+                else -> emptyList()
+            },
+            onTaskClick = onTaskClick
         )
     }
 }
 
 @Composable
-fun TaskSection(
-    title: String,
-    icon: ImageVector,
+fun TaskManagementSection(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     tasks: List<Task>,
     onTaskClick: (Task) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(true) }
+    Column {
+        ScrollableTabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = GFGPrimary,
+            edgePadding = 0.dp
+        ) {
+            listOf("All", "Pending", "In Progress", "Completed").forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { onTabSelected(index) },
+                    text = {
+                        Text(
+                            text = title,
+                            maxLines = 1,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    selectedContentColor = Color.White,
+                    unselectedContentColor = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 12.dp)
+                )
+            }
+        }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = GFGCardBackground)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
+        AnimatedVisibility(
+            visible = tasks.isEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = GFGPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = GFGTextPrimary
-                    )
-                }
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.ArrowDropDown,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
-                    tint = GFGPrimary
-                )
+                Text("No tasks found", style = MaterialTheme.typography.bodyLarge)
             }
+        }
 
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = 8.dp)) {
-                    tasks.forEach { task ->
-                        TaskCard(
-                            task = task,
-                            onTaskClick = onTaskClick
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(tasks) { task ->
+                EnhancedTaskItem(
+                    task = task,
+                    onTaskClick = onTaskClick
+                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TaskCard(
+fun EnhancedTaskItem(
     task: Task,
     onTaskClick: (Task) -> Unit
 ) {
-    val statusColor = when (task.status) {
-        TaskStatus.PENDING -> GFGStatusPending to GFGStatusPendingText
-        TaskStatus.IN_PROGRESS -> GFGStatusInProgress to GFGStatusInProgressText
-        TaskStatus.COMPLETED -> GFGStatusCompleted to GFGStatusCompletedText
-        TaskStatus.NEW -> TODO()
-    }
+    var expanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onTaskClick(task) },
-        colors = CardDefaults.cardColors(containerColor = statusColor.first.copy(alpha = 0.1f))
+            .padding(vertical = 4.dp)
+            .animateContentSize()
+            .combinedClickable(
+                onClick = { expanded = !expanded },
+                onLongClick = { onTaskClick(task) },
+                onLongClickLabel = "View task details"
+            ),
+        colors = CardDefaults.cardColors(containerColor = GFGCardBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = GFGTextPrimary
-                )
-                FilterChip(
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = statusColor.first,
-                        labelColor = statusColor.second
-                    ),
-                    label = {
-                        Text(
-                            text = task.status.name,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    },
-                    onClick = {  },
-                    selected = task.status != TaskStatus.COMPLETED
-                )
-
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Credits",
-                        tint = GFGPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "${task.credits} credits",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = task.title,
+                        style = MaterialTheme.typography.titleMedium,
                         color = GFGTextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TaskStatusChip(task.status)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("${task.credits} Credits", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Expand"
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.DateRange,
-                        contentDescription = "Due date",
-                        tint = GFGPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = formatDate(task.dueDate),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GFGTextPrimary
-                    )
+            }
 
+            AnimatedVisibility(visible = expanded) {
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    Text(
+                        task.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GFGTextPrimary.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Due: ${formatDate(task.dueDate)}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        OutlinedButton(
+                            onClick = { onTaskClick(task) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = GFGPrimary)
+                        ) {
+                            Text("View Details")
+                        }
+                    }
                 }
             }
         }

@@ -417,8 +417,9 @@ fun EnhancedTaskItem(
     DropdownMenu(
         expanded = showMenu,
         onDismissRequest = { showMenu = false },
-        offset = menuOffset
-    ) {
+        offset = menuOffset,
+        containerColor = GFGBackground,
+        ) {
         DropdownMenuItem(
             text = { Text("Edit") },
             onClick = {

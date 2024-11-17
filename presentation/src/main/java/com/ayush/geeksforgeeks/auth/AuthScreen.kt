@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -31,6 +32,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -99,6 +101,10 @@ private fun LoginContent(
     val coroutineScope = rememberCoroutineScope()
     var userRole by remember { mutableStateOf<UserRole?>(null) }
 
+
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    val resetPasswordState by viewModel.resetPasswordState.collectAsState()
+
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Success -> {
@@ -154,7 +160,18 @@ private fun LoginContent(
                     } else {
                         viewModel.signUp()
                     }
-                }
+                },
+                onForgotPasswordClick = { showForgotPasswordDialog = true }
+            )
+        }
+
+        if (showForgotPasswordDialog) {
+            ForgotPasswordDialog(
+                onDismiss = { showForgotPasswordDialog = false },
+                onSubmit = { email ->
+                    viewModel.sendPasswordResetEmail(email)
+                },
+                resetPasswordState = resetPasswordState
             )
         }
     }
@@ -178,7 +195,8 @@ private fun LoginCard(
     focusManager: FocusManager,
     emailFocus: FocusRequester,
     passwordFocus: FocusRequester,
-    onSubmitButtonClick: () -> Unit
+    onSubmitButtonClick: () -> Unit,
+    onForgotPasswordClick: () -> Unit = { }
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -302,7 +320,7 @@ private fun LoginCard(
             )
 
             if (isLoginMode) {
-                ForgotPasswordText()
+                ForgotPasswordText(onClick = onForgotPasswordClick)
             }
 
             LoginButton(
@@ -316,7 +334,6 @@ private fun LoginCard(
     }
 }
 
-// ... (rest of the composables remain the same)
 @Composable
 private fun Logo() {
     Image(
@@ -387,7 +404,7 @@ private fun InputField(
 }
 
 @Composable
-private fun ForgotPasswordText() {
+private fun ForgotPasswordText(onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End
@@ -397,12 +414,11 @@ private fun ForgotPasswordText() {
             color = GFGStatusPendingText,
             modifier = Modifier
                 .padding(end = 8.dp)
-                .clickable { /* Add forgot password action here */ }
+                .clickable(onClick = onClick)
         )
     }
     Spacer(modifier = Modifier.height(8.dp))
 }
-
 @Composable
 private fun LoginButton(
     isLoginMode: Boolean,
@@ -444,3 +460,53 @@ private fun ToggleModeText(isLoginMode: Boolean, onModeChange: (Boolean) -> Unit
     }
 }
 
+@Composable
+private fun ForgotPasswordDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit,
+    resetPasswordState: ResetPasswordState
+) {
+    var email by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reset Password") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                when (resetPasswordState) {
+                    is ResetPasswordState.Error -> Text(
+                        resetPasswordState.message,
+                        color = Color.Red
+                    )
+                    is ResetPasswordState.Success -> Text(
+                        "Password reset email sent successfully",
+                        color = GFGStatusPendingText
+                    )
+                    else -> {}
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSubmit(email) },
+                enabled = email.isNotBlank() && resetPasswordState !is ResetPasswordState.Loading
+            ) {
+                Text("Send Reset Email")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        containerColor = GFGStatusPending,
+
+        )
+}
