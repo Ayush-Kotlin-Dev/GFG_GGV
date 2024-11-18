@@ -29,6 +29,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -44,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -245,15 +247,24 @@ private fun LoginCard(
                     )
                     ExposedDropdownMenu(
                         expanded = expandedTeam,
-                        onDismissRequest = { expandedTeam = false }
+                        onDismissRequest = { expandedTeam = false },
+                        modifier = Modifier.exposedDropdownSize().background(GFGStatusPending).alpha(0.8f)
                     ) {
                         teams.forEach { team ->
                             DropdownMenuItem(
-                                text = { Text(team.name) },
+                                text = { Text(team.name, color = GFGBlack) },
                                 onClick = {
                                     onTeamSelect(team)
                                     expandedTeam = false
-                                }
+                                },
+                                colors = MenuDefaults.itemColors(
+                                    textColor = GFGBlack,
+                                    leadingIconColor = GFGBlack,
+                                    trailingIconColor = GFGBlack,
+                                    disabledTextColor = GFGBlack.copy(alpha = 0.5f),
+                                    disabledLeadingIconColor = GFGBlack.copy(alpha = 0.5f),
+                                    disabledTrailingIconColor = GFGBlack.copy(alpha = 0.5f)
+                                )
                             )
                         }
                     }
@@ -284,15 +295,24 @@ private fun LoginCard(
                         )
                         ExposedDropdownMenu(
                             expanded = expandedMember,
-                            onDismissRequest = { expandedMember = false }
+                            onDismissRequest = { expandedMember = false },
+                            modifier = Modifier.exposedDropdownSize().background(GFGStatusPending).alpha(0.8f)
                         ) {
                             teamMembers.forEach { member ->
                                 DropdownMenuItem(
-                                    text = { Text("${member.name} (${member.role})") },
+                                    text = { Text("${member.name} (${member.role})", color = GFGBlack) },
                                     onClick = {
                                         onMemberSelect(member)
                                         expandedMember = false
-                                    }
+                                    },
+                                    colors = MenuDefaults.itemColors(
+                                        textColor = GFGBlack,
+                                        leadingIconColor = GFGBlack,
+                                        trailingIconColor = GFGBlack,
+                                        disabledTextColor = GFGBlack.copy(alpha = 0.5f),
+                                        disabledLeadingIconColor = GFGBlack.copy(alpha = 0.5f),
+                                        disabledTrailingIconColor = GFGBlack.copy(alpha = 0.5f)
+                                    )
                                 )
                             }
                         }

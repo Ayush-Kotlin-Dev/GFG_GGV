@@ -10,12 +10,16 @@ import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -76,6 +80,8 @@ class AuthViewModel @Inject constructor(
 
     fun selectTeam(team: AuthRepository.Team) {
         selectedTeam = team
+        selectedMember = null
+        updateEmail("")
         viewModelScope.launch {
             loadTeamMembers(team.id)
         }
@@ -114,7 +120,8 @@ class AuthViewModel @Inject constructor(
     private fun loadTeamMembers(teamId: String) {
         viewModelScope.launch {
             try {
-                _teamMembers.value = authRepository.getTeamMembers(teamId)
+                val members = authRepository.getTeamMembers(teamId)
+                _teamMembers.value = members.sortedBy { it.role != UserRole.TEAM_LEAD }
             } catch (e: Exception) {
                 // Handle error, maybe set an error state
             }

@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,16 +13,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.navigator.Navigator
 import com.ayush.data.datastore.UserRole
 import com.ayush.geeksforgeeks.auth.AuthScreen
+import com.ayush.geeksforgeeks.auth.FirebaseDataPopulator
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var firebaseDataPopulator: FirebaseDataPopulator
+
+    @SuppressLint("CoroutineCreationDuringComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -34,7 +40,9 @@ class MainActivity : ComponentActivity() {
             GFGGGVTheme {
                 val viewModel: MainActivityViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
-
+//                lifecycleScope.launch {
+//                    firebaseDataPopulator.populateTeamsAndMembers()
+//                }
                 // This will be called when the content is ready
                 LaunchedEffect(Unit) {
                     splashScreen.setKeepOnScreenCondition { false }
