@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserSettings
+import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
@@ -72,12 +74,7 @@ class ProfileViewModel @Inject constructor(
 
     fun logOut() {
         viewModelScope.launch {
-            try {
-                userRepository.logout()
-                _uiState.value = ProfileUiState.Error("User logged out")
-            } catch (e: Exception) {
-                _uiState.value = ProfileUiState.Error(e.message ?: "Failed to log out")
-            }
+            authRepository.logout()
         }
     }
 

@@ -137,6 +137,13 @@ class AuthRepository @Inject constructor(
         firebaseAuth.sendPasswordResetEmail(email).await()
     }
 
+    suspend fun logout() {
+        withContext(ioDispatcher) {
+            firebaseAuth.signOut()
+            userPreferences.clearUserData()
+        }
+    }
+
     data class Team(val id: String, val name: String)
     data class TeamMember(val name: String, val email: String, val role: UserRole)
 }

@@ -79,7 +79,9 @@ class AuthScreen : Screen {
     override fun Content() {
         val viewModel: AuthViewModel = hiltViewModel()
         val navigator = LocalNavigator.currentOrThrow
-
+        LaunchedEffect(Unit) {
+            viewModel.resetState()
+        }
         LoginContent(viewModel, navigator)
     }
 }

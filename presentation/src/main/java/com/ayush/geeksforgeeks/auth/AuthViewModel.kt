@@ -158,6 +158,10 @@ class AuthViewModel @Inject constructor(
         selectedMember = null
     }
 
+    fun resetState() {
+        _authState.value = AuthState.Idle
+    }
+
     suspend fun getUserRoleOnLogin(): UserRole =
         authRepository.getUserRole(email)
 
