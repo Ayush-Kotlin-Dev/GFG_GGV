@@ -48,7 +48,6 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
         }
 
     suspend fun setUserData(userSettings: UserSettings) {
-        Log.d("UserPreferences", "UserPreferences: $userSettings")
         dataStore.edit { preferences ->
             preferences[USER_NAME] = userSettings.name
             preferences[USER_ID] = userSettings.userId

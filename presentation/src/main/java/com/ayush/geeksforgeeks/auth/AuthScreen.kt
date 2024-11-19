@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,6 +56,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -76,7 +75,8 @@ import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 import kotlinx.coroutines.launch
 
-class AuthScreen : Screen {
+class
+AuthScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: AuthViewModel = hiltViewModel()
@@ -105,7 +105,6 @@ private fun LoginContent(
     val coroutineScope = rememberCoroutineScope()
     var userRole by remember { mutableStateOf<UserRole?>(null) }
 
-
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     val resetPasswordState by viewModel.resetPasswordState.collectAsState()
 
@@ -120,12 +119,33 @@ private fun LoginContent(
                     }
                 }
             }
+
             is AuthState.Error -> {
-                Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT)
+                    .show()
             }
+
+            is AuthState.EmailVerificationRequired -> {
+                Toast.makeText(
+                    context,
+                    "Please verify your email to continue. Check your inbox for the verification link.",
+                    Toast.LENGTH_LONG
+                ).show()
+                viewModel.resendVerificationEmail()
+            }
+
+            is AuthState.EmailVerificationSent -> {
+                Toast.makeText(
+                    context,
+                    "Verification email sent. Please check your inbox.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
             else -> {}
         }
     }
+
 
     Box(
         modifier = Modifier
@@ -142,31 +162,41 @@ private fun LoginContent(
             Logo()
             WelcomeText(textColor = GFGBlack)
 
-            LoginCard(
-                isLoginMode = isLoginMode,
-                email = viewModel.email,
-                password = viewModel.password,
-                teams = teams,
-                teamMembers = teamMembers,
-                selectedTeam = viewModel.selectedTeam,
-                selectedMember = viewModel.selectedMember,
-                onEmailChange = viewModel::updateEmail,
-                onPasswordChange = viewModel::updatePassword,
-                onTeamSelect = viewModel::selectTeam,
-                onMemberSelect = viewModel::selectMember,
-                onModeChange = { isLoginMode = it },
-                focusManager = focusManager,
-                emailFocus = emailFocus,
-                passwordFocus = passwordFocus,
-                onSubmitButtonClick = {
-                    if (isLoginMode) {
-                        viewModel.login()
-                    } else {
-                        viewModel.signUp()
-                    }
-                },
-                onForgotPasswordClick = { showForgotPasswordDialog = true }
-            )
+            when (authState) {
+                is AuthState.EmailVerificationRequired, is AuthState.EmailVerificationSent -> {
+                    EmailVerificationContent(
+                        onResendEmail = { viewModel.resendVerificationEmail() }
+                    )
+                }
+
+                else -> {
+                    LoginCard(
+                        isLoginMode = isLoginMode,
+                        email = viewModel.email,
+                        password = viewModel.password,
+                        teams = teams,
+                        teamMembers = teamMembers,
+                        selectedTeam = viewModel.selectedTeam,
+                        selectedMember = viewModel.selectedMember,
+                        onEmailChange = viewModel::updateEmail,
+                        onPasswordChange = viewModel::updatePassword,
+                        onTeamSelect = viewModel::selectTeam,
+                        onMemberSelect = viewModel::selectMember,
+                        onModeChange = { isLoginMode = it },
+                        focusManager = focusManager,
+                        emailFocus = emailFocus,
+                        passwordFocus = passwordFocus,
+                        onSubmitButtonClick = {
+                            if (isLoginMode) {
+                                viewModel.login()
+                            } else {
+                                viewModel.signUp()
+                            }
+                        },
+                        onForgotPasswordClick = { showForgotPasswordDialog = true }
+                    )
+                }
+            }
         }
 
         if (showForgotPasswordDialog) {
@@ -177,6 +207,45 @@ private fun LoginContent(
                 },
                 resetPasswordState = resetPasswordState
             )
+        }
+    }
+}
+
+@Composable
+private fun EmailVerificationContent(
+    onResendEmail: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = GFGBackground)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Email Verification Required",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = GFGBlack
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Please check your email and click the verification link to continue.",
+                color = GFGBlack,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onResendEmail,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = GFGStatusPendingText)
+            ) {
+                Text("Resend Verification Email", color = Color.White)
+            }
         }
     }
 }
@@ -235,7 +304,9 @@ private fun LoginCard(
                         readOnly = true,
                         label = { Text("Team") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTeam) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = GFGStatusPendingText,
                             unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
@@ -248,7 +319,10 @@ private fun LoginCard(
                     ExposedDropdownMenu(
                         expanded = expandedTeam,
                         onDismissRequest = { expandedTeam = false },
-                        modifier = Modifier.exposedDropdownSize().background(GFGStatusPending).alpha(0.8f)
+                        modifier = Modifier
+                            .exposedDropdownSize()
+                            .background(GFGStatusPending)
+                            .alpha(0.8f)
                     ) {
                         teams.forEach { team ->
                             DropdownMenuItem(
@@ -283,7 +357,9 @@ private fun LoginCard(
                             readOnly = true,
                             label = { Text("Your Name") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMember) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = GFGStatusPendingText,
                                 unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
@@ -296,11 +372,19 @@ private fun LoginCard(
                         ExposedDropdownMenu(
                             expanded = expandedMember,
                             onDismissRequest = { expandedMember = false },
-                            modifier = Modifier.exposedDropdownSize().background(GFGStatusPending).alpha(0.8f)
+                            modifier = Modifier
+                                .exposedDropdownSize()
+                                .background(GFGStatusPending)
+                                .alpha(0.8f)
                         ) {
                             teamMembers.forEach { member ->
                                 DropdownMenuItem(
-                                    text = { Text("${member.name} (${member.role})", color = GFGBlack) },
+                                    text = {
+                                        Text(
+                                            "${member.name} (${member.role})",
+                                            color = GFGBlack
+                                        )
+                                    },
                                     onClick = {
                                         onMemberSelect(member)
                                         expandedMember = false
@@ -348,7 +432,7 @@ private fun LoginCard(
             LoginButton(
                 isLoginMode,
                 focusManager,
-                onSubmitButtonClick
+                onSubmitButtonClick,
             )
 
             ToggleModeText(isLoginMode, onModeChange)
@@ -441,6 +525,7 @@ private fun ForgotPasswordText(onClick: () -> Unit) {
     }
     Spacer(modifier = Modifier.height(8.dp))
 }
+
 @Composable
 private fun LoginButton(
     isLoginMode: Boolean,
@@ -507,10 +592,12 @@ private fun ForgotPasswordDialog(
                         resetPasswordState.message,
                         color = Color.Red
                     )
+
                     is ResetPasswordState.Success -> Text(
                         "Password reset email sent successfully",
                         color = GFGStatusPendingText
                     )
+
                     else -> {}
                 }
             }

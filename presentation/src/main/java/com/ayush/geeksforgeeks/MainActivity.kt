@@ -17,17 +17,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.navigator.Navigator
 import com.ayush.data.datastore.UserRole
 import com.ayush.geeksforgeeks.auth.AuthScreen
-import com.ayush.geeksforgeeks.auth.FirebaseDataPopulator
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    lateinit var firebaseDataPopulator: FirebaseDataPopulator
-
-    @SuppressLint("CoroutineCreationDuringComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)

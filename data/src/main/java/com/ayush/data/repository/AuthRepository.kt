@@ -22,6 +22,15 @@ sealed class AuthState {
     object Loading : AuthState()
     data class Success(val user: FirebaseUser) : AuthState()
     data class Error(val message: String, val exception: Throwable) : AuthState()
+    object EmailVerificationRequired : AuthState()
+    object EmailVerificationSent : AuthState()
+    object RegistrationSuccess : AuthState()
+
+}
+sealed class EmailVerificationResult {
+    object Success : EmailVerificationResult()
+    object AlreadyVerified : EmailVerificationResult()
+    data class Error(val message: String) : EmailVerificationResult()
 }
 
 class AuthRepository @Inject constructor(
@@ -30,6 +39,10 @@ class AuthRepository @Inject constructor(
     private val userPreferences: UserPreferences,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
+
+    private var lastVerificationEmailSent: Long = 0
+    private val minEmailInterval = 60_000L // 1 minute minimum between emails
+
     val userData: Flow<UserSettings> = userPreferences.userData
         .flowOn(ioDispatcher)
         .distinctUntilChanged()
@@ -47,6 +60,12 @@ class AuthRepository @Inject constructor(
 
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             result.user?.let { user ->
+                // Send verification email with proper error handling
+                val verificationResult = sendEmailVerification()
+                if (verificationResult is EmailVerificationResult.Error) {
+                    return@withContext Result.failure(Exception(verificationResult.message))
+                }
+
                 val name = memberDoc.getString("name") ?: "Unknown"
                 val role = UserRole.valueOf(memberDoc.getString("role") ?: UserRole.MEMBER.name)
                 saveUserData(name, user, isNewUser = true, teamId = teamId, role = role)
@@ -61,11 +80,61 @@ class AuthRepository @Inject constructor(
         try {
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
             result.user?.let { user ->
-                saveUserData(user = user, isNewUser = false)
-                Result.success(user)
+                // Reload user to get latest verification status
+                user.reload().await()
+
+                if (user.isEmailVerified) {
+                    saveUserData(user = user, isNewUser = false)
+                    Result.success(user)
+                } else {
+                    // Only send verification email if enough time has passed
+                    if (shouldSendVerificationEmail()) {
+                        sendEmailVerification()
+                    }
+                    Result.failure(Exception("Email not verified"))
+                }
             } ?: Result.failure(IllegalStateException("Login failed"))
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    suspend fun sendEmailVerification(): EmailVerificationResult = withContext(ioDispatcher) {
+        try {
+            val user = firebaseAuth.currentUser ?: return@withContext EmailVerificationResult.Error("No user signed in")
+
+            // Check if already verified
+            user.reload().await()
+            if (user.isEmailVerified) {
+                return@withContext EmailVerificationResult.AlreadyVerified
+            }
+
+            // Check time interval
+            if (!shouldSendVerificationEmail()) {
+                return@withContext EmailVerificationResult.Error("Please wait before requesting another verification email")
+            }
+
+            user.sendEmailVerification().await()
+            lastVerificationEmailSent = System.currentTimeMillis()
+            EmailVerificationResult.Success
+        } catch (e: Exception) {
+            EmailVerificationResult.Error(e.message ?: "Failed to send verification email")
+        }
+    }
+
+    private fun shouldSendVerificationEmail(): Boolean {
+        val currentTime = System.currentTimeMillis()
+        return (currentTime - lastVerificationEmailSent) >= minEmailInterval
+    }
+
+    suspend fun checkEmailVerificationStatus(): Boolean = withContext(ioDispatcher) {
+        try {
+            firebaseAuth.currentUser?.let { user ->
+                user.reload().await()
+                user.isEmailVerified
+            } ?: false
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -142,6 +211,16 @@ class AuthRepository @Inject constructor(
             firebaseAuth.signOut()
             userPreferences.clearUserData()
         }
+    }
+
+
+    suspend fun isEmailVerified(): Boolean = withContext(ioDispatcher) {
+        firebaseAuth.currentUser?.reload()?.await()
+        firebaseAuth.currentUser?.isEmailVerified ?: false
+    }
+
+    suspend fun reloadUser() = withContext(ioDispatcher) {
+        firebaseAuth.currentUser?.reload()?.await()
     }
 
     data class Team(val id: String, val name: String)
