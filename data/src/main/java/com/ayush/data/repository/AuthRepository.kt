@@ -34,18 +34,40 @@ sealed class EmailVerificationResult {
 }
 
 class AuthRepository @Inject constructor(
-    private val firebaseAuth: FirebaseAuth,
+    val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
     private val userPreferences: UserPreferences,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
     private var lastVerificationEmailSent: Long = 0
-    private val minEmailInterval = 60_000L // 1 minute minimum between emails
+    private val minEmailInterval = 60_000L
 
     val userData: Flow<UserSettings> = userPreferences.userData
         .flowOn(ioDispatcher)
         .distinctUntilChanged()
+
+
+    private suspend fun saveUserDataToFirestore(
+        username: String,
+        user: FirebaseUser,
+        teamId: String,
+        role: UserRole
+    ) = withContext(ioDispatcher) {
+        val userSettings = UserSettings(
+            name = username.takeIf { it.isNotBlank() } ?: user.displayName ?: "GFG User",
+            userId = user.uid,
+            email = user.email.orEmpty(),
+            profilePicUrl = user.photoUrl?.toString(),
+            isLoggedIn = false, // Set this to false initially
+            domainId = teamId.toIntOrNull() ?: 0,
+            role = role
+        )
+
+        firestore.collection("users").document(user.uid)
+            .set(userSettings)
+            .await()
+    }
 
     suspend fun signUp(
         teamId: String,
@@ -68,7 +90,10 @@ class AuthRepository @Inject constructor(
 
                 val name = memberDoc.getString("name") ?: "Unknown"
                 val role = UserRole.valueOf(memberDoc.getString("role") ?: UserRole.MEMBER.name)
-                saveUserData(name, user, isNewUser = true, teamId = teamId, role = role)
+
+                // Save user data to Firestore, but not to preferences
+                saveUserDataToFirestore(name, user, teamId, role)
+
                 Result.success(user)
             } ?: Result.failure(IllegalStateException("User creation failed"))
         } catch (e: Exception) {
@@ -76,6 +101,7 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    // Modify the login function to save user data to preferences only if email is verified
     suspend fun login(email: String, password: String): Result<FirebaseUser> = withContext(ioDispatcher) {
         try {
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
@@ -84,7 +110,7 @@ class AuthRepository @Inject constructor(
                 user.reload().await()
 
                 if (user.isEmailVerified) {
-                    saveUserData(user = user, isNewUser = false)
+                    saveUserDataAfterVerification(user)
                     Result.success(user)
                 } else {
                     // Only send verification email if enough time has passed
@@ -96,6 +122,18 @@ class AuthRepository @Inject constructor(
             } ?: Result.failure(IllegalStateException("Login failed"))
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    // Add a new function to save user data to preferences after email verification
+    suspend fun saveUserDataAfterVerification(user: FirebaseUser) {
+        val userDoc = firestore.collection("users").document(user.uid).get().await()
+        val userSettings = userDoc.toObject(UserSettings::class.java)
+        userSettings?.let {
+            val updatedUserSettings = it.copy(isLoggedIn = true)
+            userPreferences.setUserData(updatedUserSettings)
+            // Also update Firestore
+            firestore.collection("users").document(user.uid).set(updatedUserSettings).await()
         }
     }
 

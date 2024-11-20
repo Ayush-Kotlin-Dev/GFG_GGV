@@ -73,6 +73,7 @@ import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGBlack
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class
@@ -125,19 +126,10 @@ private fun LoginContent(
                     .show()
             }
 
-            is AuthState.EmailVerificationRequired -> {
+            is AuthState.EmailVerificationRequired, is AuthState.EmailVerificationSent -> {
                 Toast.makeText(
                     context,
                     "Please verify your email to continue. Check your inbox for the verification link.",
-                    Toast.LENGTH_LONG
-                ).show()
-                viewModel.resendVerificationEmail()
-            }
-
-            is AuthState.EmailVerificationSent -> {
-                Toast.makeText(
-                    context,
-                    "Verification email sent. Please check your inbox.",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -165,7 +157,8 @@ private fun LoginContent(
             when (authState) {
                 is AuthState.EmailVerificationRequired, is AuthState.EmailVerificationSent -> {
                     EmailVerificationContent(
-                        onResendEmail = { viewModel.resendVerificationEmail() }
+                        onResendEmail = { viewModel.resendVerificationEmail() },
+                        viewModel = viewModel
                     )
                 }
 
@@ -213,8 +206,17 @@ private fun LoginContent(
 
 @Composable
 private fun EmailVerificationContent(
-    onResendEmail: () -> Unit
+    onResendEmail: () -> Unit,
+    viewModel: AuthViewModel
+
+
 ) {
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5000) // Check every 5 seconds
+            viewModel.checkEmailVerification()
+        }
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),

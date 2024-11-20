@@ -24,7 +24,7 @@ class MainActivityViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             userPreferences.userData.collect { userSettings ->
-                Log.d("MainActivityViewModel", "UserSettings: ${userSettings.role}")
+                Log.d("MainActivityViewModel", "UserSettings: ${userSettings}")
                 _uiState.value = when {
                     !userSettings.isLoggedIn -> UiState.NotLoggedIn
                     userSettings.role == UserRole.TEAM_LEAD -> UiState.LoggedInAsAdmin(userSettings)

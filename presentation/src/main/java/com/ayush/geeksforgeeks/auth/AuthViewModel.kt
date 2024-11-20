@@ -10,23 +10,17 @@ import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
-import com.ayush.data.repository.EmailVerificationResult
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
-
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
@@ -122,6 +116,19 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+
+    private fun sendEmailVerification() {
+        viewModelScope.launch {
+            try {
+                authRepository.sendEmailVerification()
+                _authState.value = AuthState.EmailVerificationSent
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error("Failed to send verification email: ${e.message}", e)
+            }
+        }
+    }
+
+
     fun signUp() {
         currentAuthJob?.cancel()
         currentAuthJob = viewModelScope.launch {
@@ -135,8 +142,7 @@ class AuthViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = {
-                    sendEmailVerification()
-                    _authState.value = AuthState.RegistrationSuccess
+                    _authState.value = AuthState.EmailVerificationRequired
                 },
                 onFailure = {
                     _authState.value = AuthState.Error(it.message ?: "Sign up failed", it)
@@ -145,7 +151,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-
     fun login() {
         currentAuthJob?.cancel()
         currentAuthJob = viewModelScope.launch {
@@ -153,26 +158,29 @@ class AuthViewModel @Inject constructor(
             val result = authRepository.login(email, password)
             result.fold(
                 onSuccess = { user ->
-                    if (user.isEmailVerified) {
-                        _authState.value = AuthState.Success(user)
-                    } else {
-                        _authState.value = AuthState.EmailVerificationRequired
-                    }
+                    _authState.value = AuthState.Success(user)
                 },
                 onFailure = { e ->
-                    _authState.value = AuthState.Error(e.message ?: "Login failed", e)
+                    if (e.message == "Email not verified") {
+                        _authState.value = AuthState.EmailVerificationRequired
+                    } else {
+                        _authState.value = AuthState.Error(e.message ?: "Login failed", e)
+                    }
                 }
             )
         }
     }
 
-    private fun sendEmailVerification() {
+    fun checkEmailVerification() {
         viewModelScope.launch {
-            try {
-                authRepository.sendEmailVerification()
-                _authState.value = AuthState.EmailVerificationSent
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error("Failed to send verification email: ${e.message}", e)
+            if (authRepository.isEmailVerified()) {
+                val user = authRepository.firebaseAuth.currentUser
+                user?.let {
+                    authRepository.saveUserDataAfterVerification(it)
+                    _authState.value = AuthState.Success(it)
+                }
+            } else {
+                _authState.value = AuthState.EmailVerificationRequired
             }
         }
     }
@@ -205,7 +213,7 @@ class AuthViewModel @Inject constructor(
     private var verificationCheckJob: Job? = null
 
 
-    fun stopVerificationCheck() {
+    private fun stopVerificationCheck() {
         verificationCheckJob?.cancel()
     }
 
