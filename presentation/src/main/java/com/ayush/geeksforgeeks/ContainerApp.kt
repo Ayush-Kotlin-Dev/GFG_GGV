@@ -61,7 +61,7 @@ private fun BottomNavigationBar(
             containerColor = Color.White,
             contentColor = Color.Black
         ) {
-            TabNavigationItem(HomeTab)
+            TabNavigationItem(HomeTab,)
             TabNavigationItem(DashboardTab(onNavigator = onNavigatorChange))
             TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
             TabNavigationItem(ProfileTab(onNavigator = onNavigatorChange))

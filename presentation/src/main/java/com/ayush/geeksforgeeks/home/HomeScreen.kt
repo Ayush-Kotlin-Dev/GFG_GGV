@@ -20,6 +20,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Notifications
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,6 +49,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,8 +66,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
+import com.ayush.geeksforgeeks.AddEventScreen
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
@@ -97,6 +106,7 @@ fun HomeScreen(
     onEventClick: (Event) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showAddEventDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -123,7 +133,9 @@ fun HomeScreen(
             item {
                 FeaturedEventCard(
                     events = uiState.events,
-                    onEventClick = onEventClick
+                    onEventClick = onEventClick,
+                    isAdmin = true,
+                    onAddEventClick = { showAddEventDialog = true }
                 )
             }
 
@@ -133,6 +145,25 @@ fun HomeScreen(
 
             item {
                 AchievementsSection()
+            }
+        }
+    }
+    if (showAddEventDialog) {
+        Dialog(
+            onDismissRequest = { showAddEventDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                AddEventScreen(
+                    onEventAdded = { event ->
+                        viewModel.addEvent(event)
+                        showAddEventDialog = false
+                    },
+                    onDismiss = { showAddEventDialog = false }
+                )
             }
         }
     }
@@ -344,11 +375,12 @@ private fun MetricCard(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FeaturedEventCard(
     events: List<Event>,
-    onEventClick: (Event) -> Unit
+    onEventClick: (Event) -> Unit,
+    isAdmin: Boolean, // New parameter
+    onAddEventClick: () -> Unit // New parameter
 ) {
     val pagerState = rememberPagerState(pageCount = { events.size })
 
@@ -357,7 +389,9 @@ private fun FeaturedEventCard(
     ) {
         SectionHeader(
             title = "Featured Events",
-            action = "View All"
+            action = "View All",
+            isAdmin = isAdmin, // Pass isAdmin to SectionHeader
+            onAddClick = onAddEventClick // Pass onAddEventClick to SectionHeader
         )
 
         HorizontalPager(
@@ -385,7 +419,6 @@ private fun FeaturedEventCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventCard(event: Event, onClick: () -> Unit) {
     Card(
@@ -644,7 +677,9 @@ private fun ActivityItem(activity: RecentActivity) {
 @Composable
 private fun SectionHeader(
     title: String,
-    action: String? = null
+    action: String? = null,
+    isAdmin: Boolean = false,
+    onAddClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -658,9 +693,19 @@ private fun SectionHeader(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        if (action != null) {
-            TextButton(onClick = { }) {
-                Text(text = action)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (isAdmin) {
+                IconButton(onClick = onAddClick) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Event")
+                }
+            }
+            if (action != null) {
+                TextButton(onClick = { }) {
+                    Text(text = action)
+                }
             }
         }
     }
@@ -686,4 +731,5 @@ private fun NotificationIcon(
         }
     }
 }
+
 

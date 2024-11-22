@@ -58,6 +58,11 @@ class HomeScreenViewModel @Inject constructor() : ViewModel() {
     init {
         loadInitialData()
     }
+    fun addEvent(event: Event) {
+        val currentEvents = _uiState.value.events.toMutableList()
+        currentEvents.add(event)
+        _uiState.value = _uiState.value.copy(events = currentEvents)
+    }
 
     private fun loadInitialData() {
         // In a real app, this would come from a repository
