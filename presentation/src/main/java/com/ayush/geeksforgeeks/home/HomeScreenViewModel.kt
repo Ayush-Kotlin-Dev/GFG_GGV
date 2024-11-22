@@ -1,6 +1,5 @@
 package com.ayush.geeksforgeeks.home
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.model.Event
@@ -14,36 +13,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
-data class HomeScreenState(
-    val clubStats: ClubStats = ClubStats(),
-    val events: List<Event> = emptyList(),
-    val quickStats: QuickStats = QuickStats(),
-    val recentActivities: List<RecentActivity> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
-
-data class ClubStats(
-    val yearsActive: Int = 3,
-    val studentsBenefited: Int = 1000,
-    val activeMembers: Int = 150
-)
-
-data class QuickStats(
-    val activeMembers: Int = 150,
-    val ongoingProjects: Int = 5,
-    val recentAchievements: Int = 10
-)
-
-
-data class RecentAchievement(
-    val icon : Int,
-    val id: Int,
-    val title: String,
-    val description: String,
-    val date : String,
-    val imageRes: Int
-)
 
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
@@ -146,6 +115,37 @@ object SampleData {
         ),
     )
 }
+data class HomeScreenState(
+    val clubStats: ClubStats = ClubStats(),
+    val events: List<Event> = emptyList(),
+    val quickStats: QuickStats = QuickStats(),
+    val recentActivities: List<RecentActivity> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+data class ClubStats(
+    val yearsActive: Int = 3,
+    val studentsBenefited: Int = 1000,
+    val activeMembers: Int = 150
+)
+
+data class QuickStats(
+    val activeMembers: Int = 150,
+    val ongoingProjects: Int = 5,
+    val recentAchievements: Int = 10
+)
+
+
+data class RecentAchievement(
+    val icon : Int,
+    val id: Int,
+    val title: String,
+    val description: String,
+    val date : String,
+    val imageRes: Int
+)
+
 
 data class InfoItem(
     val id: Int,

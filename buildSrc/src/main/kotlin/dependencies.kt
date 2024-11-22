@@ -40,6 +40,9 @@ object Dependencies {
     const val firebaseAuthKtx = "com.google.firebase:firebase-auth-ktx:23.0.0"
     const val firebaseBom = "com.google.firebase:firebase-bom:33.4.0"
     const val fireStore = "com.google.firebase:firebase-firestore-ktx:25.1.0"
+    const val firebaseStorage = "com.google.firebase:firebase-storage-ktx:21.0.1"
+
+
 
 
 }
@@ -101,6 +104,7 @@ fun DependencyHandler.firebase() {
     implementation(Dependencies.firebaseAuthKtx)
     implementation(platform(Dependencies.firebaseBom))
     implementation(Dependencies.fireStore)
+    implementation(Dependencies.firebaseStorage)
 
 }
 

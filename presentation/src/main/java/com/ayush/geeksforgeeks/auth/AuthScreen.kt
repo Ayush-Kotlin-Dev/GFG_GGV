@@ -414,7 +414,7 @@ private fun LoginCard(
                 focusRequester = emailFocus,
                 nextFocusRequester = passwordFocus,
                 focusManager = focusManager,
-                keyboardType = KeyboardType.Email
+                keyboardType = KeyboardType.Email,
             )
 
             InputField(
@@ -506,7 +506,8 @@ private fun InputField(
             onNext = { nextFocusRequester?.requestFocus() },
             onDone = { focusManager.clearFocus() }
         ),
-        singleLine = true
+        singleLine = true,
+        readOnly = if (isPassword) false else true
     )
     Spacer(modifier = Modifier.height(8.dp))
 }

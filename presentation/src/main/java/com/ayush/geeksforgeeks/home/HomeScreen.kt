@@ -67,8 +67,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
+import coil.compose.AsyncImage
 import com.ayush.data.model.Event
-import com.ayush.geeksforgeeks.AddEventScreen
+import com.ayush.geeksforgeeks.utils.AddEventScreen
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
@@ -431,11 +432,11 @@ private fun EventCard(event: Event, onClick: () -> Unit) {
         onClick = onClick
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Image(
-                painter = painterResource(id = event.imageRes),
-                contentDescription = event.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+            AsyncImage(
+                model = event.imageRes,
+                contentDescription = "Event Image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
             Box(
                 modifier = Modifier

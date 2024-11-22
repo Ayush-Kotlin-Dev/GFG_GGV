@@ -12,8 +12,8 @@ data class Event(
     val time: String = "",
     val registrationDeadline: String = "",
     val formLink: String = "",
-    val imageRes: Int = 0,
+    val imageRes: String = "",
     val description: String = ""
 ) {
-    constructor() : this("", "", "", "", "", "", 0, "")
+    constructor() : this("", "", "", "", "", "", "", "")
 }
