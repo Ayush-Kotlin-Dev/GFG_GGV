@@ -12,7 +12,10 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.ayush.geeksforgeeks.home.HomeScreenEvent
 
-object  HomeTab: Tab {
+class HomeTab(
+    @Transient
+    val isAdmin : Boolean,
+): Tab {
     override val options: TabOptions
         @Composable
         get() {
@@ -30,7 +33,9 @@ object  HomeTab: Tab {
 
     @Composable
     override fun Content() {
-        Navigator(HomeScreenEvent()) { navigator ->
+        Navigator(HomeScreenEvent(
+            isAdmin = isAdmin
+        )) { navigator ->
 //            LaunchedEffect(navigator) {
 //                onNavigator(true)
 //            }

@@ -1,6 +1,5 @@
 package com.ayush.geeksforgeeks.home
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +28,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,7 +37,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -70,12 +67,15 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
+import com.ayush.data.model.Event
 import com.ayush.geeksforgeeks.AddEventScreen
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 
-class HomeScreenEvent : Screen {
+data class HomeScreenEvent(
+    val isAdmin: Boolean = false
+) : Screen {
     @Composable
     override fun Content() {
         val viewModel: HomeScreenViewModel = hiltViewModel()
@@ -93,7 +93,8 @@ class HomeScreenEvent : Screen {
                 )
                 intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
-            }
+            },
+            isAdmin = isAdmin
         )
     }
 }
@@ -103,7 +104,8 @@ fun HomeScreen(
     viewModel: HomeScreenViewModel = hiltViewModel(),
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onEventClick: (Event) -> Unit = {}
+    onEventClick: (Event) -> Unit = {},
+    isAdmin: Boolean
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddEventDialog by remember { mutableStateOf(false) }
@@ -134,7 +136,7 @@ fun HomeScreen(
                 FeaturedEventCard(
                     events = uiState.events,
                     onEventClick = onEventClick,
-                    isAdmin = true,
+                    isAdmin = isAdmin,
                     onAddEventClick = { showAddEventDialog = true }
                 )
             }
@@ -731,5 +733,3 @@ private fun NotificationIcon(
         }
     }
 }
-
-

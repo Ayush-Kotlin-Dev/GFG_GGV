@@ -1,11 +1,16 @@
 package com.ayush.geeksforgeeks.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ayush.data.model.Event
+import com.ayush.data.repository.HomeRepository
 import com.ayush.geeksforgeeks.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
@@ -30,16 +35,6 @@ data class QuickStats(
     val recentAchievements: Int = 10
 )
 
-data class Event(
-    val id: Int,
-    val title: String,
-    val date: String,
-    val time: String,
-    val registrationDeadline: String,
-    val formLink: String,
-    val imageRes: Int,
-    val description: String
-)
 
 data class RecentAchievement(
     val icon : Int,
@@ -51,62 +46,62 @@ data class RecentAchievement(
 )
 
 @HiltViewModel
-class HomeScreenViewModel @Inject constructor() : ViewModel() {
+class HomeScreenViewModel @Inject constructor(
+    private val homeRepository: HomeRepository
+
+) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeScreenState())
     val uiState: StateFlow<HomeScreenState> = _uiState.asStateFlow()
 
     init {
         loadInitialData()
     }
-    fun addEvent(event: Event) {
-        val currentEvents = _uiState.value.events.toMutableList()
-        currentEvents.add(event)
-        _uiState.value = _uiState.value.copy(events = currentEvents)
-    }
+
 
     private fun loadInitialData() {
-        // In a real app, this would come from a repository
-        _uiState.value = HomeScreenState(
-            clubStats = ClubStats(
-                yearsActive = 3,
-                studentsBenefited = 1000,
-                activeMembers = 150
-            ),
-            events = SampleData.events,
-            quickStats = QuickStats(
-                activeMembers = 150,
-                ongoingProjects = 5,
-                recentAchievements = 10
-            ),
-            recentActivities = SampleData.recentActivities
-        )
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                val events = homeRepository.fetchEvents()
+                _uiState.value = _uiState.value.copy(
+                    clubStats = ClubStats(
+                        yearsActive = 3,
+                        studentsBenefited = 1000,
+                        activeMembers = 150
+                    ),
+                    events = events,
+                    quickStats = QuickStats(
+                        activeMembers = 150,
+                        ongoingProjects = 5,
+                        recentAchievements = 10
+                    ),
+                    recentActivities = SampleData.recentActivities,
+                    isLoading = false
+                )
+
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Failed to load events: ${e.message}",
+                    isLoading = false
+                )
+            }
+        }
+    }
+    fun addEvent(event: Event) {
+        viewModelScope.launch {
+            val success = homeRepository.createEvent(event)
+            if (success) {
+                val currentEvents = _uiState.value.events.toMutableList()
+                currentEvents.add(event)
+                _uiState.value = _uiState.value.copy(events = currentEvents)
+            } else {
+                // Handle error (e.g., show an error message)
+            }
+        }
     }
 }
 
 object SampleData {
-    val events = listOf(
-        Event(
-            id = 1,
-            title = "GFG Info Session 2024 ",
-            date = "21-10-2024",
-            time = "18:00-20:00",
-            registrationDeadline = "20-10-2024",
-            formLink = "https://forms.gle/uTZqozJdKZjif9wMA",
-            imageRes = R.drawable.gfg_info,
-            description = "Join us for an informative session on GFG and its activities."
-        ),
-        Event(
-            id = 2,
-            title = "Coding Workshop",
-            date = "16-12-2024",
-            time = "14:00-16:00",
-            registrationDeadline = "10-12-2024",
-            formLink = "https://www.instagram.com/gfgsc_ggv/",
-            imageRes = R.drawable.coding,
-            description = "Join us for an intensive coding workshop focused on algorithms and data structures."
-        ),
-
-    )
 
     val recentActivities = listOf(
         RecentActivity(

@@ -19,7 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.ayush.geeksforgeeks.home.Event
+import com.ayush.data.model.Event
 
 @Composable
 fun AddEventScreen(
@@ -99,7 +99,7 @@ fun AddEventScreen(
             Button(
                 onClick = {
                     val newEvent = Event(
-                        id = System.currentTimeMillis().toInt(),
+                        id = System.currentTimeMillis().toString(),
                         title = title,
                         description = description,
                         date = date,
