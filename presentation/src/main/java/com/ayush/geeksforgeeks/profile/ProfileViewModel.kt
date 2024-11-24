@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserSettings
 import com.ayush.data.repository.AuthRepository
+import com.ayush.data.repository.QueryRepository
 import com.ayush.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val queryRepository: QueryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
@@ -72,6 +74,17 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    private val _queryState = MutableStateFlow<QueryState>(QueryState.Idle)
+    val queryState: StateFlow<QueryState> = _queryState
+
+    fun submitQuery(name: String, email: String, query: String) {
+        viewModelScope.launch {
+            _queryState.value = QueryState.Loading
+            val result = queryRepository.submitQuery(name, email, query)
+            _queryState.value = if (result) QueryState.Success else QueryState.Error("Failed to submit query")
+        }
+    }
+
     fun logOut() {
         viewModelScope.launch {
             authRepository.logout()
@@ -82,6 +95,13 @@ class ProfileViewModel @Inject constructor(
         object Loading : ProfileUiState()
         data class Success(val user: UserSettings) : ProfileUiState()
         data class Error(val message: String) : ProfileUiState()
+    }
+
+    sealed class QueryState {
+        object Idle : QueryState()
+        object Loading : QueryState()
+        object Success : QueryState()
+        data class Error(val message: String) : QueryState()
     }
 
 }

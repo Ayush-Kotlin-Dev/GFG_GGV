@@ -31,6 +31,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,7 +74,6 @@ import com.ayush.geeksforgeeks.dashboard.LoadingIndicator
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.net.URLEncoder
@@ -89,6 +90,7 @@ class ProfileScreen : Screen {
             is ProfileViewModel.ProfileUiState.Loading -> LoadingIndicator()
             is ProfileViewModel.ProfileUiState.Success -> ProfileContent(
                 state.user,
+                viewModel,
                 onLogout = {
                     viewModel.logOut()
                     navigator?.push(AuthScreen())
@@ -102,6 +104,7 @@ class ProfileScreen : Screen {
 @Composable
 fun ProfileContent(
     user: UserSettings,
+    viewModel: ProfileViewModel,
     onLogout: () -> Unit
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -214,7 +217,7 @@ fun ProfileContent(
     }
 
     if (showHelpDialog) {
-        HelpDialog(user = user, onDismiss = { showHelpDialog = false })
+        HelpDialog(user = user, viewModel = viewModel, onDismiss = { showHelpDialog = false })
     }
 
     if (showAboutUsBottomSheet) {
@@ -331,9 +334,9 @@ fun ProfileMenuItem(
 }
 
 @Composable
-fun HelpDialog(user: UserSettings, onDismiss: () -> Unit) {
+fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () -> Unit) {
     var query by remember { mutableStateOf("") }
-    val coroutineScope = rememberCoroutineScope()
+    val queryState by viewModel.queryState.collectAsState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -347,15 +350,25 @@ fun HelpDialog(user: UserSettings, onDismiss: () -> Unit) {
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth()
                 )
+                when (val state = queryState) {
+                    is ProfileViewModel.QueryState.Loading -> CircularProgressIndicator()
+                    is ProfileViewModel.QueryState.Error -> Text(state.message, color = Color.Red)
+                    is ProfileViewModel.QueryState.Success -> {
+                        LaunchedEffect(Unit) {
+                            onDismiss()
+                        }
+                    }
+                    else -> {}
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                coroutineScope.launch {
-                    submitQuery(user.name, user.email, query)
-                    onDismiss()
-                }
-            }) {
+            TextButton(
+                onClick = {
+                    viewModel.submitQuery(user.name, user.email, query)
+                },
+                enabled = queryState !is ProfileViewModel.QueryState.Loading
+            ) {
                 Text("Submit", color = GFGPrimary)
             }
         },
@@ -365,10 +378,8 @@ fun HelpDialog(user: UserSettings, onDismiss: () -> Unit) {
             }
         },
         containerColor = GFGBackground,
-
-        )
+    )
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutUsBottomSheet(onDismiss: () -> Unit) {
@@ -384,20 +395,5 @@ fun AboutUsBottomSheet(onDismiss: () -> Unit) {
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         AboutUsContent(onClose = { scope.launch { sheetState.hide() } })
-    }
-}
-
-suspend fun submitQuery(name: String, email: String, query: String) {
-    val firestore = FirebaseFirestore.getInstance()
-    val problem = hashMapOf(
-        "name" to name,
-        "email" to email,
-        "query" to query,
-        "timestamp" to System.currentTimeMillis()
-    )
-    try {
-        firestore.collection("problems").add(problem).await()
-    } catch (e: Exception) {
-        e.printStackTrace()
     }
 }
