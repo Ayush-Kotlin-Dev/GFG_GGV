@@ -415,6 +415,7 @@ private fun LoginCard(
                 nextFocusRequester = passwordFocus,
                 focusManager = focusManager,
                 keyboardType = KeyboardType.Email,
+                readOnly = !isLoginMode
             )
 
             InputField(
@@ -479,24 +480,32 @@ private fun InputField(
     nextFocusRequester: FocusRequester? = null,
     focusManager: FocusManager,
     keyboardType: KeyboardType = KeyboardType.Text,
-    imeAction: ImeAction = ImeAction.Next
+    imeAction: ImeAction = ImeAction.Next,
+    readOnly: Boolean = false  // Add this parameter
 ) {
+    val backgroundColor = if (readOnly) GFGBackground.copy(alpha = 0.6f) else GFGBackground
+    val textColor = if (readOnly) GFGBlack.copy(alpha = 0.6f) else GFGBlack
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = { Text(label, color = if (readOnly) textColor else GFGBlack) },
         modifier = Modifier
             .fillMaxWidth()
-            .focusRequester(focusRequester),
+            .focusRequester(focusRequester)
+            .background(backgroundColor, RoundedCornerShape(4.dp)),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = GFGStatusPendingText,
-            unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
-            focusedLabelColor = GFGStatusPendingText,
-            unfocusedLabelColor = GFGBlack,
-            focusedTextColor = GFGBlack,
-            unfocusedTextColor = GFGBlack,
-            cursorColor = GFGStatusPendingText
+            focusedBorderColor = if (readOnly) GFGBlack.copy(alpha = 0.3f) else GFGStatusPendingText,
+            unfocusedBorderColor = GFGBlack.copy(alpha = 0.3f),
+            focusedLabelColor = if (readOnly) textColor else GFGStatusPendingText,
+            unfocusedLabelColor = textColor,
+            focusedTextColor = textColor,
+            unfocusedTextColor = textColor,
+            cursorColor = if (readOnly) Color.Transparent else GFGStatusPendingText,
+            disabledTextColor = textColor,
+            disabledBorderColor = GFGBlack.copy(alpha = 0.3f),
+            disabledLabelColor = textColor
         ),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
@@ -507,11 +516,11 @@ private fun InputField(
             onDone = { focusManager.clearFocus() }
         ),
         singleLine = true,
-        readOnly = if (isPassword) false else true
+        readOnly = readOnly,
+        enabled = !readOnly  // Disable the field when it's read-only
     )
     Spacer(modifier = Modifier.height(8.dp))
 }
-
 @Composable
 private fun ForgotPasswordText(onClick: () -> Unit) {
     Row(

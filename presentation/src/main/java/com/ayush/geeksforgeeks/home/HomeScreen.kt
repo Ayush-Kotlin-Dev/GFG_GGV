@@ -161,8 +161,8 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.background
             ) {
                 AddEventScreen(
-                    onEventAdded = { event ->
-                        viewModel.addEvent(event)
+                    onEventAdded = { event, imageUri ->
+                        viewModel.addEventWithImage(event, imageUri)
                         showAddEventDialog = false
                     },
                     onDismiss = { showAddEventDialog = false }

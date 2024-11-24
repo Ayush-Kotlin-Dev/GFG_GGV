@@ -29,7 +29,7 @@ import java.util.*
 
 @Composable
 fun AddEventScreen(
-    onEventAdded: (Event) -> Unit,
+    onEventAdded: (Event,Uri) -> Unit,
     onDismiss: () -> Unit
 ) {
     var title by remember { mutableStateOf("") }
@@ -186,7 +186,6 @@ fun AddEventScreen(
                 onClick = {
                     coroutineScope.launch {
                         isLoading = true
-                        val imageUrl = uploadImage(imageUri)
                         val newEvent = Event(
                             id = System.currentTimeMillis().toString(),
                             title = title,
@@ -195,9 +194,11 @@ fun AddEventScreen(
                             time = time,
                             registrationDeadline = registrationDeadline,
                             formLink = formLink,
-                            imageRes = imageUrl ?: ""
+                            imageRes = ""
                         )
-                        onEventAdded(newEvent)
+                        imageUri?.let { uri ->
+                            onEventAdded(newEvent, uri)
+                        }
                         isLoading = false
                         onDismiss()
                     }

@@ -29,4 +29,5 @@ object DataStoreModule {
     fun provideUserPreferences(dataStore: DataStore<Preferences>): UserPreferences {
         return UserPreferences(dataStore)
     }
+
 }

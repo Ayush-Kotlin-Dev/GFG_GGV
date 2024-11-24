@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.home
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.model.Event
@@ -56,9 +57,9 @@ class HomeScreenViewModel @Inject constructor(
             }
         }
     }
-    fun addEvent(event: Event) {
+    fun addEventWithImage(event: Event, imageUri: Uri) {
         viewModelScope.launch {
-            val success = homeRepository.createEvent(event)
+            val success = homeRepository.createEventWithImage(event, imageUri)
             if (success) {
                 val currentEvents = _uiState.value.events.toMutableList()
                 currentEvents.add(event)
