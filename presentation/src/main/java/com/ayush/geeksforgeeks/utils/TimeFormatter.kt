@@ -1,4 +1,4 @@
-package com.ayush.geeksforgeeks.common
+package com.ayush.geeksforgeeks.utils
 
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat

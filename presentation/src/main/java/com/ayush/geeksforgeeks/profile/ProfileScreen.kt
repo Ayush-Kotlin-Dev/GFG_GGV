@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -68,14 +69,13 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.auth.AuthScreen
-import com.ayush.geeksforgeeks.common.AboutUsContent
+import com.ayush.geeksforgeeks.utils.AboutUsContent
 import com.ayush.geeksforgeeks.dashboard.ErrorMessage
 import com.ayush.geeksforgeeks.dashboard.LoadingIndicator
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.net.URLEncoder
 import kotlin.text.Charsets.UTF_8
 
@@ -232,6 +232,13 @@ fun ContactDialog(
     onWhatsApp: () -> Unit
 ) {
     AlertDialog(
+        icon = { 
+            Icon(
+                imageVector = Icons.Default.Call,
+                contentDescription = "Call Icon",
+                tint = GFGPrimary
+            )
+        },
         onDismissRequest = onDismiss,
         title = { Text("Contact Us") },
         text = { Text("How would you like to contact us?") },
@@ -339,6 +346,13 @@ fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () ->
     val queryState by viewModel.queryState.collectAsState()
 
     AlertDialog(
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = "Help Icon",
+                tint = GFGPrimary
+            )
+        },
         onDismissRequest = onDismiss,
         title = { Text("Help") },
         text = {

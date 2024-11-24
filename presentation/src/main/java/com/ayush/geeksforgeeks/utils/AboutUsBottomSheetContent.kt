@@ -1,4 +1,4 @@
-package com.ayush.geeksforgeeks.common
+package com.ayush.geeksforgeeks.utils
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*

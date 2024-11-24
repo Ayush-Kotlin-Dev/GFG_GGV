@@ -19,7 +19,6 @@ import kotlinx.coroutines.launch
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileOutputStream
-import java.io.FileWriter
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -193,6 +192,8 @@ class AdminViewModel @Inject constructor(
 
                 val workbook = XSSFWorkbook()
 
+                val currentTimestamp = Timestamp.now()
+
                 currentTeamMembers.forEach { member ->
                     val sheet = workbook.createSheet(member.name)
                     var rowNum = 0
@@ -206,11 +207,17 @@ class AdminViewModel @Inject constructor(
                     row.createCell(0).setCellValue("Role:")
                     row.createCell(1).setCellValue(member.role.toString())
 
+                    // Add current date and time
+                    row = sheet.createRow(rowNum++)
+                    row.createCell(0).setCellValue("Report Generated:")
+                    row.createCell(1).setCellValue(formatTimestamp(currentTimestamp))
+
                     rowNum++ // Empty row for spacing
 
                     // Create header row for tasks
                     row = sheet.createRow(rowNum++)
-                    val headers = listOf("Task Title", "Status", "Credits", "Due Date", "Updated At")
+                    val headers =
+                        listOf("Task Title", "Status", "Credits", "Due Date", "Updated At")
                     headers.forEachIndexed { index, header ->
                         row.createCell(index).setCellValue(header)
                     }

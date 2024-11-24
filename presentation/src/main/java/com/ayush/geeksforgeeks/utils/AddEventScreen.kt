@@ -31,6 +31,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -219,11 +220,16 @@ fun AddEventScreen(
                 TextButton(onClick = { showDatePicker = false }) {
                     Text("Cancel")
                 }
-            }
+            },
+            colors = DatePickerDefaults.colors(containerColor = GFGBackground)
         ) {
-            DatePicker(state = datePickerState)
+            DatePicker(
+                state = datePickerState,
+                colors = DatePickerDefaults.colors(containerColor = GFGBackground)
+            )
         }
     }
+
 
     if (showTimePicker) {
         AlertDialog(
@@ -243,8 +249,12 @@ fun AddEventScreen(
                 }
             },
             text = {
-                TimePicker(state = timePickerState)
-            }
+                TimePicker(
+                    state = timePickerState,
+                    colors = TimePickerDefaults.colors(containerColor = GFGBackground)
+                )
+            },
+            containerColor = GFGBackground
         )
     }
 
@@ -266,9 +276,13 @@ fun AddEventScreen(
                 TextButton(onClick = { showDeadlinePicker = false }) {
                     Text("Cancel")
                 }
-            }
+            },
+            colors = DatePickerDefaults.colors(containerColor = GFGBackground)
         ) {
-            DatePicker(state = deadlinePickerState)
+            DatePicker(
+                state = deadlinePickerState,
+                colors = DatePickerDefaults.colors(containerColor = GFGBackground)
+            )
         }
     }
 }
