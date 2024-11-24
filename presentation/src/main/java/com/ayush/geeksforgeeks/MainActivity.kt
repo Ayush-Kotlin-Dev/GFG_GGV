@@ -1,65 +1,74 @@
 package com.ayush.geeksforgeeks
 
-import android.annotation.SuppressLint
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.navigator.Navigator
-import com.ayush.data.datastore.UserRole
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
+import com.ayush.geeksforgeeks.utils.ErrorScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var splashScreenProvider: SplashScreenProvider
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
-
-        // Handle the splash screen transition
-        splashScreen.setKeepOnScreenCondition { true }
-
+        val splashScreen = splashScreenProvider.provideSplashScreen(this)
 
         setContent {
             GFGGGVTheme {
-                val viewModel: MainActivityViewModel = hiltViewModel()
+                val viewModel: MainViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
-//                lifecycleScope.launch {
-//                    firebaseDataPopulator.populateTeamsAndMembers()
-//                }
-                // This will be called when the content is ready
-                LaunchedEffect(Unit) {
-                    splashScreen.setKeepOnScreenCondition { false }
+
+                LaunchedEffect(uiState) {
+                    if (uiState !is MainViewModel.UiState.Loading) {
+                        splashScreen.setKeepOnScreenCondition { false }
+                    }
                 }
 
-                Box(modifier = Modifier.fillMaxSize()) {
-                    when (val state = uiState) {
-                        MainActivityViewModel.UiState.Loading -> {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                        }
-                        MainActivityViewModel.UiState.NotLoggedIn -> {
-                            Navigator(screen = AuthScreen())
-                        }
-                        is MainActivityViewModel.UiState.LoggedInAsAdmin -> {
-                            Navigator(screen = ContainerApp(userRole = UserRole.TEAM_LEAD))
-                        }
-                        is MainActivityViewModel.UiState.LoggedInAsMember -> {
-                            Navigator(screen = ContainerApp(userRole = UserRole.MEMBER))
-                        }
+                when (val state = uiState) {
+                    MainViewModel.UiState.Loading -> {
+                        // The splash screen will be shown
+                    }
+                    MainViewModel.UiState.NotLoggedIn -> {
+                        Navigator(screen = AuthScreen())
+                    }
+                    is MainViewModel.UiState.LoggedIn -> {
+                        Navigator(screen = ContainerApp(userRole = state.userRole))
+                    }
+                    is MainViewModel.UiState.Error -> {
+                        ErrorScreen(
+                            errorMessage = state.message,
+                            contactDetails = listOf(
+                                "gfgstudentchapterggv@gmail.com",
+                                "7408047420",
+                                "8102471811"
+                            )
+                        )                        
                     }
                 }
             }
         }
     }
 }
+
+class SplashScreenProvider @Inject constructor() {
+    fun provideSplashScreen(activity: Activity): SplashScreen {
+        return activity.installSplashScreen().apply {
+            setKeepOnScreenCondition { true }
+        }
+    }
+}
+

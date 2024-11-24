@@ -27,7 +27,7 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
     override fun Content() {
         var showBottomBar by remember { mutableStateOf(true) }
         val initialTab = remember { HomeTab(
-            isAdmin = userRole == UserRole.TEAM_LEAD
+            isAdmin = userRole == UserRole.TEAM_LEAD || userRole == UserRole.ADMIN
         ) }
 
         TabNavigator(initialTab) {
@@ -63,9 +63,11 @@ private fun BottomNavigationBar(
             containerColor = Color.White,
             contentColor = Color.Black
         ) {
-            TabNavigationItem(HomeTab(isAdmin = userRole == UserRole.TEAM_LEAD))
+            TabNavigationItem(HomeTab(isAdmin = userRole == UserRole.TEAM_LEAD || userRole == UserRole.ADMIN))
             TabNavigationItem(DashboardTab(onNavigator = onNavigatorChange))
-            TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
+            if (userRole != UserRole.ADMIN) {
+                TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
+            }
             TabNavigationItem(ProfileTab(onNavigator = onNavigatorChange))
         }
     }

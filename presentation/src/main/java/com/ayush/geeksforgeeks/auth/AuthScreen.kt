@@ -1,5 +1,7 @@
 package com.ayush.geeksforgeeks.auth
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -40,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,9 +86,6 @@ AuthScreen : Screen {
     override fun Content() {
         val viewModel: AuthViewModel = hiltViewModel()
         val navigator = LocalNavigator.currentOrThrow
-        LaunchedEffect(Unit) {
-            viewModel.resetState()
-        }
         LoginContent(viewModel, navigator)
     }
 }
@@ -94,7 +95,8 @@ private fun LoginContent(
     viewModel: AuthViewModel,
     navigator: Navigator
 ) {
-    var isLoginMode by remember { mutableStateOf(true) }
+    var isLoginMode by rememberSaveable { mutableStateOf(true) }
+
 
     val focusManager = LocalFocusManager.current
     val (emailFocus, passwordFocus) = remember { FocusRequester.createRefs() }
@@ -104,9 +106,8 @@ private fun LoginContent(
     val teamMembers by viewModel.teamMembers.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    var userRole by remember { mutableStateOf<UserRole?>(null) }
-
-    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var userRole by rememberSaveable { mutableStateOf<UserRole?>(null) }
+    var showForgotPasswordDialog by rememberSaveable { mutableStateOf(false) }
     val resetPasswordState by viewModel.resetPasswordState.collectAsState()
 
     LaunchedEffect(authState) {
@@ -273,6 +274,10 @@ private fun LoginCard(
     onSubmitButtonClick: () -> Unit,
     onForgotPasswordClick: () -> Unit = { }
 ) {
+    var showContactAdminDialog by remember { mutableStateOf(false) }
+    var newEmail by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -326,21 +331,48 @@ private fun LoginCard(
                             .background(GFGStatusPending)
                             .alpha(0.8f)
                     ) {
-                        teams.forEach { team ->
+                        // Leadership Team
+                        teams.filter { it.id.toInt() == 0 }.forEach { team ->
+                            DropdownMenuItem(
+                                text = { Text(team.name, color = GFGBlack, fontWeight = FontWeight.Bold) },
+                                onClick = {
+                                    onTeamSelect(team)
+                                    expandedTeam = false
+                                },
+                            )
+                        }
+                        Divider(color = GFGStatusPendingText, thickness = 1.dp)
+
+                        // Tech Teams
+                        DropdownMenuItem(
+                            text = { Text("Tech Teams", fontWeight = FontWeight.Bold, color = GFGStatusPendingText) },
+                            onClick = { },
+                            enabled = false
+                        )
+                        teams.filter { it.id.toInt() in 1..7 }.forEach { team ->
                             DropdownMenuItem(
                                 text = { Text(team.name, color = GFGBlack) },
                                 onClick = {
                                     onTeamSelect(team)
                                     expandedTeam = false
                                 },
-                                colors = MenuDefaults.itemColors(
-                                    textColor = GFGBlack,
-                                    leadingIconColor = GFGBlack,
-                                    trailingIconColor = GFGBlack,
-                                    disabledTextColor = GFGBlack.copy(alpha = 0.5f),
-                                    disabledLeadingIconColor = GFGBlack.copy(alpha = 0.5f),
-                                    disabledTrailingIconColor = GFGBlack.copy(alpha = 0.5f)
-                                )
+                            )
+                        }
+                        Divider(color = GFGStatusPendingText, thickness = 1.dp)
+
+                        // Non-Tech Teams
+                        DropdownMenuItem(
+                            text = { Text("Non-Tech Teams", fontWeight = FontWeight.Bold, color = GFGStatusPendingText) },
+                            onClick = { },
+                            enabled = false
+                        )
+                        teams.filter { it.id.toInt() > 7 }.forEach { team ->
+                            DropdownMenuItem(
+                                text = { Text(team.name, color = GFGBlack) },
+                                onClick = {
+                                    onTeamSelect(team)
+                                    expandedTeam = false
+                                },
                             )
                         }
                     }
@@ -417,7 +449,18 @@ private fun LoginCard(
                 keyboardType = KeyboardType.Email,
                 readOnly = !isLoginMode
             )
-
+            if (!isLoginMode && selectedTeam != null && selectedMember != null) {
+                Text(
+                    text = "Incorrect email?",
+                    color = GFGStatusPendingText,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showContactAdminDialog = true }
+                        .padding(top = 4.dp, bottom = 8.dp),
+                    textAlign = TextAlign.End
+                )
+            }
             InputField(
                 value = password,
                 onValueChange = onPasswordChange,
@@ -440,6 +483,50 @@ private fun LoginCard(
 
             ToggleModeText(isLoginMode, onModeChange)
         }
+    }
+    if (showContactAdminDialog) {
+        AlertDialog(
+            onDismissRequest = { showContactAdminDialog = false },
+            title = { Text("Contact Admin") },
+            text = {
+                Column {
+                    Text("Please enter your correct email:")
+                    OutlinedTextField(
+                        value = newEmail,
+                        onValueChange = { newEmail = it },
+                        label = { Text("New Email") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val message = "Hello, this is regarding the GFG Student Chapter GGV app. " +
+                                "I need to change my email for my account. " +
+                                "My current email is $email. " +
+                                "I want to change it to $newEmail. " +
+                                "Team: ${selectedTeam?.name}, " +
+                                "Member: ${selectedMember?.name}. " +
+                                "Can you please help?"
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            data = Uri.parse("https://wa.me/+916264450423?text=${Uri.encode(message)}")
+                        }
+                        context.startActivity(intent)
+                        showContactAdminDialog = false
+                    }
+                ) {
+                    Text("Contact Admin on WhatsApp")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showContactAdminDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = GFGBackground
+        )
     }
 }
 
@@ -517,10 +604,11 @@ private fun InputField(
         ),
         singleLine = true,
         readOnly = readOnly,
-        enabled = !readOnly  // Disable the field when it's read-only
+        enabled = !readOnly
     )
     Spacer(modifier = Modifier.height(8.dp))
 }
+
 @Composable
 private fun ForgotPasswordText(onClick: () -> Unit) {
     Row(

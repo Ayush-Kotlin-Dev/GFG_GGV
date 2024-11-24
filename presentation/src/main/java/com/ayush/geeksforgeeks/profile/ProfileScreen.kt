@@ -93,7 +93,7 @@ class ProfileScreen : Screen {
                 viewModel,
                 onLogout = {
                     viewModel.logOut()
-                    navigator?.push(AuthScreen())
+                    navigator?.replaceAll(AuthScreen())
                 }
             )
             is ProfileViewModel.ProfileUiState.Error -> ErrorMessage(state.message)
@@ -112,7 +112,7 @@ fun ProfileContent(
     var showAboutUsBottomSheet by remember { mutableStateOf(false) }
     var showContactDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val appLink = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/tag/GFG"
+    val appLink = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
 
 
     Column(

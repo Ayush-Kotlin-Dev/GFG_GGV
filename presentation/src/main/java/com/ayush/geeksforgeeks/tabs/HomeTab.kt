@@ -12,7 +12,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.ayush.geeksforgeeks.home.HomeScreenEvent
 
-class HomeTab(
+data class HomeTab(
     @Transient
     val isAdmin : Boolean,
 ): Tab {
