@@ -4,7 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateValue
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,6 +24,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -40,6 +47,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -165,33 +173,12 @@ private fun LoginContent(
             WelcomeText(textColor = GFGBlack)
 
             when (authState) {
-                is AuthState.EmailVerificationRequired, is AuthState.EmailVerificationSent -> {
+                is AuthState.EmailVerificationRequired,
+                is AuthState.EmailVerificationSent -> {
                     EmailVerificationContent(
                         onResendEmail = { viewModel.resendVerificationEmail() },
                         viewModel = viewModel
                     )
-                }
-                is AuthState.Loading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.5f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Card(
-                                modifier = Modifier.padding(16.dp),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    CircularProgressIndicator(color = GFGStatusPendingText)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Please wait...")
-                                }
-                            }
-                        }
                 }
 
                 else -> {
@@ -223,7 +210,58 @@ private fun LoginContent(
                 }
             }
         }
+        if (authState is AuthState.Loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .clickable(enabled = false) { /* Prevent clicks through overlay */ },
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    modifier = Modifier
+                        .width(200.dp)
+                        .wrapContentHeight()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color = GFGStatusPendingText,
+                            strokeWidth = 4.dp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Please wait...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = GFGBlack
+                        )
 
+                        val dots by rememberInfiniteTransition(label = "").animateValue(
+                            initialValue = 0,
+                            targetValue = 3,
+                            typeConverter = Int.VectorConverter,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1000),
+                                repeatMode = RepeatMode.Restart
+                            ), label = ""
+                        )
+                        Text(
+                            text = ".".repeat(dots),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = GFGStatusPendingText
+                        )
+                    }
+                }
+            }
+        }
         if (showForgotPasswordDialog) {
             ForgotPasswordDialog(
                 onDismiss = { showForgotPasswordDialog = false },

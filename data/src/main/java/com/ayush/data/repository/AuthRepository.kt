@@ -84,14 +84,21 @@ class AuthRepository @Inject constructor(
             require(teamId.isNotBlank()) { "Team ID is required" }
             require(email.isNotBlank()) { "Email is required" }
             require(password.isNotBlank()) { "Password is required" }
-            val memberDoc = firestore.collection("teams").document(teamId)
-                .collection("members").document(email).get().await()
+
+            // Add retryIO here
+            val memberDoc = retryIO {
+                firestore.collection("teams").document(teamId)
+                    .collection("members").document(email).get().await()
+            }
 
             require(memberDoc.exists()) { "Member not found in the selected team" }
 
-            val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            // Add retryIO here
+            val result = retryIO {
+                firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            }
+
             result.user?.let { user ->
-                // Send verification email with proper error handling
                 val verificationResult = sendEmailVerification()
                 if (verificationResult is EmailVerificationResult.Error) {
                     return@withContext Result.failure(Exception(verificationResult.message))
@@ -100,12 +107,15 @@ class AuthRepository @Inject constructor(
                 val name = memberDoc.getString("name") ?: "Unknown"
                 val role = UserRole.valueOf(memberDoc.getString("role") ?: UserRole.MEMBER.name)
 
-                // Save user data to Firestore, but not to preferences
-                saveUserDataToFirestore(name, user, teamId, role)
+                // Add retryIO here
+                retryIO {
+                    saveUserDataToFirestore(name, user, teamId, role)
+                }
 
                 Result.success(user)
             } ?: Result.failure(IllegalStateException("User creation failed"))
         } catch (e: Exception) {
+            Log.e(TAG, "Signup failed: ${e.message}")
             Result.failure(e)
         }
     }
@@ -118,20 +128,18 @@ class AuthRepository @Inject constructor(
             Log.d(TAG, "Starting login for email: ${email.take(3)}***")
 
             // Try sign in
-            val result = try {
+            val result = retryIO {
                 firebaseAuth.signInWithEmailAndPassword(email, password).await()
-            } catch (e: Exception) {
-                Log.e(TAG, "Firebase sign-in failed: ${e.message}")
-                return@withContext Result.failure(e)
             }
 
             val user = result.user ?: return@withContext Result.failure(
                 IllegalStateException("Login failed: No user returned")
             )
 
-            // Check verification
             try {
-                user.reload().await()
+                retryIO {
+                    user.reload().await()
+                }
                 if (!user.isEmailVerified) {
                     if (shouldSendVerificationEmail()) {
                         sendEmailVerification()
@@ -178,13 +186,11 @@ class AuthRepository @Inject constructor(
 
     suspend fun saveUserDataAfterVerification(user: FirebaseUser) = withContext(ioDispatcher) {
         try {
-            Log.d(TAG, "Saving verified user data for uid: ${user.uid}")
-
-            // Use transaction for atomic operation
-            firestore.runTransaction { transaction ->
-                val userDoc = transaction.get(
-                    firestore.collection("users").document(user.uid)
-                )
+            retryIO {
+                val userDoc = firestore.collection("users")
+                    .document(user.uid)
+                    .get()
+                    .await()
 
                 val userSettings = userDoc.toObject(UserSettings::class.java)
                     ?: throw IllegalStateException("User data not found in Firestore")
@@ -194,19 +200,18 @@ class AuthRepository @Inject constructor(
                     userId = user.uid
                 )
 
-                transaction.set(
-                    firestore.collection("users").document(user.uid),
-                    updatedUserSettings
-                )
+                // Use transaction for atomic operation with retry
+                firestore.runTransaction { transaction ->
+                    transaction.set(
+                        firestore.collection("users").document(user.uid),
+                        updatedUserSettings
+                    )
+                }.await()
 
-                // Return the settings to save to DataStore
-                updatedUserSettings
-            }.await().also { settings ->
-                userPreferences.setUserData(settings)
-                Log.d(TAG, "Successfully updated user data after verification")
+                userPreferences.setUserData(updatedUserSettings)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error saving verified user data: ${e.message}")
+            Log.e("AuthRepository", "Failed to save user data after retries: ${e.message}")
             throw e
         }
     }
@@ -215,21 +220,25 @@ class AuthRepository @Inject constructor(
         try {
             val user = firebaseAuth.currentUser ?: return@withContext EmailVerificationResult.Error("No user signed in")
 
-            // Check if already verified
-            user.reload().await()
+            retryIO {
+                user.reload().await()
+            }
+
             if (user.isEmailVerified) {
                 return@withContext EmailVerificationResult.AlreadyVerified
             }
 
-            // Check time interval
             if (!shouldSendVerificationEmail()) {
                 return@withContext EmailVerificationResult.Error("Please wait before requesting another verification email")
             }
 
-            user.sendEmailVerification().await()
+            retryIO {
+                user.sendEmailVerification().await()
+            }
             lastVerificationEmailSent = System.currentTimeMillis()
             EmailVerificationResult.Success
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to send verification email: ${e.message}")
             EmailVerificationResult.Error(e.message ?: "Failed to send verification email")
         }
     }
@@ -242,10 +251,13 @@ class AuthRepository @Inject constructor(
     suspend fun checkEmailVerificationStatus(): Boolean = withContext(ioDispatcher) {
         try {
             firebaseAuth.currentUser?.let { user ->
-                user.reload().await()
-                user.isEmailVerified
+                retryIO {
+                    user.reload().await()
+                    user.isEmailVerified
+                }
             } ?: false
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to check email verification status: ${e.message}")
             false
         }
     }
@@ -257,25 +269,29 @@ class AuthRepository @Inject constructor(
         teamId: String? = null,
         role: UserRole = UserRole.MEMBER
     ) = withContext(ioDispatcher) {
-        val userSettings = UserSettings(
-            name = username.takeIf { it.isNotBlank() } ?: user.displayName ?: "GFG User",
-            userId = user.uid,
-            email = user.email.orEmpty(),
-            profilePicUrl = user.photoUrl?.toString(),
-            isLoggedIn = true,
-            domainId = teamId?.toIntOrNull() ?: 0,
-            role = role
-        )
+        try {
+            val userSettings = UserSettings(
+                name = username.takeIf { it.isNotBlank() } ?: user.displayName ?: "GFG User",
+                userId = user.uid,
+                email = user.email.orEmpty(),
+                profilePicUrl = user.photoUrl?.toString(),
+                isLoggedIn = true,
+                domainId = teamId?.toIntOrNull() ?: 0,
+                role = role
+            )
 
-        coroutineScope {
-            launch { userPreferences.setUserData(userSettings) }
-            if (isNewUser) {
-                launch {
-                    firestore.collection("users").document(user.uid)
-                        .set(userSettings)
-                        .await()
-                }
+            retryIO {
+                firestore.runTransaction { transaction ->
+                    transaction.set(
+                        firestore.collection("users").document(user.uid),
+                        userSettings
+                    )
+                }.await()
+                userPreferences.setUserData(userSettings)
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save user data: ${e.message}")
+            throw e
         }
     }
 
@@ -295,41 +311,59 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun getTeams(): List<Team> = withContext(ioDispatcher) {
-        val snapshot = firestore.collection("teams").get().await()
-        snapshot.documents.map { doc ->
-            Team(doc.id, doc.getString("name") ?: "")
+        try {
+            retryIO {
+                val snapshot = firestore.collection("teams").get().await()
+                snapshot.documents.map { doc ->
+                    Team(doc.id, doc.getString("name") ?: "")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Failed to get teams after retries: ${e.message}")
+            emptyList()
         }
     }
 
     suspend fun getTeamMembers(teamId: String): List<TeamMember> = withContext(ioDispatcher) {
         require(teamId.isNotBlank()) { "Team ID must not be blank" }
         try {
-            val snapshot = firestore.collection("teams")
-                .document(teamId)
-                .collection("members")
-                .get()
-                .await()
+            retryIO {
+                val snapshot = firestore.collection("teams")
+                    .document(teamId)
+                    .collection("members")
+                    .get()
+                    .await()
 
-            snapshot.documents.mapNotNull { doc ->
-                try {
-                    TeamMember(
-                        name = doc.getString("name") ?: throw IllegalStateException("Name not found"),
-                        email = doc.id,
-                        role = UserRole.valueOf(doc.getString("role") ?: UserRole.MEMBER.name)
-                    )
-                } catch (e: Exception) {
-                    Log.e("AuthRepository", "Error mapping team member: ${e.message}")
-                    null
+                snapshot.documents.mapNotNull { doc ->
+                    try {
+                        TeamMember(
+                            name = doc.getString("name") ?: throw IllegalStateException("Name not found"),
+                            email = doc.id,
+                            role = UserRole.valueOf(doc.getString("role") ?: UserRole.MEMBER.name)
+                        )
+                    } catch (e: Exception) {
+                        Log.e("AuthRepository", "Error mapping team member: ${e.message}")
+                        null
+                    }
                 }
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Error getting team members: ${e.message}")
+            Log.e("AuthRepository", "Error getting team members after retries: ${e.message}")
             emptyList()
         }
     }
 
-    suspend fun sendPasswordResetEmail(email: String) {
-        firebaseAuth.sendPasswordResetEmail(email).await()
+    suspend fun sendPasswordResetEmail(email: String) = withContext(ioDispatcher) {
+        try {
+            require(email.isNotBlank()) { "Email cannot be empty" }
+            retryIO {
+                firebaseAuth.sendPasswordResetEmail(email).await()
+            }
+            Log.d(TAG, "Password reset email sent successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send password reset email: ${e.message}")
+            throw e
+        }
     }
 
     suspend fun logout() = withContext(ioDispatcher) {
@@ -363,8 +397,17 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun isEmailVerified(): Boolean = withContext(ioDispatcher) {
-        firebaseAuth.currentUser?.reload()?.await()
-        firebaseAuth.currentUser?.isEmailVerified ?: false
+        try {
+            retryIO {
+                firebaseAuth.currentUser?.let { user ->
+                    user.reload().await()
+                    user.isEmailVerified
+                } ?: false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to check email verification: ${e.message}")
+            false
+        }
     }
 
     suspend fun reloadUser() = withContext(ioDispatcher) {
@@ -376,18 +419,18 @@ class AuthRepository @Inject constructor(
         maxDelay: Long = 1000,
         factor: Double = 2.0,
         block: suspend () -> T
-    ): T = withContext(ioDispatcher) {
+    ): T {
         var currentDelay = initialDelay
         repeat(times - 1) { attempt ->
             try {
-                return@withContext block()
+                return block()
             } catch (e: Exception) {
-                Log.w("AuthRepository", "Attempt ${attempt + 1} failed: ${e.message}")
+                Log.w(TAG, "Attempt ${attempt + 1} failed: ${e.message}")
             }
             delay(currentDelay)
             currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
         }
-        return@withContext block() // last attempt
+        return block() // last attempt
     }
     data class Team(val id: String, val name: String)
     data class TeamMember(val name: String, val email: String, val role: UserRole)
