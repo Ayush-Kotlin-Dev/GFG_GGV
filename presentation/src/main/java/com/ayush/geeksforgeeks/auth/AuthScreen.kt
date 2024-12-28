@@ -3,6 +3,9 @@ package com.ayush.geeksforgeeks.auth
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +24,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,6 +37,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -52,6 +60,7 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -80,8 +89,7 @@ import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class
-AuthScreen : Screen {
+class AuthScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: AuthViewModel = hiltViewModel()
@@ -96,7 +104,6 @@ private fun LoginContent(
     navigator: Navigator
 ) {
     var isLoginMode by rememberSaveable { mutableStateOf(true) }
-
 
     val focusManager = LocalFocusManager.current
     val (emailFocus, passwordFocus) = remember { FocusRequester.createRefs() }
@@ -138,7 +145,6 @@ private fun LoginContent(
             else -> {}
         }
     }
-
 
     Box(
         modifier = Modifier
@@ -209,8 +215,6 @@ private fun LoginContent(
 private fun EmailVerificationContent(
     onResendEmail: () -> Unit,
     viewModel: AuthViewModel
-
-
 ) {
     LaunchedEffect(Unit) {
         while (true) {
@@ -525,7 +529,7 @@ private fun LoginCard(
                     Text("Cancel")
                 }
             },
-            containerColor = GFGBackground
+            containerColor = GFGBackground,
         )
     }
 }
@@ -568,10 +572,21 @@ private fun InputField(
     focusManager: FocusManager,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
-    readOnly: Boolean = false  // Add this parameter
+    readOnly: Boolean = false
 ) {
     val backgroundColor = if (readOnly) GFGBackground.copy(alpha = 0.6f) else GFGBackground
     val textColor = if (readOnly) GFGBlack.copy(alpha = 0.6f) else GFGBlack
+
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (passwordVisible) 180f else 0f,
+        animationSpec = tween(
+            durationMillis = 300,
+            easing = FastOutSlowInEasing
+        ),
+        label = "rotation"
+    )
 
     OutlinedTextField(
         value = value,
@@ -581,7 +596,32 @@ private fun InputField(
             .fillMaxWidth()
             .focusRequester(focusRequester)
             .background(backgroundColor, RoundedCornerShape(4.dp)),
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        visualTransformation = if (isPassword && !passwordVisible)
+            PasswordVisualTransformation()
+        else
+            VisualTransformation.None,
+        trailingIcon = if (isPassword) {
+            {
+                IconButton(
+                    onClick = { passwordVisible = !passwordVisible }
+                ) {
+                    Icon(
+                        imageVector = if (passwordVisible)
+                            Icons.Rounded.Visibility
+                        else
+                            Icons.Rounded.VisibilityOff,
+                        contentDescription = if (passwordVisible)
+                            "Show password"
+                        else
+                            "Hide password",
+                        tint = GFGStatusPendingText,
+                        modifier = Modifier.graphicsLayer {
+                            rotationY = rotationAngle
+                        }
+                    )
+                }
+            }
+        } else null,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = if (readOnly) GFGBlack.copy(alpha = 0.3f) else GFGStatusPendingText,
             unfocusedBorderColor = GFGBlack.copy(alpha = 0.3f),
@@ -715,7 +755,6 @@ private fun ForgotPasswordDialog(
                 Text("Cancel")
             }
         },
-        containerColor = GFGStatusPending,
-
-        )
+        containerColor = GFGBackground,
+    )
 }

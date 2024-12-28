@@ -1,5 +1,6 @@
 package com.ayush.data.repository
 
+import android.util.Log
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.datastore.UserSettings
@@ -104,30 +105,83 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    // Modify the login function to save user data to preferences only if email is verified
     suspend fun login(email: String, password: String): Result<FirebaseUser> = withContext(ioDispatcher) {
+        Log.d("AuthRepository", "Starting login process for email: ${email.take(3)}***")
         try {
+            Log.d("AuthRepository", "Attempting Firebase sign in...")
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+
             result.user?.let { user ->
-                // Reload user to get latest verification status
+                Log.d("AuthRepository", "Firebase sign in successful, uid: ${user.uid}")
+                Log.d("AuthRepository", "Reloading user data...")
                 user.reload().await()
 
                 if (user.isEmailVerified) {
-                    saveUserDataAfterVerification(user)
-                    Result.success(user)
+                    Log.d("AuthRepository", "Email is verified, fetching user data from Firestore...")
+
+                    // Get user data from Firestore first
+                    val userDoc = firestore.collection("users")
+                        .document(user.uid)
+                        .get()
+                        .await()
+
+                    val userSettings = userDoc.toObject(UserSettings::class.java)
+                    if (userSettings == null) {
+                        Log.e("AuthRepository", "User settings not found in Firestore for uid: ${user.uid}")
+                        throw IllegalStateException("User data not found")
+                    }
+                    Log.d("AuthRepository", "User data retrieved from Firestore successfully")
+
+                    // Update the isLoggedIn status and save to both Firestore and DataStore
+                    val updatedUserSettings = userSettings.copy(isLoggedIn = true)
+                    Log.d("AuthRepository", "Updating user login status...")
+
+                    try {
+                        // Save to Firestore first
+                        Log.d("AuthRepository", "Saving updated user data to Firestore...")
+                        firestore.collection("users")
+                            .document(user.uid)
+                            .set(updatedUserSettings)
+                            .await()
+                        Log.d("AuthRepository", "Firestore update successful")
+
+                        // Then save to DataStore
+                        Log.d("AuthRepository", "Saving user data to DataStore...")
+                        userPreferences.setUserData(updatedUserSettings)
+                        Log.d("AuthRepository", "DataStore update successful")
+
+                        Log.d("AuthRepository", "Login process completed successfully")
+                        Result.success(user)
+                    } catch (e: Exception) {
+                        Log.e("AuthRepository", "Error saving user data: ${e.message}")
+                        // If saving fails, try to revert Firestore changes
+                        try {
+                            firestore.collection("users")
+                                .document(user.uid)
+                                .set(userSettings)
+                                .await()
+                        } catch (revertError: Exception) {
+                            Log.e("AuthRepository", "Failed to revert Firestore changes: ${revertError.message}")
+                        }
+                        throw e
+                    }
                 } else {
-                    // Only send verification email if enough time has passed
+                    Log.w("AuthRepository", "Email not verified, checking if verification email should be sent")
                     if (shouldSendVerificationEmail()) {
+                        Log.d("AuthRepository", "Sending verification email...")
                         sendEmailVerification()
                     }
                     Result.failure(Exception("Email not verified"))
                 }
-            } ?: Result.failure(IllegalStateException("Login failed"))
+            } ?: run {
+                Log.e("AuthRepository", "Login failed: User is null after sign in")
+                Result.failure(IllegalStateException("Login failed"))
+            }
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Login error: ${e.message}", e)
             Result.failure(e)
         }
-    }
-
+    } ?: Result.failure(IllegalStateException("Login failed"))
     // Add a new function to save user data to preferences after email verification
     suspend fun saveUserDataAfterVerification(user: FirebaseUser) {
         val userDoc = firestore.collection("users").document(user.uid).get().await()

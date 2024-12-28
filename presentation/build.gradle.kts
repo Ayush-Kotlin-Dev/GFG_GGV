@@ -76,7 +76,6 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.compose.material:material-icons-extended:1.7.6")
 
-
 }
 
 tasks.register("copyProguardRules", Copy::class) {

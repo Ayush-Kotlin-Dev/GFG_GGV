@@ -18,21 +18,40 @@ class UserRepository @Inject constructor(
     private val userPreferences: UserPreferences
 ) {
     suspend fun getCurrentUser(): UserSettings {
-        val localUser = userPreferences.userData.first()
+        try {
+            // First check if there's a Firebase user
+            val firebaseUser = firebaseAuth.currentUser
+                ?: throw IllegalStateException("No user logged in")
 
-        require(localUser.userId.isNotBlank()) { "User ID must not be blank" }
-        return if (localUser.isLoggedIn) {
-            val firebaseUser = firestore.collection("users")
-                .document(localUser.userId)
+            Log.d("UserRepository", "Firebase user ID: ${firebaseUser.uid}")
+
+            // Try to get user from DataStore
+            val localUser = userPreferences.userData.first()
+            Log.d("UserRepository", "Local user from DataStore: $localUser")
+
+            // If local user is valid and logged in, use it
+            if (localUser.isLoggedIn && localUser.userId.isNotBlank()) {
+                Log.d("UserRepository", "Using local user data")
+                return localUser
+            }
+
+            // If local user is invalid or not logged in, fetch from Firestore
+            Log.d("UserRepository", "Fetching user data from Firestore")
+            val firestoreUser = firestore.collection("users")
+                .document(firebaseUser.uid)
                 .get()
                 .await()
-                ?.toObject(UserSettings::class.java)
+                .toObject(UserSettings::class.java)
+                ?: throw IllegalStateException("User data not found in Firestore")
 
-            Log.d("UserRepository", "getCurrentUser: firebaseUser=$firebaseUser")
-            firebaseUser?.let { userPreferences.setUserData(it) }
-            firebaseUser ?: localUser
-        } else {
-            throw IllegalStateException("No user logged in")
+            // Update DataStore with Firestore data
+            Log.d("UserRepository", "Updating DataStore with Firestore data")
+            userPreferences.setUserData(firestoreUser)
+
+            return firestoreUser
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error getting current user: ${e.message}", e)
+            throw e
         }
     }
 

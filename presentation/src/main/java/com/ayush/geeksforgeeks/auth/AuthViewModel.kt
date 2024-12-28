@@ -1,6 +1,7 @@
 package com.ayush.geeksforgeeks.auth
 
 import android.os.Bundle
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -149,20 +151,36 @@ class AuthViewModel @Inject constructor(
     fun login() {
         currentAuthJob?.cancel()
         currentAuthJob = viewModelScope.launch {
-            _authState.value = AuthState.Loading
-            val result = authRepository.login(email, password)
-            result.fold(
-                onSuccess = { user ->
-                    _authState.value = AuthState.Success(user)
-                },
-                onFailure = { e ->
-                    if (e.message == "Email not verified") {
-                        _authState.value = AuthState.EmailVerificationRequired
-                    } else {
-                        _authState.value = AuthState.Error(e.message ?: "Login failed", e)
+            try {
+                Log.d("AuthViewModel", "Starting login process...")
+                _authState.value = AuthState.Loading
+
+                Log.d("AuthViewModel", "Calling repository login...")
+                val result = authRepository.login(email, password)
+
+                result.fold(
+                    onSuccess = { user ->
+                        Log.d("AuthViewModel", "Login successful for user: ${user.uid}")
+                        _authState.value = AuthState.Success(user)
+                    },
+                    onFailure = { e ->
+                        when {
+                            e is CancellationException -> throw e  // Rethrow cancellation
+                            e.message == "Email not verified" -> {
+                                Log.w("AuthViewModel", "Login failed: Email not verified")
+                                _authState.value = AuthState.EmailVerificationRequired
+                            }
+                            else -> {
+                                Log.e("AuthViewModel", "Login failed with error: ${e.message}", e)
+                                _authState.value = AuthState.Error(e.message ?: "Login failed", e)
+                            }
+                        }
                     }
-                }
-            )
+                )
+            } catch (e: CancellationException) {
+                Log.d("AuthViewModel", "Login cancelled")
+                throw e  // Rethrow cancellation
+            }
         }
     }
 
