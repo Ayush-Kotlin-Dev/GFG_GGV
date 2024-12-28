@@ -53,17 +53,20 @@ class AuthRepository @Inject constructor(
         user: FirebaseUser,
         teamId: String,
         role: UserRole
-    ) = withContext(ioDispatcher) {
+    ) {
+        require(teamId.isNotBlank()) { "Team ID must be provided" }
+        // Construct user settings
         val userSettings = UserSettings(
-            name = username.takeIf { it.isNotBlank() } ?: user.displayName ?: "GFG User",
+            name = username.ifBlank { user.displayName ?: "GFG User" },
             userId = user.uid,
             email = user.email.orEmpty(),
             profilePicUrl = user.photoUrl?.toString(),
-            isLoggedIn = false, // Set this to false initially
+            isLoggedIn = false,
             domainId = teamId.toIntOrNull() ?: 0,
             role = role
         )
 
+        // Save user settings
         firestore.collection("users").document(user.uid)
             .set(userSettings)
             .await()

@@ -67,13 +67,13 @@ fun DependencyHandler.coil() {
     implementation("io.coil-kt:coil-compose:${Versions.coil}")
 }
 
-//fun DependencyHandler.ktor() {
-//    implementation("io.ktor:ktor-client-core:${Versions.ktor}")
-//    implementation("io.ktor:ktor-client-content-negotiation:${Versions.ktor}")
-//    implementation("io.ktor:ktor-client-cio:${Versions.ktor}")
-//    implementation("io.ktor:ktor-client-logging:${Versions.ktor}")
-//    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
-//}
+fun DependencyHandler.ktor() {
+    implementation("io.ktor:ktor-client-core:${Versions.ktor}")
+    implementation("io.ktor:ktor-client-content-negotiation:${Versions.ktor}")
+    implementation("io.ktor:ktor-client-cio:${Versions.ktor}")
+    implementation("io.ktor:ktor-client-logging:${Versions.ktor}")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}")
+}
 
 fun DependencyHandler.serialization() {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization}")

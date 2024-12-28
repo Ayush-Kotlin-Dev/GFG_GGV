@@ -74,6 +74,7 @@ dependencies {
     implementation ("org.apache.poi:poi-ooxml:5.2.4")
     implementation ("org.apache.poi:poi:5.2.4")
     implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.compose.material:material-icons-extended:1.7.6")
 
 
 }

@@ -10,17 +10,14 @@ import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
-import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
+
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
@@ -116,7 +113,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-
     private fun sendEmailVerification() {
         viewModelScope.launch {
             try {
@@ -127,7 +123,6 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
-
 
     fun signUp() {
         currentAuthJob?.cancel()
@@ -212,11 +207,9 @@ class AuthViewModel @Inject constructor(
 
     private var verificationCheckJob: Job? = null
 
-
     private fun stopVerificationCheck() {
         verificationCheckJob?.cancel()
     }
-
 
     override fun onCleared() {
         super.onCleared()

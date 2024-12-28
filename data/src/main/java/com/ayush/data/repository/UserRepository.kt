@@ -1,6 +1,5 @@
 package com.ayush.data.repository
 
-
 import android.net.Uri
 import android.util.Log
 import com.ayush.data.datastore.User
@@ -20,12 +19,14 @@ class UserRepository @Inject constructor(
 ) {
     suspend fun getCurrentUser(): UserSettings {
         val localUser = userPreferences.userData.first()
+
+        require(localUser.userId.isNotBlank()) { "User ID must not be blank" }
         return if (localUser.isLoggedIn) {
             val firebaseUser = firestore.collection("users")
                 .document(localUser.userId)
                 .get()
                 .await()
-                .toObject(UserSettings::class.java)
+                ?.toObject(UserSettings::class.java)
 
             Log.d("UserRepository", "getCurrentUser: firebaseUser=$firebaseUser")
             firebaseUser?.let { userPreferences.setUserData(it) }
@@ -54,13 +55,14 @@ class UserRepository @Inject constructor(
     }
 
     suspend fun updateUser(userSettings: UserSettings) {
+        require(userSettings.userId.isNotBlank()) { "User ID must not be blank" }
         firestore.collection("users")
             .document(userSettings.userId)
             .set(userSettings)
             .await()
         userPreferences.setUserData(userSettings)
     }
-    
+
     suspend fun getTeamMembers(): List<User> {
         return try {
 
@@ -107,6 +109,4 @@ class UserRepository @Inject constructor(
             0 // Return 0 if there's an error
         }
     }
-
-
 }

@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -75,6 +76,7 @@ import com.ayush.geeksforgeeks.dashboard.LoadingIndicator
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
+import com.ayush.geeksforgeeks.utils.ContributorsContent
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import kotlin.text.Charsets.UTF_8
@@ -113,6 +115,7 @@ fun ProfileContent(
     var showContactDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val appLink = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
+    var showContributorsBottomSheet by remember { mutableStateOf(false) }
 
 
     Column(
@@ -148,6 +151,7 @@ fun ProfileContent(
                     context.startActivity(shareIntent)
                 }
                 ProfileMenuItem(Icons.Default.Info, "Help") { showHelpDialog = true }
+                ProfileMenuItem(Icons.Default.Code, "Contributors") { showContributorsBottomSheet = true }
                 ProfileMenuItem(Icons.Rounded.FavoriteBorder, "About Us") { showAboutUsBottomSheet = true }
             }
         }
@@ -222,6 +226,9 @@ fun ProfileContent(
 
     if (showAboutUsBottomSheet) {
         AboutUsBottomSheet(onDismiss = { showAboutUsBottomSheet = false })
+    }
+    if (showContributorsBottomSheet) {
+        ContributorsBottomSheet(onDismiss = { showContributorsBottomSheet = false })
     }
 }
 @Composable
@@ -394,6 +401,22 @@ fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () ->
         containerColor = GFGBackground,
     )
 }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ContributorsBottomSheet(onDismiss: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val scope = rememberCoroutineScope()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = GFGBackground,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        ContributorsContent(onClose = { scope.launch { sheetState.hide() } })
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutUsBottomSheet(onDismiss: () -> Unit) {
