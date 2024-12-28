@@ -27,8 +27,24 @@ class AuthViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    companion object {
+        private const val VERIFICATION_TIMEOUT = 5 * 60 * 1000L // 5 minutes
+        private const val VERIFICATION_CHECK_INTERVAL = 5000L
+    }
+
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState = _authState.asStateFlow()
+
+    private val _verificationState = MutableStateFlow<VerificationState>(VerificationState.Idle)
+    val verificationState = _verificationState.asStateFlow()
+
+    sealed class VerificationState {
+        object Idle : VerificationState()
+        object Loading : VerificationState()
+        data class TimeoutWarning(val remainingSeconds: Int) : VerificationState()
+        object Timeout : VerificationState()
+        data class Error(val message: String) : VerificationState()
+    }
 
     private var currentAuthJob: Job? = null
     private var verificationCheckJob: Job? = null
@@ -130,17 +146,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun sendEmailVerification() {
-        viewModelScope.launch {
-            try {
-                authRepository.sendEmailVerification()
-                _authState.value = AuthState.EmailVerificationSent
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error("Failed to send verification email: ${e.message}", e)
-            }
-        }
-    }
-
     fun signUp() {
         currentAuthJob?.cancel()
         currentAuthJob = viewModelScope.launch {
@@ -205,6 +210,7 @@ class AuthViewModel @Inject constructor(
         currentAuthJob?.cancel()
         verificationCheckJob?.cancel()
         currentAuthJob = viewModelScope.launch {
+            delay(1000)
             try {
                 if (!validateLoginInput()) {
                     return@launch
@@ -249,24 +255,57 @@ class AuthViewModel @Inject constructor(
         verificationCheckJob?.cancel()
         verificationCheckJob = viewModelScope.launch {
             try {
-                while (true) {
-                    delay(5000)
-                    Log.d("AuthViewModel", "Checking email verification status")
+                val startTime = System.currentTimeMillis()
+                while (System.currentTimeMillis() - startTime < VERIFICATION_TIMEOUT) {
+                    _verificationState.value = VerificationState.Loading
+                    
+                    // Show remaining time warning when less than 1 minute
+                    val remainingTime = VERIFICATION_TIMEOUT - (System.currentTimeMillis() - startTime)
+                    if (remainingTime < 60000) {
+                        _verificationState.value = VerificationState.TimeoutWarning(
+                            (remainingTime / 1000).toInt()
+                        )
+                    }
+
                     if (authRepository.isEmailVerified()) {
                         val user = authRepository.firebaseAuth.currentUser
                         if (user != null) {
                             Log.d("AuthViewModel", "Email verified, saving user data")
                             authRepository.saveUserDataAfterVerification(user)
                             _authState.value = AuthState.Success(user)
-                            break  // Exit the loop once verified
+                            _verificationState.value = VerificationState.Idle
+                            return@launch
                         }
                     }
+                    delay(VERIFICATION_CHECK_INTERVAL)
                 }
+                // Timeout reached
+                _verificationState.value = VerificationState.Timeout
+                _authState.value = AuthState.Error(
+                    "Verification timeout. Please try again.",
+                    Exception("Verification timeout")
+                )
             } catch (e: CancellationException) {
-                throw e  // Rethrow cancellation
+                throw e
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Verification check error: ${e.message}")
+                _verificationState.value = VerificationState.Error(e.message ?: "Verification check failed")
                 _authState.value = AuthState.Error("Verification check failed", e)
+            }
+        }
+    }
+
+    fun retryVerification() {
+        viewModelScope.launch {
+            try {
+                _authState.value = AuthState.Loading
+                _verificationState.value = VerificationState.Loading
+                authRepository.sendEmailVerification()
+                _authState.value = AuthState.EmailVerificationRequired
+                startVerificationCheck()
+            } catch (e: Exception) {
+                _verificationState.value = VerificationState.Error(e.message ?: "Failed to retry verification")
+                _authState.value = AuthState.Error("Failed to retry verification", e)
             }
         }
     }
@@ -317,7 +356,16 @@ class AuthViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        verificationCheckJob?.cancel()
+        viewModelScope.launch {
+            try {
+                verificationCheckJob?.cancel()
+                currentAuthJob?.cancel()
+                clearFormData()
+                Log.d("AuthViewModel", "Successfully cleaned up resources")
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error during cleanup: ${e.message}")
+            }
+        }
     }
 }
 

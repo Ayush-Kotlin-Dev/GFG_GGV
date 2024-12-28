@@ -32,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,6 +83,7 @@ import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
 import com.ayush.geeksforgeeks.ContainerApp
 import com.ayush.geeksforgeeks.R
+import com.ayush.geeksforgeeks.auth.AuthViewModel.VerificationState
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGBlack
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
@@ -151,6 +153,7 @@ private fun LoginContent(
             .fillMaxSize()
             .background(GFGStatusPending)
     ) {
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -167,6 +170,28 @@ private fun LoginContent(
                         onResendEmail = { viewModel.resendVerificationEmail() },
                         viewModel = viewModel
                     )
+                }
+                is AuthState.Loading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Card(
+                                modifier = Modifier.padding(16.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    CircularProgressIndicator(color = GFGStatusPendingText)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Please wait...")
+                                }
+                            }
+                        }
                 }
 
                 else -> {
@@ -211,51 +236,6 @@ private fun LoginContent(
     }
 }
 
-@Composable
-private fun EmailVerificationContent(
-    onResendEmail: () -> Unit,
-    viewModel: AuthViewModel
-) {
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(5000) // Check every 5 seconds
-            viewModel.checkEmailVerification()
-        }
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = GFGBackground)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Email Verification Required",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = GFGBlack
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Please check your email and click the verification link to continue.",
-                color = GFGBlack,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onResendEmail,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = GFGStatusPendingText)
-            ) {
-                Text("Resend Verification Email", color = Color.White)
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -338,7 +318,13 @@ private fun LoginCard(
                         // Leadership Team
                         teams.filter { it.id.toInt() == 0 }.forEach { team ->
                             DropdownMenuItem(
-                                text = { Text(team.name, color = GFGBlack, fontWeight = FontWeight.Bold) },
+                                text = {
+                                    Text(
+                                        team.name,
+                                        color = GFGBlack,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
                                 onClick = {
                                     onTeamSelect(team)
                                     expandedTeam = false
@@ -349,7 +335,13 @@ private fun LoginCard(
 
                         // Tech Teams
                         DropdownMenuItem(
-                            text = { Text("Tech Teams", fontWeight = FontWeight.Bold, color = GFGStatusPendingText) },
+                            text = {
+                                Text(
+                                    "Tech Teams",
+                                    fontWeight = FontWeight.Bold,
+                                    color = GFGStatusPendingText
+                                )
+                            },
                             onClick = { },
                             enabled = false
                         )
@@ -366,7 +358,13 @@ private fun LoginCard(
 
                         // Non-Tech Teams
                         DropdownMenuItem(
-                            text = { Text("Non-Tech Teams", fontWeight = FontWeight.Bold, color = GFGStatusPendingText) },
+                            text = {
+                                Text(
+                                    "Non-Tech Teams",
+                                    fontWeight = FontWeight.Bold,
+                                    color = GFGStatusPendingText
+                                )
+                            },
                             onClick = { },
                             enabled = false
                         )
@@ -515,7 +513,8 @@ private fun LoginCard(
                                 "Member: ${selectedMember?.name}. " +
                                 "Can you please help?"
                         val intent = Intent(Intent.ACTION_VIEW).apply {
-                            data = Uri.parse("https://wa.me/+916264450423?text=${Uri.encode(message)}")
+                            data =
+                                Uri.parse("https://wa.me/+916264450423?text=${Uri.encode(message)}")
                         }
                         context.startActivity(intent)
                         showContactAdminDialog = false
@@ -757,4 +756,124 @@ private fun ForgotPasswordDialog(
         },
         containerColor = GFGBackground,
     )
+}
+
+@Composable
+private fun EmailVerificationContent(
+    onResendEmail: () -> Unit,
+    viewModel: AuthViewModel
+) {
+    val verificationState by viewModel.verificationState.collectAsState()
+    var isResending by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = GFGBackground)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Email Verification Required",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = GFGBlack
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Show different messages based on verification state
+            when (verificationState) {
+                is VerificationState.Loading -> {
+                    CircularProgressIndicator(color = GFGStatusPendingText)
+                    Text(
+                        "Checking verification status...",
+                        color = GFGBlack,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                is VerificationState.TimeoutWarning -> {
+                    val remainingSeconds =
+                        (verificationState as VerificationState.TimeoutWarning).remainingSeconds
+                    Text(
+                        "Verification expires in ${remainingSeconds}s",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                is VerificationState.Timeout -> {
+                    Text(
+                        "Verification timed out. Please try again.",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                is VerificationState.Error -> {
+                    Text(
+                        (verificationState as VerificationState.Error).message,
+                        color = Color.Red,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                else -> {
+                    Text(
+                        "Please check your email and click the verification link to continue.",
+                        color = GFGBlack,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(
+                    onClick = {
+                        isResending = true
+                        onResendEmail()
+                    },
+                    enabled = !isResending && verificationState !is VerificationState.Loading,
+                    colors = ButtonDefaults.buttonColors(containerColor = GFGStatusPendingText)
+                ) {
+                    if (isResending) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        Text("Resend Email", color = Color.White)
+                    }
+                }
+
+                if (verificationState is VerificationState.Timeout ||
+                    verificationState is VerificationState.Error
+                ) {
+                    Button(
+                        onClick = { viewModel.retryVerification() },
+                        colors = ButtonDefaults.buttonColors(containerColor = GFGStatusPendingText)
+                    ) {
+                        Text("Retry Verification", color = Color.White)
+                    }
+                }
+            }
+        }
+    }
+
+    // Reset resending state after delay
+    LaunchedEffect(isResending) {
+        if (isResending) {
+            delay(3000)
+            isResending = false
+        }
+    }
 }

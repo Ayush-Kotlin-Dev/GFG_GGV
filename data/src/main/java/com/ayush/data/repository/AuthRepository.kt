@@ -1,5 +1,6 @@
 package com.ayush.data.repository
 
+import android.content.ContentValues.TAG
 import android.util.Log
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserRole
@@ -10,6 +11,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -109,112 +111,102 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun login(email: String, password: String): Result<FirebaseUser> = withContext(ioDispatcher) {
-        Log.d("AuthRepository", "Starting login process for email: ${email.take(3)}***")
         try {
-            Log.d("AuthRepository", "Attempting Firebase sign in...")
-            val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+            require(email.isNotBlank()) { "Email cannot be empty" }
+            require(password.isNotBlank()) { "Password cannot be empty" }
 
-            result.user?.let { user ->
-                Log.d("AuthRepository", "Firebase sign in successful, uid: ${user.uid}")
-                Log.d("AuthRepository", "Reloading user data...")
+            Log.d(TAG, "Starting login for email: ${email.take(3)}***")
+
+            // Try sign in
+            val result = try {
+                firebaseAuth.signInWithEmailAndPassword(email, password).await()
+            } catch (e: Exception) {
+                Log.e(TAG, "Firebase sign-in failed: ${e.message}")
+                return@withContext Result.failure(e)
+            }
+
+            val user = result.user ?: return@withContext Result.failure(
+                IllegalStateException("Login failed: No user returned")
+            )
+
+            // Check verification
+            try {
                 user.reload().await()
-
-                if (user.isEmailVerified) {
-                    Log.d("AuthRepository", "Email is verified, fetching user data from Firestore...")
-
-                    // Get user data from Firestore first
-                    val userDoc = firestore.collection("users")
-                        .document(user.uid)
-                        .get()
-                        .await()
-
-                    val userSettings = userDoc.toObject(UserSettings::class.java)
-                    if (userSettings == null) {
-                        Log.e("AuthRepository", "User settings not found in Firestore for uid: ${user.uid}")
-                        throw IllegalStateException("User data not found")
-                    }
-                    Log.d("AuthRepository", "User data retrieved from Firestore successfully")
-
-                    // Update the isLoggedIn status and save to both Firestore and DataStore
-                    val updatedUserSettings = userSettings.copy(isLoggedIn = true)
-                    Log.d("AuthRepository", "Updating user login status...")
-
-                    try {
-                        // Save to Firestore first
-                        Log.d("AuthRepository", "Saving updated user data to Firestore...")
-                        firestore.collection("users")
-                            .document(user.uid)
-                            .set(updatedUserSettings)
-                            .await()
-                        Log.d("AuthRepository", "Firestore update successful")
-
-                        // Then save to DataStore
-                        Log.d("AuthRepository", "Saving user data to DataStore...")
-                        userPreferences.setUserData(updatedUserSettings)
-                        Log.d("AuthRepository", "DataStore update successful")
-
-                        Log.d("AuthRepository", "Login process completed successfully")
-                        Result.success(user)
-                    } catch (e: Exception) {
-                        Log.e("AuthRepository", "Error saving user data: ${e.message}")
-                        // If saving fails, try to revert Firestore changes
-                        try {
-                            firestore.collection("users")
-                                .document(user.uid)
-                                .set(userSettings)
-                                .await()
-                        } catch (revertError: Exception) {
-                            Log.e("AuthRepository", "Failed to revert Firestore changes: ${revertError.message}")
-                        }
-                        throw e
-                    }
-                } else {
-                    Log.w("AuthRepository", "Email not verified, checking if verification email should be sent")
+                if (!user.isEmailVerified) {
                     if (shouldSendVerificationEmail()) {
-                        Log.d("AuthRepository", "Sending verification email...")
                         sendEmailVerification()
                     }
-                    Result.failure(Exception("Email not verified"))
+                    return@withContext Result.failure(Exception("Email not verified"))
                 }
-            } ?: run {
-                Log.e("AuthRepository", "Login failed: User is null after sign in")
-                Result.failure(IllegalStateException("Login failed"))
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking email verification: ${e.message}")
+                return@withContext Result.failure(e)
+            }
+
+            // Get and update user data
+            try {
+                val userDoc = firestore.collection("users")
+                    .document(user.uid)
+                    .get()
+                    .await()
+
+                val userSettings = userDoc.toObject(UserSettings::class.java)
+                    ?: throw IllegalStateException("User data not found")
+
+                val updatedUserSettings = userSettings.copy(isLoggedIn = true)
+
+                // Transaction to ensure data consistency
+                firestore.runTransaction { transaction ->
+                    transaction.set(
+                        firestore.collection("users").document(user.uid),
+                        updatedUserSettings
+                    )
+                }.await()
+
+                userPreferences.setUserData(updatedUserSettings)
+
+                Result.success(user)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating user data: ${e.message}")
+                Result.failure(e)
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Login error: ${e.message}", e)
+            Log.e(TAG, "Login error: ${e.message}")
             Result.failure(e)
         }
     }
 
     suspend fun saveUserDataAfterVerification(user: FirebaseUser) = withContext(ioDispatcher) {
         try {
-            Log.d("AuthRepository", "Saving verified user data for uid: ${user.uid}")
-            val userDoc = firestore.collection("users")
-                .document(user.uid)
-                .get()
-                .await()
+            Log.d(TAG, "Saving verified user data for uid: ${user.uid}")
 
-            val userSettings = userDoc.toObject(UserSettings::class.java)
-                ?: throw IllegalStateException("User data not found in Firestore")
+            // Use transaction for atomic operation
+            firestore.runTransaction { transaction ->
+                val userDoc = transaction.get(
+                    firestore.collection("users").document(user.uid)
+                )
 
-            val updatedUserSettings = userSettings.copy(
-                isLoggedIn = true,
-                userId = user.uid
-            )
+                val userSettings = userDoc.toObject(UserSettings::class.java)
+                    ?: throw IllegalStateException("User data not found in Firestore")
 
-            // Sequential operations for better error handling
-            firestore.collection("users")
-                .document(user.uid)
-                .set(updatedUserSettings)
-                .await()
-            Log.d("AuthRepository", "Updated Firestore with verified user data")
+                val updatedUserSettings = userSettings.copy(
+                    isLoggedIn = true,
+                    userId = user.uid
+                )
 
-            userPreferences.setUserData(updatedUserSettings)
-            Log.d("AuthRepository", "Updated DataStore with verified user data")
+                transaction.set(
+                    firestore.collection("users").document(user.uid),
+                    updatedUserSettings
+                )
 
-            Log.d("AuthRepository", "Verification process completed successfully")
+                // Return the settings to save to DataStore
+                updatedUserSettings
+            }.await().also { settings ->
+                userPreferences.setUserData(settings)
+                Log.d(TAG, "Successfully updated user data after verification")
+            }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Error saving verified user data: ${e.message}")
+            Log.e(TAG, "Error saving verified user data: ${e.message}")
             throw e
         }
     }
@@ -340,10 +332,33 @@ class AuthRepository @Inject constructor(
         firebaseAuth.sendPasswordResetEmail(email).await()
     }
 
-    suspend fun logout() {
-        withContext(ioDispatcher) {
+    suspend fun logout() = withContext(ioDispatcher) {
+        try {
+            // Get user ID before signing out
+            val userId = firebaseAuth.currentUser?.uid
+
+            // Sign out from Firebase
             firebaseAuth.signOut()
+
+            // Clear local data
             userPreferences.clearUserData()
+
+            // Update Firestore if we have the user ID
+            userId?.let {
+                try {
+                    firestore.collection("users")
+                        .document(it)
+                        .update("isLoggedIn", false)
+                        .await()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error updating Firestore login status: ${e.message}")
+                }
+            }
+
+            Log.d(TAG, "Logout completed successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during logout: ${e.message}")
+            throw e
         }
     }
 
@@ -355,7 +370,25 @@ class AuthRepository @Inject constructor(
     suspend fun reloadUser() = withContext(ioDispatcher) {
         firebaseAuth.currentUser?.reload()?.await()
     }
-
+    private suspend fun <T> retryIO(
+        times: Int = 3,
+        initialDelay: Long = 100,
+        maxDelay: Long = 1000,
+        factor: Double = 2.0,
+        block: suspend () -> T
+    ): T = withContext(ioDispatcher) {
+        var currentDelay = initialDelay
+        repeat(times - 1) { attempt ->
+            try {
+                return@withContext block()
+            } catch (e: Exception) {
+                Log.w("AuthRepository", "Attempt ${attempt + 1} failed: ${e.message}")
+            }
+            delay(currentDelay)
+            currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
+        }
+        return@withContext block() // last attempt
+    }
     data class Team(val id: String, val name: String)
     data class TeamMember(val name: String, val email: String, val role: UserRole)
 }
