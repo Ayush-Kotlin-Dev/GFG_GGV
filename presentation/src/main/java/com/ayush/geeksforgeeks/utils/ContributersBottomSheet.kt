@@ -1,6 +1,7 @@
 package com.ayush.geeksforgeeks.utils
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -106,12 +107,21 @@ fun ContributorSection(contributor: Contributor) {
         }
         IconButton(
             onClick = { uriHandler.openUri(contributor.githubUrl) },
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .border(
+                    width = 1.dp,
+                    color = GFGPrimary,
+                    shape = CircleShape
+                )
         ) {
             Image(
                 painter = painterResource(id = R.drawable.github_mark),
                 contentDescription = "GitHub profile",
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(4.dp)
             )
         }
     }
