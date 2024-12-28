@@ -13,6 +13,7 @@ import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,7 @@ class AuthViewModel @Inject constructor(
     val authState = _authState.asStateFlow()
 
     private var currentAuthJob: Job? = null
+    private var verificationCheckJob: Job? = null
 
     var email by mutableStateOf(savedStateHandle.get<String>("email") ?: "")
         private set
@@ -83,13 +85,23 @@ class AuthViewModel @Inject constructor(
     val resetPasswordState: StateFlow<ResetPasswordState> = _resetPasswordState
 
     fun sendPasswordResetEmail(email: String) {
+        if (email.isBlank()) {
+            _resetPasswordState.value = ResetPasswordState.Error("Email is required")
+            return
+        }
+
         viewModelScope.launch {
             _resetPasswordState.value = ResetPasswordState.Loading
             try {
                 authRepository.sendPasswordResetEmail(email)
                 _resetPasswordState.value = ResetPasswordState.Success
+                delay(3000) // Show success for 3 seconds
+                _resetPasswordState.value = ResetPasswordState.Idle
             } catch (e: Exception) {
-                _resetPasswordState.value = ResetPasswordState.Error(e.message ?: "Unknown error occurred")
+                Log.e("AuthViewModel", "Password reset error: ${e.message}")
+                _resetPasswordState.value = ResetPasswordState.Error(
+                    e.message ?: "Failed to send reset email"
+                )
             }
         }
     }
@@ -99,7 +111,9 @@ class AuthViewModel @Inject constructor(
             try {
                 _teams.value = authRepository.getTeams()
             } catch (e: Exception) {
-                // Handle error, maybe set an error state
+                Log.e("AuthViewModel", "Error loading teams: ${e.message}")
+                // Add proper error handling
+                _authState.value = AuthState.Error("Failed to load teams", e)
             }
         }
     }
@@ -110,7 +124,8 @@ class AuthViewModel @Inject constructor(
                 val members = authRepository.getTeamMembers(teamId)
                 _teamMembers.value = members.sortedBy { it.role != UserRole.TEAM_LEAD }
             } catch (e: Exception) {
-                // Handle error, maybe set an error state
+                Log.e("AuthViewModel", "Error loading team members: ${e.message}")
+                _authState.value = AuthState.Error("Failed to load team members", e)
             }
         }
     }
@@ -129,29 +144,72 @@ class AuthViewModel @Inject constructor(
     fun signUp() {
         currentAuthJob?.cancel()
         currentAuthJob = viewModelScope.launch {
-            _authState.value = AuthState.Loading
-
-            val result = authRepository.signUp(
-                teamId = selectedTeam?.id ?: "",
-                email = email,
-                password = password
-            )
-
-            result.fold(
-                onSuccess = {
-                    _authState.value = AuthState.EmailVerificationRequired
-                },
-                onFailure = {
-                    _authState.value = AuthState.Error(it.message ?: "Sign up failed", it)
+            try {
+                if (!validateSignUpInput()) {
+                    return@launch
                 }
-            )
+
+                if (selectedTeam == null || selectedMember == null) {
+                    Log.e("AuthViewModel", "Team or member not selected")
+                    _authState.value = AuthState.Error("Please select team and name", Exception())
+                    return@launch
+                }
+
+                _authState.value = AuthState.Loading
+                Log.d("AuthViewModel", "Starting signup for ${selectedMember?.name}")
+
+                val result = authRepository.signUp(
+                    teamId = selectedTeam?.id ?: "",
+                    email = email,
+                    password = password
+                )
+
+                result.fold(
+                    onSuccess = {
+                        Log.d("AuthViewModel", "Signup successful, verification email sent")
+                        _authState.value = AuthState.EmailVerificationRequired
+                    },
+                    onFailure = { e ->
+                        Log.e("AuthViewModel", "Signup failed: ${e.message}")
+                        _authState.value = AuthState.Error(e.message ?: "Sign up failed", e)
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Signup error: ${e.message}")
+                _authState.value = AuthState.Error(e.message ?: "Sign up failed", e)
+            }
         }
+    }
+
+    private fun validateLoginInput(): Boolean {
+        if (email.isBlank() || password.isBlank()) {
+            _authState.value = AuthState.Error("Email and password are required", Exception())
+            return false
+        }
+        return true
+    }
+
+    private fun validateSignUpInput(): Boolean {
+        if (selectedTeam == null || selectedMember == null) {
+            _authState.value = AuthState.Error("Please select team and name", Exception())
+            return false
+        }
+        if (password.length < 6) {
+            _authState.value = AuthState.Error("Password must be at least 6 characters", Exception())
+            return false
+        }
+        return true
     }
 
     fun login() {
         currentAuthJob?.cancel()
+        verificationCheckJob?.cancel()
         currentAuthJob = viewModelScope.launch {
             try {
+                if (!validateLoginInput()) {
+                    return@launch
+                }
+
                 Log.d("AuthViewModel", "Starting login process...")
                 _authState.value = AuthState.Loading
 
@@ -180,6 +238,35 @@ class AuthViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 Log.d("AuthViewModel", "Login cancelled")
                 throw e  // Rethrow cancellation
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Login error: ${e.message}")
+                _authState.value = AuthState.Error(e.message ?: "Login failed", e)
+            }
+        }
+    }
+
+    private fun startVerificationCheck() {
+        verificationCheckJob?.cancel()
+        verificationCheckJob = viewModelScope.launch {
+            try {
+                while (true) {
+                    delay(5000)
+                    Log.d("AuthViewModel", "Checking email verification status")
+                    if (authRepository.isEmailVerified()) {
+                        val user = authRepository.firebaseAuth.currentUser
+                        if (user != null) {
+                            Log.d("AuthViewModel", "Email verified, saving user data")
+                            authRepository.saveUserDataAfterVerification(user)
+                            _authState.value = AuthState.Success(user)
+                            break  // Exit the loop once verified
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e  // Rethrow cancellation
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Verification check error: ${e.message}")
+                _authState.value = AuthState.Error("Verification check failed", e)
             }
         }
     }
@@ -194,6 +281,7 @@ class AuthViewModel @Inject constructor(
                 }
             } else {
                 _authState.value = AuthState.EmailVerificationRequired
+                startVerificationCheck()
             }
         }
     }
@@ -214,24 +302,22 @@ class AuthViewModel @Inject constructor(
         password = ""
         selectedTeam = null
         selectedMember = null
+        _authState.value = AuthState.Idle
+        _resetPasswordState.value = ResetPasswordState.Idle
+        verificationCheckJob?.cancel()
     }
 
     fun resetState() {
         _authState.value = AuthState.Idle
+        clearFormData()
     }
 
     suspend fun getUserRoleOnLogin(): UserRole =
         authRepository.getUserRole(email)
 
-    private var verificationCheckJob: Job? = null
-
-    private fun stopVerificationCheck() {
-        verificationCheckJob?.cancel()
-    }
-
     override fun onCleared() {
         super.onCleared()
-        stopVerificationCheck()
+        verificationCheckJob?.cancel()
     }
 }
 

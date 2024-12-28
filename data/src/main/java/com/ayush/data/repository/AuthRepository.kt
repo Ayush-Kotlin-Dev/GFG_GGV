@@ -28,6 +28,7 @@ sealed class AuthState {
     object RegistrationSuccess : AuthState()
 
 }
+
 sealed class EmailVerificationResult {
     object Success : EmailVerificationResult()
     object AlreadyVerified : EmailVerificationResult()
@@ -47,7 +48,6 @@ class AuthRepository @Inject constructor(
     val userData: Flow<UserSettings> = userPreferences.userData
         .flowOn(ioDispatcher)
         .distinctUntilChanged()
-
 
     private suspend fun saveUserDataToFirestore(
         username: String,
@@ -79,6 +79,9 @@ class AuthRepository @Inject constructor(
         password: String
     ): Result<FirebaseUser> = withContext(ioDispatcher) {
         try {
+            require(teamId.isNotBlank()) { "Team ID is required" }
+            require(email.isNotBlank()) { "Email is required" }
+            require(password.isNotBlank()) { "Password is required" }
             val memberDoc = firestore.collection("teams").document(teamId)
                 .collection("members").document(email).get().await()
 
@@ -181,16 +184,38 @@ class AuthRepository @Inject constructor(
             Log.e("AuthRepository", "Login error: ${e.message}", e)
             Result.failure(e)
         }
-    } ?: Result.failure(IllegalStateException("Login failed"))
-    // Add a new function to save user data to preferences after email verification
-    suspend fun saveUserDataAfterVerification(user: FirebaseUser) {
-        val userDoc = firestore.collection("users").document(user.uid).get().await()
-        val userSettings = userDoc.toObject(UserSettings::class.java)
-        userSettings?.let {
-            val updatedUserSettings = it.copy(isLoggedIn = true)
+    }
+
+    suspend fun saveUserDataAfterVerification(user: FirebaseUser) = withContext(ioDispatcher) {
+        try {
+            Log.d("AuthRepository", "Saving verified user data for uid: ${user.uid}")
+            val userDoc = firestore.collection("users")
+                .document(user.uid)
+                .get()
+                .await()
+
+            val userSettings = userDoc.toObject(UserSettings::class.java)
+                ?: throw IllegalStateException("User data not found in Firestore")
+
+            val updatedUserSettings = userSettings.copy(
+                isLoggedIn = true,
+                userId = user.uid
+            )
+
+            // Sequential operations for better error handling
+            firestore.collection("users")
+                .document(user.uid)
+                .set(updatedUserSettings)
+                .await()
+            Log.d("AuthRepository", "Updated Firestore with verified user data")
+
             userPreferences.setUserData(updatedUserSettings)
-            // Also update Firestore
-            firestore.collection("users").document(user.uid).set(updatedUserSettings).await()
+            Log.d("AuthRepository", "Updated DataStore with verified user data")
+
+            Log.d("AuthRepository", "Verification process completed successfully")
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Error saving verified user data: ${e.message}")
+            throw e
         }
     }
 
@@ -285,17 +310,31 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun getTeamMembers(teamId: String): List<TeamMember> = withContext(ioDispatcher) {
-        val snapshot = firestore.collection("teams").document(teamId)
-            .collection("members").get().await()
-        snapshot.documents.map { doc ->
-            TeamMember(
-                name = doc.getString("name") ?: "",
-                email = doc.id,
-                role = UserRole.valueOf(doc.getString("role") ?: UserRole.MEMBER.name)
-            )
+        require(teamId.isNotBlank()) { "Team ID must not be blank" }
+        try {
+            val snapshot = firestore.collection("teams")
+                .document(teamId)
+                .collection("members")
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
+                try {
+                    TeamMember(
+                        name = doc.getString("name") ?: throw IllegalStateException("Name not found"),
+                        email = doc.id,
+                        role = UserRole.valueOf(doc.getString("role") ?: UserRole.MEMBER.name)
+                    )
+                } catch (e: Exception) {
+                    Log.e("AuthRepository", "Error mapping team member: ${e.message}")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Error getting team members: ${e.message}")
+            emptyList()
         }
     }
-
 
     suspend fun sendPasswordResetEmail(email: String) {
         firebaseAuth.sendPasswordResetEmail(email).await()
@@ -307,7 +346,6 @@ class AuthRepository @Inject constructor(
             userPreferences.clearUserData()
         }
     }
-
 
     suspend fun isEmailVerified(): Boolean = withContext(ioDispatcher) {
         firebaseAuth.currentUser?.reload()?.await()
