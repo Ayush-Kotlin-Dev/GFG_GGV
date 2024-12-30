@@ -1,6 +1,7 @@
 package com.ayush.geeksforgeeks.tabs
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -18,7 +19,7 @@ class ProfileTab(
         @Composable
         get() {
             val title = "Profile"
-            val icon = rememberVectorPainter(Icons.Default.Person)
+            val icon = rememberVectorPainter(Icons.Default.AccountCircle)
 
             return remember {
                 TabOptions(

@@ -2,6 +2,7 @@ package com.ayush.geeksforgeeks.profile
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,14 +22,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ContactSupport
+import androidx.compose.material.icons.automirrored.filled.HelpCenter
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.ContactSupport
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Engineering
+import androidx.compose.material.icons.filled.HelpCenter
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
@@ -137,11 +146,13 @@ fun ProfileContent(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column {
-                ProfileMenuItem(Icons.Default.Person, "Profile")
-                ProfileMenuItem(Icons.Default.Settings, "Setting")
-                ProfileMenuItem(Icons.Default.Email, "Contact") {
-                    showContactDialog = true
+                ProfileMenuItem(Icons.Default.ManageAccounts, "Profile") {
+                    Toast.makeText(context, "🚧 Profile features coming soon! We're building something awesome! ", Toast.LENGTH_SHORT).show()
                 }
+                ProfileMenuItem(Icons.Default.AdminPanelSettings, "Setting") {
+                    Toast.makeText(context, "⚙️ Settings panel under development ! Stay tuned! ", Toast.LENGTH_SHORT).show()
+                }
+                ProfileMenuItem(Icons.AutoMirrored.Filled.ContactSupport, "Contact") { showContactDialog = true }
                 ProfileMenuItem(Icons.Default.Share, "Share App") {
                     val sendIntent: Intent = Intent().apply {
                         action = Intent.ACTION_SEND
@@ -151,9 +162,9 @@ fun ProfileContent(
                     val shareIntent = Intent.createChooser(sendIntent, null)
                     context.startActivity(shareIntent)
                 }
-                ProfileMenuItem(Icons.Default.Info, "Help") { showHelpDialog = true }
-                ProfileMenuItem(Icons.Default.Code, "Contributors") { showContributorsBottomSheet = true }
-                ProfileMenuItem(Icons.Rounded.FavoriteBorder, "About Us") { showAboutUsBottomSheet = true }
+                ProfileMenuItem(Icons.AutoMirrored.Filled.HelpCenter, "Help") { showHelpDialog = true }
+                ProfileMenuItem(Icons.Default.Engineering, "Contributors") { showContributorsBottomSheet = true }
+                ProfileMenuItem(Icons.Rounded.Groups, "About Us") { showAboutUsBottomSheet = true }
             }
         }
 

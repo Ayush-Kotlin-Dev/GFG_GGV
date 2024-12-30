@@ -1,6 +1,7 @@
 package com.ayush.geeksforgeeks.tabs
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,7 +21,7 @@ data class HomeTab(
         @Composable
         get() {
             val title = "Home"
-            val icon = rememberVectorPainter(Icons.Default.Home)
+            val icon = rememberVectorPainter(Icons.Default.Dashboard)
 
             return remember {
                 TabOptions(

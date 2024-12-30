@@ -1,7 +1,9 @@
 package com.ayush.geeksforgeeks.tabs
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -19,7 +21,7 @@ class DashboardTab(
         @Composable
         get() {
             val title = "Dashboard"
-            val icon = rememberVectorPainter(Icons.Default.DateRange)
+            val icon = rememberVectorPainter(Icons.Default.Leaderboard)
 
             return remember {
                 TabOptions(

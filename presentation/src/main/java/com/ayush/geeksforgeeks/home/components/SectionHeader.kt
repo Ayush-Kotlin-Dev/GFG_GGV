@@ -22,8 +22,10 @@ fun SectionHeader(
     title: String,
     action: String? = null,
     isAdmin: Boolean = false,
-    onAddClick: () -> Unit = {}
+    onAddClick: () -> Unit = {},
+    onViewAllClick: () -> Unit = {}
 ) {
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -46,7 +48,9 @@ fun SectionHeader(
                 }
             }
             if (action != null) {
-                TextButton(onClick = { }) {
+                TextButton(onClick = {
+                    onViewAllClick()
+                }) {
                     Text(text = action)
                 }
             }

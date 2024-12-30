@@ -1,7 +1,8 @@
 package com.ayush.geeksforgeeks.tabs
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -29,7 +30,7 @@ class TaskTab(
                 else -> "My Tasks"
             }
 
-            val icon = rememberVectorPainter(Icons.Default.MailOutline)
+            val icon = rememberVectorPainter(Icons.Default.Code)
 
             return remember {
                 TabOptions(

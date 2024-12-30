@@ -1,7 +1,9 @@
 package com.ayush.geeksforgeeks.home
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,13 +21,20 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.PeopleAlt
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
@@ -52,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -88,8 +98,9 @@ data class HomeScreenEvent(
 
         HomeScreen(
             viewModel = viewModel,
-            onNotificationClick = {},
-            onProfileClick = {},
+            onNotificationClick = {
+                android.widget.Toast.makeText(context, "Coming Soon! This feature is under development.", android.widget.Toast.LENGTH_SHORT).show()
+            },
             onEventClick = { event ->
                 val intent = android.content.Intent(
                     android.content.Intent.ACTION_VIEW,
@@ -98,7 +109,8 @@ data class HomeScreenEvent(
                 intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             },
-            isAdmin = isAdmin
+            isAdmin = isAdmin,
+            context = context
         )
     }
 }
@@ -107,9 +119,9 @@ data class HomeScreenEvent(
 fun HomeScreen(
     viewModel: HomeScreenViewModel = hiltViewModel(),
     onNotificationClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
     onEventClick: (Event) -> Unit = {},
-    isAdmin: Boolean
+    isAdmin: Boolean,
+    context: android.content.Context
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddEventDialog by remember { mutableStateOf(false) }
@@ -118,7 +130,6 @@ fun HomeScreen(
         topBar = {
             HomeTopBar(
                 onNotificationClick = onNotificationClick,
-                onProfileClick = onProfileClick
             )
         }
     ) { paddingValues ->
@@ -141,16 +152,17 @@ fun HomeScreen(
                     events = uiState.events,
                     onEventClick = onEventClick,
                     isAdmin = isAdmin,
-                    onAddEventClick = { showAddEventDialog = true }
+                    onAddEventClick = { showAddEventDialog = true },
+                    context = context
                 )
             }
 
             item {
-                ActivitySection(activities = uiState.recentActivities)
+                ActivitySection(activities = uiState.recentActivities, context = context)
             }
 
             item {
-                AchievementsSection()
+                AchievementsSection(context = context)
             }
         }
     }
@@ -182,7 +194,6 @@ fun HomeScreen(
 @Composable
 private fun HomeTopBar(
     onNotificationClick: () -> Unit,
-    onProfileClick: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -222,54 +233,7 @@ private fun HomeTopBar(
         )
     )
 }
-@Preview
-@Composable
-fun HeaderSectionPreview() {
-    HeaderSection(
-        clubStats = ClubStats(
-            yearsActive = 5,
-            studentsBenefited = 1000,
-            activeMembers = 50
-        )
-    )
-}
 
-@Composable
-private fun HeaderSection(clubStats: ClubStats) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(24.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF2E8B57),
-                            Color(0xFF1A5D3A),
-                        ),
-                        start = Offset(0f, 0f),
-                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                    )
-                )
-                .padding(24.dp)
-        ) {
-            Text(
-                text = "Welcome to GFG",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            StatsRow(clubStats = clubStats)
-        }
-    }
-}
 @Composable
 private fun StatsRow(clubStats: ClubStats) {
     Row(
@@ -279,17 +243,17 @@ private fun StatsRow(clubStats: ClubStats) {
         StatCounter(
             count = clubStats.yearsActive,
             label = "Years\nActive",
-            icon = Icons.Filled.Star
+            icon = Icons.Filled.Timeline
         )
         StatCounter(
             count = clubStats.studentsBenefited,
             label = "Students\nBenefited",
-            icon = Icons.Filled.ThumbUp
+            icon = Icons.Filled.School
         )
         StatCounter(
             count = clubStats.activeMembers,
             label = "Active\nMembers",
-            icon = Icons.Filled.Person
+            icon = Icons.Filled.Groups
         )
     }
 }
@@ -307,7 +271,11 @@ private fun StatCounter(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier
+                .size(24.dp)
+                .scale(animateFloatAsState(
+                    if (count > 0) 1f else 0.8f
+                ).value)
         )
         Text(
             text = count.toString(),
@@ -336,22 +304,25 @@ private fun MetricsCardRow(quickStats: QuickStats) {
             modifier = Modifier.weight(1f),
             title = "Projects",
             value = quickStats.ongoingProjects.toString(),
-            icon = Icons.Filled.Build,
-            color = MaterialTheme.colorScheme.tertiary
+            icon = Icons.Filled.Terminal,
+            color = MaterialTheme.colorScheme.tertiary,
+            borderColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
         )
         MetricCard(
             modifier = Modifier.weight(1f),
             title = "Members",
             value = quickStats.activeMembers.toString(),
-            icon = Icons.Filled.Person,
-            color = MaterialTheme.colorScheme.secondary
+            icon = Icons.Filled.PeopleAlt,
+            color = MaterialTheme.colorScheme.secondary,
+            borderColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
         )
         MetricCard(
             modifier = Modifier.weight(1f),
             title = "Events",
             value = quickStats.recentAchievements.toString(),
-            icon = Icons.Filled.Star,
-            color = MaterialTheme.colorScheme.primary
+            icon = Icons.Filled.Event,
+            color = MaterialTheme.colorScheme.primary,
+            borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
         )
     }
 }
@@ -362,10 +333,16 @@ private fun MetricCard(
     title: String,
     value: String,
     icon: ImageVector,
-    color: Color
+    color: Color,
+    borderColor: Color
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier
+            .border(
+                width = 2.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(16.dp)
+            ),
         colors = CardDefaults.cardColors(
             containerColor = GFGLightGray
         ),
@@ -401,7 +378,8 @@ private fun FeaturedEventCard(
     events: List<Event>,
     onEventClick: (Event) -> Unit,
     isAdmin: Boolean,
-    onAddEventClick: () -> Unit
+    onAddEventClick: () -> Unit,
+    context: android.content.Context
 ) {
     val pagerState = rememberPagerState(pageCount = { events.size })
 
@@ -412,7 +390,10 @@ private fun FeaturedEventCard(
             title = "Featured Events",
             action = "View All",
             isAdmin = isAdmin,
-            onAddClick = onAddEventClick
+            onAddClick = onAddEventClick,
+            onViewAllClick = {
+                android.widget.Toast.makeText(context, "That's all we've got! Want to see more events here? Get involved and propose your innovative ideas for organizing exciting events. The club needs your creativity!", android.widget.Toast.LENGTH_LONG).show()
+            }
         )
 
         HorizontalPager(
@@ -490,13 +471,16 @@ private fun EventCard(event: Event, onClick: () -> Unit) {
 }
 
 @Composable
-private fun AchievementsSection() {
+private fun AchievementsSection(context: android.content.Context) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
         SectionHeader(
             title = "Recent Achievements",
-            action = "View All"
+            action = "View All",
+            onViewAllClick = {
+                android.widget.Toast.makeText(context, "That's all we have for now! Work hard to create more achievements worth showing.", android.widget.Toast.LENGTH_LONG).show()
+            }
         )
 
         Card(
@@ -510,8 +494,6 @@ private fun AchievementsSection() {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
-
                 Divider()
 
                 AchievementItem(
@@ -620,15 +602,17 @@ private fun AchievementItem(
     }
 }
 
-
 @Composable
-private fun ActivitySection(activities: List<RecentActivity>) {
+private fun ActivitySection(activities: List<RecentActivity> , context: android.content.Context) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
         SectionHeader(
             title = "Recent Activities",
-            action = "See All"
+            action = "See All",
+            onViewAllClick = {
+                android.widget.Toast.makeText(context, "That's all we have for now! Work hard to create more achievements worth showing.", android.widget.Toast.LENGTH_LONG).show()
+            }
         )
 
         Card(
@@ -666,7 +650,6 @@ private fun ActivityItem(activity: RecentActivity) {
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape),
-//            contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -688,9 +671,6 @@ private fun ActivityItem(activity: RecentActivity) {
     }
 }
 
-
-
-
 @Composable
 private fun NotificationIcon(
     badgeCount: Int,
@@ -705,9 +685,46 @@ private fun NotificationIcon(
             }
         ) {
             Icon(
-                Icons.Filled.Notifications,
+                imageVector = Icons.Filled.NotificationsActive,
                 contentDescription = "Notifications"
             )
+        }
+    }
+}
+
+@Composable
+private fun HeaderSection(clubStats: ClubStats) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF2E8B57),
+                            Color(0xFF1A5D3A),
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "Welcome to GFG",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            StatsRow(clubStats = clubStats)
         }
     }
 }

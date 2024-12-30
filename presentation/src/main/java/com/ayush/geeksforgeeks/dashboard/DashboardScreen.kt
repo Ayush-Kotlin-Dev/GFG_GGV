@@ -29,6 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,6 +51,23 @@ import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.line.lineChart
 import com.patrykandpatrick.vico.core.entry.FloatEntry
 import com.patrykandpatrick.vico.core.entry.entryModelOf
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Leaderboard
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.scale
 
 class DashboardScreen : Screen {
     @Composable
@@ -125,37 +144,78 @@ fun WelcomeCard(user: UserSettings) {
 @Composable
 fun ClubStatsCard(clubStats: ClubStats) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = GFGCardBackground)
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = GFGPrimary.copy(alpha = 0.1f),
+                shape = MaterialTheme.shapes.medium
+            ),
+        colors = CardDefaults.cardColors(containerColor = GFGCardBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Club Overview",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = GFGPrimary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Analytics,  
+                    contentDescription = null,
+                    tint = GFGPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Club Overview",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = GFGPrimary
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItem("Total Members", clubStats.totalMembers.toString(), Icons.Default.Person)
-                StatItem("Active Projects", clubStats.activeProjects.toString(), Icons.Default.Build)
-                StatItem("Total Credits", clubStats.totalCredits.toString(), Icons.Default.Star)
+                StatItem(
+                    "Total Members",
+                    clubStats.totalMembers.toString(),
+                    Icons.Default.Groups  
+                )
+                StatItem(
+                    "Active Projects",
+                    clubStats.activeProjects.toString(),
+                    Icons.Default.Terminal  
+                )
+                StatItem(
+                    "Total Credits",
+                    clubStats.totalCredits.toString(),
+                    Icons.Default.WorkspacePremium  
+                )
             }
         }
     }
 }
 
 @Composable
-fun StatItem(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun StatItem(label: String, value: String, icon: ImageVector) {
+    var isHovered by remember { mutableStateOf(false) }
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .hoverable(
+                interactionSource = remember { MutableInteractionSource() },
+                enabled = true
+            )
+    ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = GFGPrimary,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier
+                .size(24.dp)
+                .scale(animateFloatAsState(if (isHovered) 1.1f else 1f).value)
         )
         Text(
             text = value,
@@ -208,17 +268,35 @@ fun CreditHistoryChart(creditHistory: List<CreditLog>) {
 @Composable
 fun TopContributorsCard(topContributors: List<UserSettings>) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = GFGCardBackground)
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = GFGPrimary.copy(alpha = 0.1f),
+                shape = MaterialTheme.shapes.medium
+            ),
+        colors = CardDefaults.cardColors(containerColor = GFGCardBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Top Contributors",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = GFGPrimary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Leaderboard,  
+                    contentDescription = null,
+                    tint = GFGPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Top Contributors",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = GFGPrimary
+                )
+            }
             topContributors.forEachIndexed { index, contributor ->
                 ContributorItem(contributor, index + 1)
                 if (index < topContributors.lastIndex) {
@@ -237,13 +315,19 @@ fun ContributorItem(user: UserSettings, rank: Int) {
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "#$rank",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = GFGPrimary,
-            modifier = Modifier.width(40.dp)
-        )
+        // Medal icons for top 3
+        when (rank) {
+            1 -> Icon(Icons.Default.EmojiEvents, "Gold", tint = androidx.compose.ui.graphics.Color(0xFFFFD700))
+            2 -> Icon(Icons.Default.EmojiEvents, "Silver", tint = androidx.compose.ui.graphics.Color(0xFFC0C0C0))
+            3 -> Icon(Icons.Default.EmojiEvents, "Bronze", tint = androidx.compose.ui.graphics.Color(0xFFCD7F32))
+            else -> Text(
+                text = "#$rank",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = GFGPrimary,
+                modifier = Modifier.width(40.dp)
+            )
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = user.name,
@@ -259,15 +343,8 @@ fun ContributorItem(user: UserSettings, rank: Int) {
                 color = GFGTextPrimary.copy(alpha = 0.7f)
             )
         }
-        Icon(
-            imageVector = Icons.Default.Star,
-            contentDescription = null,
-            tint = GFGPrimary,
-            modifier = Modifier.size(24.dp)
-        )
     }
 }
-
 
 data class ClubStats(
     val totalMembers: Int,
