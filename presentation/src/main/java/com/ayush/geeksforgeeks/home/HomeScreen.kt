@@ -52,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -62,6 +63,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -71,6 +73,7 @@ import coil.compose.AsyncImage
 import com.ayush.data.model.Event
 import com.ayush.geeksforgeeks.utils.AddEventScreen
 import com.ayush.geeksforgeeks.R
+import com.ayush.geeksforgeeks.home.components.SectionHeader
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 
@@ -219,6 +222,17 @@ private fun HomeTopBar(
         )
     )
 }
+@Preview
+@Composable
+fun HeaderSectionPreview() {
+    HeaderSection(
+        clubStats = ClubStats(
+            yearsActive = 5,
+            studentsBenefited = 1000,
+            activeMembers = 50
+        )
+    )
+}
 
 @Composable
 private fun HeaderSection(clubStats: ClubStats) {
@@ -232,11 +246,13 @@ private fun HeaderSection(clubStats: ClubStats) {
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.verticalGradient(
+                    brush = Brush.linearGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.inverseSurface
-                        )
+                            Color(0xFF2E8B57),
+                            Color(0xFF1A5D3A),
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                     )
                 )
                 .padding(24.dp)
@@ -244,7 +260,7 @@ private fun HeaderSection(clubStats: ClubStats) {
             Text(
                 text = "Welcome to GFG",
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = Color.White,
                 fontWeight = FontWeight.Bold
             )
 
@@ -254,7 +270,6 @@ private fun HeaderSection(clubStats: ClubStats) {
         }
     }
 }
-
 @Composable
 private fun StatsRow(clubStats: ClubStats) {
     Row(
@@ -385,8 +400,8 @@ private fun MetricCard(
 private fun FeaturedEventCard(
     events: List<Event>,
     onEventClick: (Event) -> Unit,
-    isAdmin: Boolean, // New parameter
-    onAddEventClick: () -> Unit // New parameter
+    isAdmin: Boolean,
+    onAddEventClick: () -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { events.size })
 
@@ -396,8 +411,8 @@ private fun FeaturedEventCard(
         SectionHeader(
             title = "Featured Events",
             action = "View All",
-            isAdmin = isAdmin, // Pass isAdmin to SectionHeader
-            onAddClick = onAddEventClick // Pass onAddEventClick to SectionHeader
+            isAdmin = isAdmin,
+            onAddClick = onAddEventClick
         )
 
         HorizontalPager(
@@ -495,13 +510,7 @@ private fun AchievementsSection() {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AchievementItem(
-                    icon = Icons.Filled.Star,
-                    title = "SIH 2024 Winner",
-                    description = "Team won Smart India Hackathon",
-                    date = "March 2024",
-                    iconTint = MaterialTheme.colorScheme.primary
-                )
+
 
                 Divider()
 
@@ -680,42 +689,7 @@ private fun ActivityItem(activity: RecentActivity) {
 }
 
 
-@Composable
-private fun SectionHeader(
-    title: String,
-    action: String? = null,
-    isAdmin: Boolean = false,
-    onAddClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (isAdmin) {
-                IconButton(onClick = onAddClick) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Event")
-                }
-            }
-            if (action != null) {
-                TextButton(onClick = { }) {
-                    Text(text = action)
-                }
-            }
-        }
-    }
-}
+
 
 @Composable
 private fun NotificationIcon(

@@ -57,12 +57,12 @@ import com.ayush.data.model.Task
 import com.ayush.data.model.TaskStatus
 import com.ayush.geeksforgeeks.admin.TaskStatusChip
 import com.ayush.geeksforgeeks.utils.formatDate
-import com.ayush.geeksforgeeks.dashboard.ErrorMessage
-import com.ayush.geeksforgeeks.dashboard.LoadingIndicator
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
+import com.ayush.geeksforgeeks.utils.ErrorScreen
+import com.ayush.geeksforgeeks.utils.LoadingIndicator
 
 class TasksScreen : Screen {
     @Composable
@@ -89,7 +89,7 @@ class TasksScreen : Screen {
                         onTaskClick = { navigator.push(TaskDetailScreen(it.id, navigator::pop)) }
                     )
                 }
-                is TasksViewModel.TasksUiState.Error -> ErrorMessage(state.message)
+                is TasksViewModel.TasksUiState.Error -> ErrorScreen(state.message)
             }
         }
     }

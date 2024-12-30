@@ -1,7 +1,6 @@
 package com.ayush.geeksforgeeks.dashboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,7 +18,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,6 +41,8 @@ import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
+import com.ayush.geeksforgeeks.utils.ErrorScreen
+import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import com.patrykandpatrick.vico.compose.axis.horizontal.bottomAxis
 import com.patrykandpatrick.vico.compose.axis.vertical.startAxis
 import com.patrykandpatrick.vico.compose.chart.Chart
@@ -66,7 +66,7 @@ fun DashboardContent(uiState: DashboardUiState) {
         when (uiState) {
             is DashboardUiState.Loading -> LoadingIndicator()
             is DashboardUiState.Success -> DashboardSuccessContent(uiState)
-            is DashboardUiState.Error -> ErrorMessage(uiState.message)
+            is DashboardUiState.Error -> ErrorScreen(uiState.message)
         }
 }
 
@@ -268,35 +268,6 @@ fun ContributorItem(user: UserSettings, rank: Int) {
     }
 }
 
-@Composable
-fun LoadingIndicator() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GFGBackground)
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.align(Alignment.Center),
-            color = GFGPrimary
-        )
-    }
-}
-
-@Composable
-fun ErrorMessage(message: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GFGBackground),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "Error: $message",
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyLarge
-        )
-    }
-}
 
 data class ClubStats(
     val totalMembers: Int,

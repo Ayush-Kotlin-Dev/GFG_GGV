@@ -43,7 +43,12 @@ fun EmailVerificationContent(
 ) {
     val verificationState by viewModel.verificationState.collectAsState()
     var isResending by remember { mutableStateOf(false) }
-
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5000)
+            viewModel.checkEmailVerification()
+        }
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),

@@ -16,6 +16,8 @@ import com.ayush.data.model.Task
 import com.ayush.data.model.TaskStatus
 import com.ayush.geeksforgeeks.taskdetail.TaskDetailViewModel
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
+import com.ayush.geeksforgeeks.utils.ErrorScreen
+import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -46,7 +48,7 @@ data class TaskDetailScreen(
             }
         ) { innerPadding ->
             when (val state = taskState) {
-                is TaskDetailViewModel.TaskState.Loading -> LoadingScreen()
+                is TaskDetailViewModel.TaskState.Loading -> LoadingIndicator()
                 is TaskDetailViewModel.TaskState.Error -> ErrorScreen(state.message)
                 is TaskDetailViewModel.TaskState.Success -> TaskDetailContent(
                     task = state.task,
@@ -57,20 +59,6 @@ data class TaskDetailScreen(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun LoadingScreen() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = GFGPrimary)
-    }
-}
-
-@Composable
-private fun ErrorScreen(message: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Error: $message", color = MaterialTheme.colorScheme.error)
     }
 }
 

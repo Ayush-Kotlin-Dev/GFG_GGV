@@ -76,7 +76,7 @@ import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGBlack
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
-import com.ayush.geeksforgeeks.utils.GFGLoading
+import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import kotlinx.coroutines.launch
 
 class AuthScreen : Screen {
@@ -191,7 +191,7 @@ private fun LoginContent(
             }
         }
         if (authState is AuthState.Loading) {
-            GFGLoading()
+            LoadingIndicator()
         }
         if (showForgotPasswordDialog) {
             ForgotPasswordDialog(

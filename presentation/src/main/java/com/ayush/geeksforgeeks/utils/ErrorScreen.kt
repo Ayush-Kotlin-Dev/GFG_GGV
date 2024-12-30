@@ -8,8 +8,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+
 @Composable
-fun ErrorScreen(errorMessage: String, contactDetails: List<String>) {
+fun ErrorScreen(errorMessage: String, contactDetails: List<String> = emptyList()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -28,17 +29,20 @@ fun ErrorScreen(errorMessage: String, contactDetails: List<String>) {
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = "Contact us:",
-            style = MaterialTheme.typography.titleMedium
-        )
-        contactDetails.forEach { contact ->
+        // Only show contact details if the list is not empty
+        if (contactDetails.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = contact,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                text = "Contact us:",
+                style = MaterialTheme.typography.titleMedium
             )
+            contactDetails.forEach { contact ->
+                Text(
+                    text = contact,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }

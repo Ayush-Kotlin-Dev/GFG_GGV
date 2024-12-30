@@ -194,7 +194,7 @@ fun AddEventScreen(
                 enabled = eventData.isValid() && imageUri != null && !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                    SimpleLoadingIndicator(color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text("Add Event")
                 }

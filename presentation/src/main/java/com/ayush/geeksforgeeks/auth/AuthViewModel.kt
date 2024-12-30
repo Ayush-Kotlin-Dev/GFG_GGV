@@ -28,7 +28,7 @@ class AuthViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        private const val VERIFICATION_TIMEOUT = 5 * 60 * 1000L // 5 minutes
+        private const val VERIFICATION_TIMEOUT = 5 * 60 * 1000L
         private const val VERIFICATION_CHECK_INTERVAL = 5000L
     }
 
@@ -69,6 +69,10 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             savedStateHandle.setSavedStateProvider("email") { Bundle().apply { putString("email", email) } }
             savedStateHandle.setSavedStateProvider("password") { Bundle().apply { putString("password", password) } }
+            // Restore saved state
+            savedStateHandle.get<String>("email")?.let { updateEmail(it) }
+            savedStateHandle.get<String>("password")?.let { updatePassword(it) }
+            
             loadTeams()
         }
     }
@@ -209,20 +213,16 @@ class AuthViewModel @Inject constructor(
     fun login() {
         currentAuthJob?.cancel()
         verificationCheckJob?.cancel()
-        _authState.value = AuthState.Loading
+    
         currentAuthJob = viewModelScope.launch {
-            delay(1000)
             try {
-                if (!validateLoginInput()) {
-                    return@launch
-                }
+                if (!validateLoginInput()) return@launch
 
-                Log.d("AuthViewModel", "Starting login process...")
                 _authState.value = AuthState.Loading
+                Log.d("AuthViewModel", "Starting login for email: $email")
 
-                Log.d("AuthViewModel", "Calling repository login...")
                 val result = authRepository.login(email, password)
-
+            
                 result.fold(
                     onSuccess = { user ->
                         Log.d("AuthViewModel", "Login successful for user: ${user.uid}")
@@ -230,25 +230,23 @@ class AuthViewModel @Inject constructor(
                     },
                     onFailure = { e ->
                         when {
-                            e is CancellationException -> throw e  // Rethrow cancellation
-                            e.message == "Email not verified" -> {
-                                Log.w("AuthViewModel", "Login failed: Email not verified")
+                            e is CancellationException -> throw e
+                            e.message?.contains("Email not verified") == true -> {
+                                Log.d("AuthViewModel", "Email not verified, starting verification check")
                                 _authState.value = AuthState.EmailVerificationRequired
+                                startVerificationCheck()  // Start verification check immediately
                             }
                             else -> {
-                                Log.e("AuthViewModel", "Login failed with error: ${e.message}", e)
+                                Log.e("AuthViewModel", "Login failed: ${e.message}")
                                 _authState.value = AuthState.Error(e.message ?: "Login failed", e)
                             }
                         }
                     }
                 )
             } catch (e: CancellationException) {
-                Log.d("AuthViewModel", "Login cancelled")
-                _authState.value = AuthState.Idle
-                throw e  // Rethrow cancellation
+                throw e
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Login error: ${e.message}")
-                _authState.value = AuthState.Idle
                 _authState.value = AuthState.Error(e.message ?: "Login failed", e)
             }
         }
@@ -259,10 +257,11 @@ class AuthViewModel @Inject constructor(
         verificationCheckJob = viewModelScope.launch {
             try {
                 val startTime = System.currentTimeMillis()
+                
                 while (System.currentTimeMillis() - startTime < VERIFICATION_TIMEOUT) {
                     _verificationState.value = VerificationState.Loading
                     
-                    // Show remaining time warning when less than 1 minute
+                    // Calculate and show remaining time
                     val remainingTime = VERIFICATION_TIMEOUT - (System.currentTimeMillis() - startTime)
                     if (remainingTime < 60000) {
                         _verificationState.value = VerificationState.TimeoutWarning(
@@ -270,30 +269,41 @@ class AuthViewModel @Inject constructor(
                         )
                     }
 
+                    // Check verification status
                     if (authRepository.isEmailVerified()) {
                         val user = authRepository.firebaseAuth.currentUser
                         if (user != null) {
-                            Log.d("AuthViewModel", "Email verified, saving user data")
-                            authRepository.saveUserDataAfterVerification(user)
-                            _authState.value = AuthState.Success(user)
-                            _verificationState.value = VerificationState.Idle
-                            return@launch
+                            Log.d("AuthViewModel", "Email verified, updating user data")
+                            try {
+                                authRepository.saveUserDataAfterVerification(user)
+                                _authState.value = AuthState.Success(user)
+                                _verificationState.value = VerificationState.Idle
+                                return@launch
+                            } catch (e: Exception) {
+                                Log.e("AuthViewModel", "Error saving user data: ${e.message}")
+                                _verificationState.value = VerificationState.Error(
+                                    "Error updating user data. Please try logging in again."
+                                )
+                            }
                         }
                     }
+                    
                     delay(VERIFICATION_CHECK_INTERVAL)
                 }
-                // Timeout reached
+                
+                // Timeout handling
                 _verificationState.value = VerificationState.Timeout
                 _authState.value = AuthState.Error(
-                    "Verification timeout. Please try again.",
+                    "Email verification timeout. Please try again.",
                     Exception("Verification timeout")
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Verification check error: ${e.message}")
-                _verificationState.value = VerificationState.Error(e.message ?: "Verification check failed")
-                _authState.value = AuthState.Error("Verification check failed", e)
+                _verificationState.value = VerificationState.Error(
+                    e.message ?: "Verification check failed"
+                )
             }
         }
     }

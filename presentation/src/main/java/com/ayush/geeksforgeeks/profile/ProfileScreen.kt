@@ -51,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,12 +72,12 @@ import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.utils.AboutUsContent
-import com.ayush.geeksforgeeks.dashboard.ErrorMessage
-import com.ayush.geeksforgeeks.dashboard.LoadingIndicator
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import com.ayush.geeksforgeeks.utils.ContributorsContent
+import com.ayush.geeksforgeeks.utils.ErrorScreen
+import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import kotlin.text.Charsets.UTF_8
@@ -98,7 +99,7 @@ class ProfileScreen : Screen {
                     navigator?.replaceAll(AuthScreen())
                 }
             )
-            is ProfileViewModel.ProfileUiState.Error -> ErrorMessage(state.message)
+            is ProfileViewModel.ProfileUiState.Error -> ErrorScreen(state.message)
         }
     }
 }
@@ -109,13 +110,13 @@ fun ProfileContent(
     viewModel: ProfileViewModel,
     onLogout: () -> Unit
 ) {
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var showHelpDialog by remember { mutableStateOf(false) }
-    var showAboutUsBottomSheet by remember { mutableStateOf(false) }
-    var showContactDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by rememberSaveable { mutableStateOf(false) }
+    var showHelpDialog by rememberSaveable { mutableStateOf(false) }
+    var showAboutUsBottomSheet by rememberSaveable { mutableStateOf(false) }
+    var showContactDialog by rememberSaveable { mutableStateOf(false) }
+    var showContributorsBottomSheet by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val appLink = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
-    var showContributorsBottomSheet by remember { mutableStateOf(false) }
 
 
     Column(
@@ -372,7 +373,7 @@ fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () ->
                     modifier = Modifier.fillMaxWidth()
                 )
                 when (val state = queryState) {
-                    is ProfileViewModel.QueryState.Loading -> CircularProgressIndicator()
+                    is ProfileViewModel.QueryState.Loading -> LoadingIndicator()
                     is ProfileViewModel.QueryState.Error -> Text(state.message, color = Color.Red)
                     is ProfileViewModel.QueryState.Success -> {
                         LaunchedEffect(Unit) {
@@ -413,10 +414,16 @@ fun ContributorsBottomSheet(onDismiss: () -> Unit) {
         containerColor = GFGBackground,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
-        ContributorsContent(onClose = { scope.launch { sheetState.hide() } })
+        ContributorsContent(
+            onClose = {
+                scope.launch {
+                    sheetState.hide()
+                    onDismiss()
+                }
+            }
+        )
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutUsBottomSheet(onDismiss: () -> Unit) {
@@ -431,6 +438,13 @@ fun AboutUsBottomSheet(onDismiss: () -> Unit) {
         containerColor = GFGBackground,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
-        AboutUsContent(onClose = { scope.launch { sheetState.hide() } })
+        AboutUsContent(
+            onClose = {
+                scope.launch {
+                    sheetState.hide()
+                    onDismiss()
+                }
+            }
+        )
     }
 }
