@@ -209,6 +209,7 @@ class AuthViewModel @Inject constructor(
     fun login() {
         currentAuthJob?.cancel()
         verificationCheckJob?.cancel()
+        _authState.value = AuthState.Loading
         currentAuthJob = viewModelScope.launch {
             delay(1000)
             try {
@@ -243,9 +244,11 @@ class AuthViewModel @Inject constructor(
                 )
             } catch (e: CancellationException) {
                 Log.d("AuthViewModel", "Login cancelled")
+                _authState.value = AuthState.Idle
                 throw e  // Rethrow cancellation
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Login error: ${e.message}")
+                _authState.value = AuthState.Idle
                 _authState.value = AuthState.Error(e.message ?: "Login failed", e)
             }
         }
