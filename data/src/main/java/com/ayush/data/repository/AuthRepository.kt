@@ -28,7 +28,6 @@ sealed class AuthState {
     object EmailVerificationRequired : AuthState()
     object EmailVerificationSent : AuthState()
     object RegistrationSuccess : AuthState()
-
 }
 
 sealed class EmailVerificationResult {
@@ -58,21 +57,24 @@ class AuthRepository @Inject constructor(
         role: UserRole
     ) {
         require(teamId.isNotBlank()) { "Team ID must be provided" }
-        // Construct user settings
-        val userSettings = UserSettings(
-            name = username.ifBlank { user.displayName ?: "GFG User" },
-            userId = user.uid,
-            email = user.email.orEmpty(),
-            profilePicUrl = user.photoUrl?.toString(),
-            isLoggedIn = false,
-            domainId = teamId.toIntOrNull() ?: 0,
-            role = role
+
+        val userSettings = mapOf(
+            "name" to (username.ifBlank { user.displayName ?: "GFG User" }),
+            "userId" to user.uid,
+            "email" to (user.email ?: ""),
+            "profilePicUrl" to (user.photoUrl?.toString()),
+            "isLoggedIn" to false,
+            "domainId" to (teamId.toIntOrNull() ?: 0),
+            "role" to role.name,
+            "totalCredits" to 0
         )
 
-        // Save user settings
-        firestore.collection("users").document(user.uid)
-            .set(userSettings)
-            .await()
+        retryIO {
+            firestore.collection("users")
+                .document(user.uid)
+                .set(userSettings)
+                .await()
+        }
     }
 
     suspend fun signUp(
@@ -85,7 +87,6 @@ class AuthRepository @Inject constructor(
             require(email.isNotBlank()) { "Email is required" }
             require(password.isNotBlank()) { "Password is required" }
 
-            // Add retryIO here
             val memberDoc = retryIO {
                 firestore.collection("teams").document(teamId)
                     .collection("members").document(email).get().await()
@@ -93,7 +94,6 @@ class AuthRepository @Inject constructor(
 
             require(memberDoc.exists()) { "Member not found in the selected team" }
 
-            // Add retryIO here
             val result = retryIO {
                 firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             }
@@ -107,7 +107,6 @@ class AuthRepository @Inject constructor(
                 val name = memberDoc.getString("name") ?: "Unknown"
                 val role = UserRole.valueOf(memberDoc.getString("role") ?: UserRole.MEMBER.name)
 
-                // Add retryIO here
                 retryIO {
                     saveUserDataToFirestore(name, user, teamId, role)
                 }
@@ -127,7 +126,6 @@ class AuthRepository @Inject constructor(
 
             Log.d(TAG, "Starting login for email: ${email.take(3)}***")
 
-            // Try sign in
             val result = retryIO {
                 firebaseAuth.signInWithEmailAndPassword(email, password).await()
             }
@@ -151,33 +149,28 @@ class AuthRepository @Inject constructor(
                 return@withContext Result.failure(e)
             }
 
-            // Get and update user data
-            try {
-                val userDoc = firestore.collection("users")
+            val userDoc = retryIO {
+                firestore.collection("users")
                     .document(user.uid)
                     .get()
                     .await()
-
-                val userSettings = userDoc.toObject(UserSettings::class.java)
-                    ?: throw IllegalStateException("User data not found")
-
-                val updatedUserSettings = userSettings.copy(isLoggedIn = true)
-
-                // Transaction to ensure data consistency
-                firestore.runTransaction { transaction ->
-                    transaction.set(
-                        firestore.collection("users").document(user.uid),
-                        updatedUserSettings
-                    )
-                }.await()
-
-                userPreferences.setUserData(updatedUserSettings)
-
-                Result.success(user)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error updating user data: ${e.message}")
-                Result.failure(e)
             }
+
+            val userSettings = userDoc.toObject(UserSettings::class.java)
+                ?: throw IllegalStateException("User data not found")
+
+            val updatedUserSettings = userSettings.copy(isLoggedIn = true)
+
+            firestore.runTransaction { transaction ->
+                transaction.set(
+                    firestore.collection("users").document(user.uid),
+                    updatedUserSettings
+                )
+            }.await()
+
+            userPreferences.setUserData(updatedUserSettings)
+
+            Result.success(user)
         } catch (e: Exception) {
             Log.e(TAG, "Login error: ${e.message}")
             Result.failure(e)
@@ -186,30 +179,29 @@ class AuthRepository @Inject constructor(
 
     suspend fun saveUserDataAfterVerification(user: FirebaseUser) = withContext(ioDispatcher) {
         try {
-            retryIO {
-                val userDoc = firestore.collection("users")
+            val userDoc = retryIO {
+                firestore.collection("users")
                     .document(user.uid)
                     .get()
                     .await()
-
-                val userSettings = userDoc.toObject(UserSettings::class.java)
-                    ?: throw IllegalStateException("User data not found in Firestore")
-
-                val updatedUserSettings = userSettings.copy(
-                    isLoggedIn = true,
-                    userId = user.uid
-                )
-
-                // Use transaction for atomic operation with retry
-                firestore.runTransaction { transaction ->
-                    transaction.set(
-                        firestore.collection("users").document(user.uid),
-                        updatedUserSettings
-                    )
-                }.await()
-
-                userPreferences.setUserData(updatedUserSettings)
             }
+
+            val userSettings = userDoc.toObject(UserSettings::class.java)
+                ?: throw IllegalStateException("User data not found in Firestore")
+
+            val updatedUserSettings = userSettings.copy(
+                isLoggedIn = true,
+                userId = user.uid
+            )
+
+            firestore.runTransaction { transaction ->
+                transaction.set(
+                    firestore.collection("users").document(user.uid),
+                    updatedUserSettings
+                )
+            }.await()
+
+            userPreferences.setUserData(updatedUserSettings)
         } catch (e: Exception) {
             Log.e("AuthRepository", "Failed to save user data after retries: ${e.message}")
             throw e
@@ -368,16 +360,12 @@ class AuthRepository @Inject constructor(
 
     suspend fun logout() = withContext(ioDispatcher) {
         try {
-            // Get user ID before signing out
             val userId = firebaseAuth.currentUser?.uid
 
-            // Sign out from Firebase
             firebaseAuth.signOut()
 
-            // Clear local data
             userPreferences.clearUserData()
 
-            // Update Firestore if we have the user ID
             userId?.let {
                 try {
                     firestore.collection("users")
@@ -413,6 +401,7 @@ class AuthRepository @Inject constructor(
     suspend fun reloadUser() = withContext(ioDispatcher) {
         firebaseAuth.currentUser?.reload()?.await()
     }
+
     private suspend fun <T> retryIO(
         times: Int = 3,
         initialDelay: Long = 100,
@@ -430,8 +419,9 @@ class AuthRepository @Inject constructor(
             delay(currentDelay)
             currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
         }
-        return block() // last attempt
+        return block()
     }
+
     data class Team(val id: String, val name: String)
     data class TeamMember(val name: String, val email: String, val role: UserRole)
 }

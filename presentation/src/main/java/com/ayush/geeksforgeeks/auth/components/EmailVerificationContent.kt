@@ -63,7 +63,6 @@ fun EmailVerificationContent(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Show different messages based on verification state
             when (verificationState) {
                 is VerificationState.Loading -> {
                     CircularProgressIndicator(color = GFGStatusPendingText)
@@ -147,7 +146,6 @@ fun EmailVerificationContent(
         }
     }
 
-    // Reset resending state after delay
     LaunchedEffect(isResending) {
         if (isResending) {
             delay(3000)
