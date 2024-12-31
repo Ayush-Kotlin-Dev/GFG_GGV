@@ -1,6 +1,7 @@
 package com.ayush.geeksforgeeks.utils
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -60,7 +61,14 @@ fun AboutUsContent(onClose: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             IconButton(
-                onClick = { uriHandler.openUri("https://www.instagram.com/gfgsc_ggv/") }
+                onClick = { uriHandler.openUri("https://www.instagram.com/gfgsc_ggv/") },
+                modifier = Modifier
+                    .border(
+                        width = 1.dp,
+                        color = GFGPrimary,
+                        shape = CircleShape
+                    )
+                    .padding(8.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.instagram_1_svgrepo_com),
@@ -69,7 +77,14 @@ fun AboutUsContent(onClose: () -> Unit) {
                 )
             }
             IconButton(
-                onClick = { uriHandler.openUri("https://x.com/gfgsc_ggv") }
+                onClick = { uriHandler.openUri("https://x.com/gfgsc_ggv") },
+                modifier = Modifier
+                    .border(
+                        width = 1.dp,
+                        color = GFGPrimary,
+                        shape = CircleShape
+                    )
+                    .padding(8.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.twitter_color_svgrepo_com),
@@ -78,7 +93,14 @@ fun AboutUsContent(onClose: () -> Unit) {
                 )
             }
             IconButton(
-                onClick = { uriHandler.openUri("https://www.linkedin.com/company/gfgsc-ggv/posts/?feedView=all") }
+                onClick = { uriHandler.openUri("https://www.linkedin.com/company/gfgsc-ggv/posts/?feedView=all") },
+                modifier = Modifier
+                    .border(
+                        width = 1.dp,
+                        color = GFGPrimary,
+                        shape = CircleShape
+                    )
+                    .padding(8.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.linkedin_svgrepo_com),

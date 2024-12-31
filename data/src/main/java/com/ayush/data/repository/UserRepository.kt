@@ -105,15 +105,30 @@ class UserRepository @Inject constructor(
         userPreferences.clearUserData()
     }
 
-    //TODO
     suspend fun uploadProfileImage(uri: Uri): String {
-        val storageRef = FirebaseStorage.getInstance().reference
-        val imageRef = storageRef.child("profile_pics/${firebaseAuth.currentUser?.uid}")
-        val uploadTask = imageRef.putFile(uri)
-        uploadTask.await()
-        return imageRef.downloadUrl.await().toString()
+        val userId = firebaseAuth.currentUser?.uid
+            ?: throw IllegalStateException("No user logged in")
+        try {
+            // Upload to Firebase Storage
+            val storageRef = FirebaseStorage.getInstance().reference
+            val imageRef = storageRef.child("profile_pics/$userId")
+            val uploadTask = imageRef.putFile(uri)
+            uploadTask.await()
+            val imageUrl = imageRef.downloadUrl.await().toString()
 
+            // Get current user data
+            val currentUser = userPreferences.userData.first()
+            val updatedUser = currentUser.copy(profilePicUrl = imageUrl)
+
+            // Update both Firestore and local preferences in one go
+            updateUser(updatedUser) // This function handles both Firestore and local updates
+
+            return imageUrl
+        } catch (e: Exception) {
+            throw Exception("Failed to update profile picture: ${e.message}")
+        }
     }
+
 
     suspend fun getTotalMembersCount(): Int {
         return try {

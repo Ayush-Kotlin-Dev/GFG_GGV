@@ -102,7 +102,7 @@ private fun TabIcon(tab: Tab, selected: Boolean) {
         modifier = Modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(if (selected) Color.Red.copy(alpha = 0.1f) else Color.Transparent),
+            .background(if (selected) Color.Green.copy(alpha = 0.1f) else Color.Transparent),
         contentAlignment = Alignment.Center
     ) {
         tab.options.icon?.let { painter ->

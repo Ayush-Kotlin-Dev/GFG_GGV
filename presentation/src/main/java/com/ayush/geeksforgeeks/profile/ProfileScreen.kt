@@ -3,7 +3,6 @@ package com.ayush.geeksforgeeks.profile
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -26,23 +25,15 @@ import androidx.compose.material.icons.automirrored.filled.ContactSupport
 import androidx.compose.material.icons.automirrored.filled.HelpCenter
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.ContactSupport
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Engineering
-import androidx.compose.material.icons.filled.HelpCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ManageAccounts
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -71,19 +62,19 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
+import coil.compose.AsyncImage
 import com.ayush.data.datastore.UserSettings
-import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.auth.AuthScreen
-import com.ayush.geeksforgeeks.utils.AboutUsContent
+import com.ayush.geeksforgeeks.profile.profile_detail.ProfileDetailScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
+import com.ayush.geeksforgeeks.utils.AboutUsContent
 import com.ayush.geeksforgeeks.utils.ContributorsContent
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
@@ -126,6 +117,7 @@ fun ProfileContent(
     var showContributorsBottomSheet by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val appLink = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
+    val navigator = LocalNavigator.current
 
 
     Column(
@@ -147,7 +139,7 @@ fun ProfileContent(
         ) {
             Column {
                 ProfileMenuItem(Icons.Default.ManageAccounts, "Profile") {
-                    Toast.makeText(context, "🚧 Profile features coming soon! We're building something awesome! ", Toast.LENGTH_SHORT).show()
+                    navigator?.push(ProfileDetailScreen())
                 }
                 ProfileMenuItem(Icons.Default.AdminPanelSettings, "Setting") {
                     Toast.makeText(context, "⚙️ Settings panel under development ! Stay tuned! ", Toast.LENGTH_SHORT).show()
@@ -282,8 +274,8 @@ fun ProfileHeader(user: UserSettings) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.pixelcut_export),
+        AsyncImage(
+            model = user.profilePicUrl,
             contentDescription = "Profile Picture",
             modifier = Modifier
                 .size(100.dp)
@@ -295,7 +287,7 @@ fun ProfileHeader(user: UserSettings) {
                         style = Stroke(width = 2.dp.toPx())
                     )
                 },
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
