@@ -71,6 +71,7 @@ import coil.compose.AsyncImage
 import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.profile.profile_detail.ProfileDetailScreen
+import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
@@ -142,7 +143,7 @@ fun ProfileContent(
                     navigator?.push(ProfileDetailScreen())
                 }
                 ProfileMenuItem(Icons.Default.AdminPanelSettings, "Setting") {
-                    Toast.makeText(context, "⚙️ Settings panel under development ! Stay tuned! ", Toast.LENGTH_SHORT).show()
+                    navigator?.push(SettingsScreen())
                 }
                 ProfileMenuItem(Icons.AutoMirrored.Filled.ContactSupport, "Contact") { showContactDialog = true }
                 ProfileMenuItem(Icons.Default.Share, "Share App") {

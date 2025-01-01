@@ -1,6 +1,7 @@
 package com.ayush.geeksforgeeks
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -13,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,19 +32,35 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
             isAdmin = userRole == UserRole.TEAM_LEAD || userRole == UserRole.ADMIN
         ) }
 
+        // Add animated offset for content
+        val bottomPadding by animateDpAsState(
+            targetValue = if (showBottomBar) 73.dp else 0.dp,
+            animationSpec = tween(300), 
+            label = "bottom padding animation"
+        )
+
         TabNavigator(initialTab) {
             Scaffold(
-                content = { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding)) {
-                        CurrentTab()
-                    }
-                },
+                modifier = Modifier.fillMaxSize(),
                 bottomBar = {
                     BottomNavigationBar(showBottomBar, userRole) { show ->
                         showBottomBar = show
                     }
                 }
-            )
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(
+                            start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
+                            top = innerPadding.calculateTopPadding(),
+                            end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
+                            bottom = bottomPadding
+                        )
+                ) {
+                    CurrentTab()
+                }
+            }
         }
     }
 }
