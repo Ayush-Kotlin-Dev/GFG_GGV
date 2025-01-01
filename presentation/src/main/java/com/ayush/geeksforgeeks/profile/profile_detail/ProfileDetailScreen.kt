@@ -1,40 +1,77 @@
 package com.ayush.geeksforgeeks.profile.profile_detail
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Domain
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import coil.compose.AsyncImage
 import com.ayush.data.datastore.UserSettings
+import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.profile.ProfileViewModel
 import com.ayush.geeksforgeeks.profile.ProfileViewModel.ProfileUiState
-import com.ayush.geeksforgeeks.R
+import com.ayush.geeksforgeeks.ui.theme.GFGBackground
+import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
+import com.ayush.geeksforgeeks.utils.DomainUtils
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
-import androidx.compose.foundation.border
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import com.ayush.geeksforgeeks.utils.DomainUtils
 
 class ProfileDetailScreen : Screen {
     @Composable
@@ -54,8 +91,9 @@ fun ProfileDetail(
             user = state.user,
             viewModel = viewModel
         )
+
         is ProfileUiState.Loading -> LoadingIndicator()
-        is ProfileUiState.Error -> ErrorScreen(errorMessage = state.message) 
+        is ProfileUiState.Error -> ErrorScreen(errorMessage = state.message)
     }
 }
 
@@ -78,6 +116,7 @@ fun EditableProfileContent(
         }
     }
     val uiState by viewModel.uiState.collectAsState()
+    val navigation = LocalNavigator.current
 
     LaunchedEffect(uiState) {
         when (val state = uiState) {
@@ -85,27 +124,57 @@ fun EditableProfileContent(
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 isUploading = false
             }
+
             is ProfileUiState.Success -> {
                 if (isUploading) {
-                    Toast.makeText(context, "Profile picture updated successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Profile picture updated successfully!",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     isUploading = false
                 }
             }
+
             else -> {}
+        }
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
+        IconButton(
+            onClick = { navigation?.pop() },
+            modifier = Modifier.align(Alignment.TopStart)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.White
+            )
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(GFGBackground)
     ) {
-        // Top Header with Profile Picture - Changed from GFGPrimary to a neutral dark color
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp)
-                .background(Color(0xFF2C3E50)) // Dark blue-gray color
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF2E8B57),
+                            Color(0xFF1A5D3A),
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
         ) {
             Column(
                 modifier = Modifier
@@ -117,7 +186,7 @@ fun EditableProfileContent(
                 Box(
                     modifier = Modifier
                         .size(120.dp)
-                        .padding(4.dp) // Added padding to account for the protruding edit button
+                        .padding(4.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -134,7 +203,7 @@ fun EditableProfileContent(
                             contentScale = ContentScale.Crop
                         )
                     }
-                    
+
                     IconButton(
                         onClick = { showImagePicker = true },
                         modifier = Modifier
@@ -147,7 +216,7 @@ fun EditableProfileContent(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Profile Picture",
-                            tint = Color(0xFF2C3E50),
+                            tint = GFGPrimary,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -253,10 +322,10 @@ fun EditableProfileContent(
                     if (isUploading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = Color(0xFF2C3E50)
+                            color = GFGPrimary
                         )
                     } else {
-                        Text("Confirm", color = Color(0xFF2C3E50))
+                        Text("Confirm", color = GFGPrimary)
                     }
                 }
             },
@@ -268,7 +337,7 @@ fun EditableProfileContent(
                     },
                     enabled = !isUploading
                 ) {
-                    Text("Cancel", color = Color(0xFF2C3E50))
+                    Text("Cancel", color = GFGPrimary)
                 }
             }
         )
@@ -284,7 +353,7 @@ private fun ProfileSection(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White, 
+            containerColor = GFGCardBackground,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -294,7 +363,7 @@ private fun ProfileSection(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = Color(0xFF2C3E50),
+                color = GFGPrimary,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -318,7 +387,7 @@ private fun ProfileField(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFF2C3E50), 
+            tint = GFGPrimary,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -331,7 +400,7 @@ private fun ProfileField(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFF2C3E50) 
+                color = GFGTextPrimary
             )
         }
     }
