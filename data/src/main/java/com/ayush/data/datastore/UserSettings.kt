@@ -1,8 +1,11 @@
 package com.ayush.data.datastore
 
+import androidx.annotation.Keep
+import com.google.firebase.firestore.PropertyName
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
+@Keep
 @Serializable
 data class UserSettings(
     val userId: String = "",
@@ -18,6 +21,7 @@ data class UserSettings(
 
 
 @Serializable
+@Keep
 data class User(
     val userId: String = "",
     val name: String = "",

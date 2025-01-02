@@ -41,6 +41,5 @@ dependencies {
     hilt()
     serialization()
     preferenceDataStore()
-    domain()
     firebase()
 }

@@ -22,4 +22,3 @@ dependencyResolutionManagement {
 rootProject.name = "GFG GGV"
 include(":presentation")
 include(":data")
-include(":domain")

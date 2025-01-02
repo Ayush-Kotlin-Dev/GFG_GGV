@@ -325,6 +325,8 @@ class AuthViewModel @Inject constructor(
 
     fun checkEmailVerification() {
         viewModelScope.launch {
+            if (_authState.value is AuthState.Success) return@launch // Already verified
+
             if (authRepository.isEmailVerified()) {
                 val user = authRepository.firebaseAuth.currentUser
                 user?.let {

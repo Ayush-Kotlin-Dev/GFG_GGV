@@ -8,6 +8,7 @@ import com.ayush.data.datastore.UserSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -42,6 +45,7 @@ class AuthRepository @Inject constructor(
     private val userPreferences: UserPreferences,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
+    private val userUpdateLock = Mutex()
 
     private var lastVerificationEmailSent: Long = 0
     private val minEmailInterval = 60_000L
@@ -58,21 +62,30 @@ class AuthRepository @Inject constructor(
     ) {
         require(teamId.isNotBlank()) { "Team ID must be provided" }
 
-        val userSettings = mapOf(
-            "name" to (username.ifBlank { user.displayName ?: "GFG User" }),
-            "userId" to user.uid,
-            "email" to (user.email ?: ""),
-            "profilePicUrl" to (user.photoUrl?.toString()),
-            "isLoggedIn" to false,
-            "domainId" to (teamId.toIntOrNull() ?: 0),
-            "role" to role.name,
-            "totalCredits" to 0
+        // First fetch existing data
+        val existingData = retryIO {
+            firestore.collection("users")
+                .document(user.uid)
+                .get()
+                .await()
+                .data ?: emptyMap()
+        }
+
+        val userSettings = existingData + mapOf(
+            Pair("name", username.ifBlank { user.displayName ?: "GFG User" }),
+            Pair("userId", user.uid),
+            Pair("email", user.email ?: ""),
+            Pair("profilePicUrl", user.photoUrl?.toString()),
+            Pair("isLoggedIn", false),
+            Pair("domainId", teamId.toIntOrNull() ?: 0),
+            Pair("role", role.name),
+            Pair("totalCredits", (existingData["totalCredits"] as? Number)?.toInt() ?: 0)
         )
 
         retryIO {
             firestore.collection("users")
                 .document(user.uid)
-                .set(userSettings)
+                .set(userSettings, SetOptions.merge())  // Use merge option
                 .await()
         }
     }
@@ -120,93 +133,114 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun login(email: String, password: String): Result<FirebaseUser> = withContext(ioDispatcher) {
-        try {
-            require(email.isNotBlank()) { "Email cannot be empty" }
-            require(password.isNotBlank()) { "Password cannot be empty" }
-
-            Log.d(TAG, "Starting login for email: ${email.take(3)}***")
-
-            val result = retryIO {
-                firebaseAuth.signInWithEmailAndPassword(email, password).await()
-            }
-
-            val user = result.user ?: return@withContext Result.failure(
-                IllegalStateException("Login failed: No user returned")
-            )
-
+        userUpdateLock.withLock {
             try {
-                retryIO {
-                    user.reload().await()
+                require(email.isNotBlank()) { "Email cannot be empty" }
+                require(password.isNotBlank()) { "Password cannot be empty" }
+
+                Log.d(TAG, "Starting login for email: ${email.take(3)}***")
+
+                val result = retryIO {
+                    firebaseAuth.signInWithEmailAndPassword(email, password).await()
                 }
-                if (!user.isEmailVerified) {
-                    if (shouldSendVerificationEmail()) {
-                        sendEmailVerification()
-                    }
-                    return@withContext Result.failure(Exception("Email not verified"))
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error checking email verification: ${e.message}")
-                return@withContext Result.failure(e)
-            }
 
-            val userDoc = retryIO {
-                firestore.collection("users")
-                    .document(user.uid)
-                    .get()
-                    .await()
-            }
-
-            val userSettings = userDoc.toObject(UserSettings::class.java)
-                ?: throw IllegalStateException("User data not found")
-
-            val updatedUserSettings = userSettings.copy(isLoggedIn = true)
-
-            firestore.runTransaction { transaction ->
-                transaction.set(
-                    firestore.collection("users").document(user.uid),
-                    updatedUserSettings
+                val user = result.user ?: return@withContext Result.failure(
+                    IllegalStateException("Login failed: No user returned")
                 )
-            }.await()
 
-            userPreferences.setUserData(updatedUserSettings)
+                try {
+                    retryIO {
+                        user.reload().await()
+                    }
+                    if (!user.isEmailVerified) {
+                        if (shouldSendVerificationEmail()) {
+                            sendEmailVerification()
+                        }
+                        return@withContext Result.failure(Exception("Email not verified"))
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error checking email verification: ${e.message}")
+                    return@withContext Result.failure(e)
+                }
 
-            Result.success(user)
-        } catch (e: Exception) {
-            Log.e(TAG, "Login error: ${e.message}")
-            Result.failure(e)
+                val userDoc = retryIO {
+                    firestore.collection("users")
+                        .document(user.uid)
+                        .get()
+                        .await()
+                }
+
+                val userSettings = userDoc.toObject(UserSettings::class.java)
+                    ?: throw IllegalStateException("User data not found")
+
+                if (!userSettings.isLoggedIn) {
+                    retryIO {
+                        firestore.collection("users")
+                            .document(user.uid)
+                            .update("isLoggedIn", true)
+                            .await()
+                    }
+                }
+
+                userPreferences.setUserData(userSettings.copy(isLoggedIn = true))
+                Result.success(user)
+            } catch (e: Exception) {
+                Log.e(TAG, "Login error: ${e.message}")
+                Result.failure(e)
+            }
         }
     }
 
     suspend fun saveUserDataAfterVerification(user: FirebaseUser) = withContext(ioDispatcher) {
-        try {
-            val userDoc = retryIO {
-                firestore.collection("users")
-                    .document(user.uid)
-                    .get()
-                    .await()
+        userUpdateLock.withLock {
+            try {
+                // First check if update is needed
+                val currentDoc = retryIO {
+                    firestore.collection("users")
+                        .document(user.uid)
+                        .get()
+                        .await()
+                }
+
+                val currentSettings = currentDoc.toObject(UserSettings::class.java)
+                if (currentSettings?.isLoggedIn == true) {
+                    // User is already logged in, no need to update
+                    userPreferences.setUserData(currentSettings)
+                    return@withLock
+                }
+
+                // Update only if necessary
+                retryIO {
+                    firestore.collection("users")
+                        .document(user.uid)
+                        .update(
+                            mapOf(
+                                "isLoggedIn" to true,
+                                "userId" to user.uid
+                            )
+                        )
+                        .await()
+                }
+
+                // Fetch final state for preferences
+                val updatedDoc = retryIO {
+                    firestore.collection("users")
+                        .document(user.uid)
+                        .get()
+                        .await()
+                }
+
+                val userSettings = updatedDoc.toObject(UserSettings::class.java)
+                    ?: throw IllegalStateException("User data not found in Firestore")
+
+                userPreferences.setUserData(userSettings)
+            } catch (e: Exception) {
+                Log.e("AuthRepository", "Failed to save user data: ${e.message}")
+                throw e
             }
-
-            val userSettings = userDoc.toObject(UserSettings::class.java)
-                ?: throw IllegalStateException("User data not found in Firestore")
-
-            val updatedUserSettings = userSettings.copy(
-                isLoggedIn = true,
-                userId = user.uid
-            )
-
-            firestore.runTransaction { transaction ->
-                transaction.set(
-                    firestore.collection("users").document(user.uid),
-                    updatedUserSettings
-                )
-            }.await()
-
-            userPreferences.setUserData(updatedUserSettings)
-        } catch (e: Exception) {
-            Log.e("AuthRepository", "Failed to save user data after retries: ${e.message}")
-            throw e
         }
     }
+
 
     suspend fun sendEmailVerification(): EmailVerificationResult = withContext(ioDispatcher) {
         try {
@@ -240,52 +274,7 @@ class AuthRepository @Inject constructor(
         return (currentTime - lastVerificationEmailSent) >= minEmailInterval
     }
 
-    suspend fun checkEmailVerificationStatus(): Boolean = withContext(ioDispatcher) {
-        try {
-            firebaseAuth.currentUser?.let { user ->
-                retryIO {
-                    user.reload().await()
-                    user.isEmailVerified
-                }
-            } ?: false
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to check email verification status: ${e.message}")
-            false
-        }
-    }
 
-    private suspend fun saveUserData(
-        username: String = "",
-        user: FirebaseUser,
-        isNewUser: Boolean,
-        teamId: String? = null,
-        role: UserRole = UserRole.MEMBER
-    ) = withContext(ioDispatcher) {
-        try {
-            val userSettings = UserSettings(
-                name = username.takeIf { it.isNotBlank() } ?: user.displayName ?: "GFG User",
-                userId = user.uid,
-                email = user.email.orEmpty(),
-                profilePicUrl = user.photoUrl?.toString(),
-                isLoggedIn = true,
-                domainId = teamId?.toIntOrNull() ?: 0,
-                role = role
-            )
-
-            retryIO {
-                firestore.runTransaction { transaction ->
-                    transaction.set(
-                        firestore.collection("users").document(user.uid),
-                        userSettings
-                    )
-                }.await()
-                userPreferences.setUserData(userSettings)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to save user data: ${e.message}")
-            throw e
-        }
-    }
 
     suspend fun getUserRole(email: String): UserRole = withContext(ioDispatcher) {
         try {

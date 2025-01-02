@@ -19,7 +19,29 @@ import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-
+/**
+ * Note to other developers:
+ * 
+ * This project is structured into three modules:
+ * 
+ * 1. buildSrc - Manages project dependencies using Kotlin DSL
+ *    - Centralizes dependency versions
+ *    - Makes dependency management type-safe
+ * 
+ * 2. data - Handles the data layer
+ *    - Contains Firebase API calls
+ *    - Manages data models and repositories
+ *    - Handles data source interactions
+ * 
+ * 3. presentation - Contains the UI layer
+ *    - Implements Jetpack Compose UI
+ *    - Contains ViewModels and UI states
+ *    - Handles user interactions
+ * 
+ * Note: Domain layer was intentionally omitted since this is a small, 
+ * fast-build application. The business logic is minimal and handled 
+ * directly between data and presentation layers.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject

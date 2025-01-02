@@ -13,7 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,8 +75,13 @@ import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import java.util.UUID
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.AssignmentInd
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PendingActions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.unit.DpOffset
 
 class AdminScreen : Screen {
@@ -100,6 +105,7 @@ class AdminScreen : Screen {
             LazyColumn {
                 item {
                     AdminHeader(
+                        stats = stats,
                         onAddTask = { showAddTaskDialog = true },
                         onShowStats = { showStatsDialog = true },
                         onGenerateReport = { viewModel.generateWeeklyReport() }
@@ -170,7 +176,12 @@ class AdminScreen : Screen {
 }
 
 @Composable
-fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport: () -> Unit) {
+fun AdminHeader(
+    stats: Map<String, Int>,
+    onAddTask: () -> Unit,
+    onShowStats: () -> Unit,
+    onGenerateReport: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -180,63 +191,137 @@ fun AdminHeader(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport
             "Team Lead Panel",
             style = MaterialTheme.typography.headlineMedium,
             color = GFGPrimary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            "Manage your team and tasks",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            OutlinedButton(
-                onClick = onShowStats,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = GFGPrimary,
-                    containerColor = Color.Transparent
-                ),
-                border = BorderStroke(1.dp, GFGPrimary),
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
-                Icon(Icons.Default.Person, "Stats", modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Stats", maxLines = 1)
-            }
-            OutlinedButton(
-                onClick = onAddTask,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = GFGPrimary,
-                    containerColor = Color.Transparent
-                ),
-                border = BorderStroke(1.dp, GFGPrimary),
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
-                Icon(Icons.Default.Add, "Add Task", modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("New Task", maxLines = 1)
-            }
+            StatsCard(
+                icon = Icons.Default.AssignmentInd,
+                label = "Total Tasks",
+                value = "${stats["total"] ?: 0}",
+                backgroundColor = MaterialTheme.colorScheme.primary
+            )
+            StatsCard(
+                icon = Icons.Default.PendingActions,
+                label = "Unassigned",
+                value = "${stats["unassigned"] ?: 0}",
+                backgroundColor = MaterialTheme.colorScheme.error
+            )
+            StatsCard(
+                icon = Icons.Default.CheckCircle,
+                label = "Completed",
+                value = "${stats["completed"] ?: 0}",
+                backgroundColor = MaterialTheme.colorScheme.tertiary
+            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        ActionButtons(onAddTask, onShowStats, onGenerateReport)
+    }
+}
 
+@Composable
+fun StatsCard(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    backgroundColor: Color
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor.copy(alpha = 0.1f)
+        ),
+        border = BorderStroke(1.dp, backgroundColor.copy(alpha = 0.3f))
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = backgroundColor,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                color = backgroundColor,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = backgroundColor
+            )
+        }
+    }
+}
+
+@Composable
+fun ActionButtons(onAddTask: () -> Unit, onShowStats: () -> Unit, onGenerateReport: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         OutlinedButton(
-            onClick = onGenerateReport,
+            onClick = onShowStats,
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = GFGPrimary,
                 containerColor = Color.Transparent
             ),
             border = BorderStroke(1.dp, GFGPrimary),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.word_image),
-                contentDescription = "Generate Report"
-            )
+            Icon(Icons.Default.Person, "Stats", modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(4.dp))
-            Text("Generate Report")
+            Text("Stats", maxLines = 1)
         }
+        OutlinedButton(
+            onClick = onAddTask,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = GFGPrimary,
+                containerColor = Color.Transparent
+            ),
+            border = BorderStroke(1.dp, GFGPrimary),
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(vertical = 12.dp)
+        ) {
+            Icon(Icons.Default.Add, "Add Task", modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("New Task", maxLines = 1)
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    OutlinedButton(
+        onClick = onGenerateReport,
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = GFGPrimary,
+            containerColor = Color.Transparent
+        ),
+        border = BorderStroke(1.dp, GFGPrimary),
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(vertical = 12.dp)
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.word_image),
+            contentDescription = "Generate Report"
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Generate Report")
     }
 }
 
@@ -419,7 +504,7 @@ fun EnhancedTaskItem(
         onDismissRequest = { showMenu = false },
         offset = menuOffset,
         containerColor = GFGBackground,
-        ) {
+    ) {
         DropdownMenuItem(
             text = { Text("Edit") },
             onClick = {
@@ -436,6 +521,7 @@ fun EnhancedTaskItem(
         )
     }
 }
+
 @Composable
 fun TaskStatusChip(status: TaskStatus) {
     val (backgroundColor, textColor) = when (status) {
@@ -466,17 +552,29 @@ fun TeamSection(teamMembers: List<User>, stats: Map<String, Int>) {
         colors = CardDefaults.cardColors(containerColor = GFGCardBackground)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                "Team Performance",
-                style = MaterialTheme.typography.titleLarge,
-                color = GFGPrimary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Team Performance",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = GFGPrimary
+                )
+                Text(
+                    "${teamMembers.size} Members",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Column {
                 teamMembers.forEach { member ->
                     EnhancedTeamMemberItem(
                         member = member,
-                        completedTasks = stats[member.userId] ?: 77
+                        completedTasks = stats[member.userId] ?: 0,
+                        totalTasks = (stats["total"] ?: 0)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -486,37 +584,54 @@ fun TeamSection(teamMembers: List<User>, stats: Map<String, Int>) {
 }
 
 @Composable
-fun EnhancedTeamMemberItem(member: User, completedTasks: Int) {
+fun EnhancedTeamMemberItem(
+    member: User,
+    completedTasks: Int,
+    totalTasks: Int
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .padding(12.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
         ) {
-            Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = member.name,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = member.role.toString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
                 Text(
-                    text = member.name,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = member.role.toString(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "$completedTasks tasks",
+                    text = "$completedTasks/$totalTasks tasks",
                     style = MaterialTheme.typography.bodyMedium,
                     color = GFGPrimary
                 )
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = if (totalTasks > 0) completedTasks.toFloat() / totalTasks else 0f,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(MaterialTheme.shapes.small),
+                color = GFGPrimary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         }
     }
 }
