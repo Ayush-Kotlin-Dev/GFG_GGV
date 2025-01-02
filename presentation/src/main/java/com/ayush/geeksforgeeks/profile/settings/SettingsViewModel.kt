@@ -1,11 +1,14 @@
 package com.ayush.geeksforgeeks.profile.settings
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.repository.AuthRepository
 import com.ayush.geeksforgeeks.auth.ResetPasswordState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,8 +39,8 @@ sealed class SettingsEvent {
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val authRepository: AuthRepository
-
+    private val authRepository: AuthRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -64,23 +67,38 @@ class SettingsViewModel @Inject constructor(
 
     private fun updateDarkMode(enabled: Boolean) {
         viewModelScope.launch {
-            // Update dark mode in DataStore or similar
+            Toast.makeText(
+                context,
+                "Dark mode? In this economy? 🌚 (Coming soon!)",
+                Toast.LENGTH_SHORT
+            ).show()
             _state.update { it.copy(isDarkMode = enabled) }
         }
     }
 
     private fun updateNotifications(enabled: Boolean) {
         viewModelScope.launch {
-            // Update notifications preference in DataStore
+            Toast.makeText(
+                context,
+                if (enabled) "Sure, I'll ping you... when this feature is ready 🔔"
+                else "Fine, I'll be quiet... not that I was making any noise anyway 🤫",
+                Toast.LENGTH_SHORT
+            ).show()
             _state.update { it.copy(isNotificationsEnabled = enabled) }
         }
     }
 
     private fun updateEventReminders(enabled: Boolean) {
+        // Update event reminders preference in DataStore
         viewModelScope.launch {
-            // Update event reminders preference in DataStore
+            Toast.makeText(
+                context,
+                if (enabled) "Event reminders enabled 🎉" else "Event reminders disabled 😢",
+                Toast.LENGTH_SHORT
+            ).show()
             _state.update { it.copy(isEventRemindersEnabled = enabled) }
         }
+
     }
 
     fun handleChangePassword() {
@@ -120,7 +138,14 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun handleDownloadSettings() {
-        // Navigate to download settings screen
+        viewModelScope.launch {
+            Toast.makeText(
+                context,
+                "Downloads? Coming soon to a screen near you! 📥",
+                Toast.LENGTH_SHORT
+            ).show()
+
+        }
     }
 
     private fun handleLanguageSettings() {
@@ -134,4 +159,5 @@ class SettingsViewModel @Inject constructor(
     private fun handlePrivacyPolicy() {
         // Open privacy policy
     }
+
 }

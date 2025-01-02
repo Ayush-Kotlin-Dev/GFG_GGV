@@ -2,8 +2,11 @@ package com.ayush.geeksforgeeks
 
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,15 +20,23 @@ import com.ayush.geeksforgeeks.utils.ErrorScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var splashScreenProvider: SplashScreenProvider
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        Log.d("FCM", "Notification permission granted: $isGranted")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val splashScreen = splashScreenProvider.provideSplashScreen(this)
+
+        // Add permission check
+        checkNotificationPermission()
 
         setContent {
             GFGGGVTheme {
@@ -56,8 +67,21 @@ class MainActivity : ComponentActivity() {
                                 "7408047420",
                                 "8102471811"
                             )
-                        )                        
+                        )
                     }
+                }
+            }
+        }
+    }
+
+    private fun checkNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            when {
+                checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED -> {
+                    Log.d("FCM", "Notification permission granted")
+                }
+                else -> {
+                    requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
         }
@@ -71,4 +95,3 @@ class SplashScreenProvider @Inject constructor() {
         }
     }
 }
-
