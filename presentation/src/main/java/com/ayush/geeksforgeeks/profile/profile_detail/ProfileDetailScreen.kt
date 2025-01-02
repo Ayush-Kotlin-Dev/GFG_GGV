@@ -1,6 +1,11 @@
 package com.ayush.geeksforgeeks.profile.profile_detail
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Domain
@@ -52,7 +56,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color as ColorUi
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -60,9 +65,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.palette.graphics.Palette
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
+import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.profile.ProfileViewModel
@@ -74,7 +83,9 @@ import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import com.ayush.geeksforgeeks.utils.DomainUtils
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
+import com.ayush.geeksforgeeks.utils.PaletteGenerator
 import com.ayush.geeksforgeeks.utils.PulseAnimation
+import com.ayush.geeksforgeeks.utils.parserColor
 
 class ProfileDetailScreen : Screen {
     @Composable
@@ -109,6 +120,16 @@ fun EditableProfileContent(
     var showConfirmDialog by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isUploading by remember { mutableStateOf(false) }
+    var profileImageColors by remember {
+        mutableStateOf(
+            mapOf(
+                "vibrant" to "#2E8B57",
+                "darkVibrant" to "#1A5D3A",
+                "onDarkVibrant" to "#FFFFFF"
+            )
+        )
+    }
+
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -142,6 +163,15 @@ fun EditableProfileContent(
             else -> {}
         }
     }
+
+    rememberDominantColorState(
+        context = LocalContext.current,
+        imageUrl = user.profilePicUrl,
+        defaultColor = ColorUi(0xFF2E8B57)
+    ) { colors ->
+        profileImageColors = colors
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -152,9 +182,9 @@ fun EditableProfileContent(
             modifier = Modifier.align(Alignment.TopStart)
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                imageVector = Icons.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.White
+                tint = ColorUi.White
             )
         }
     }
@@ -171,8 +201,8 @@ fun EditableProfileContent(
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFF2E8B57),
-                            Color(0xFF1A5D3A),
+                            ColorUi(parserColor(profileImageColors["vibrant"] ?: "#2E8B57")),
+                            ColorUi(parserColor(profileImageColors["darkVibrant"] ?: "#1A5D3A"))
                         ),
                         start = Offset(0f, 0f),
                         end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
@@ -195,7 +225,7 @@ fun EditableProfileContent(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(CircleShape)
-                            .border(2.dp, Color.White, CircleShape)
+                            .border(2.dp, ColorUi.White, CircleShape)
                     ) {
                         var isLoading by remember { mutableStateOf(true) }
                         AsyncImage(
@@ -206,7 +236,7 @@ fun EditableProfileContent(
                                 .clip(CircleShape)
                                 .drawBehind {
                                     drawCircle(
-                                        color = Color.Black,
+                                        color = ColorUi.Black,
                                         radius = size.width / 2,
                                         style = Stroke(width = 2.dp.toPx())
                                     )
@@ -231,11 +261,11 @@ fun EditableProfileContent(
                             .size(32.dp)
                             .align(Alignment.BottomEnd)
                             .offset(x = 4.dp, y = 4.dp)
-                            .background(Color.White, CircleShape)
-                            .border(1.dp, Color(0xFFE0E0E0), CircleShape)
+                            .background(ColorUi.White, CircleShape)
+                            .border(1.dp, ColorUi(0xFFE0E0E0), CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Edit,
+                            imageVector = Icons.Filled.Edit,
                             contentDescription = "Edit Profile Picture",
                             tint = GFGPrimary,
                             modifier = Modifier.size(16.dp)
@@ -246,7 +276,7 @@ fun EditableProfileContent(
                 Text(
                     text = user.name,
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
+                    color = ColorUi.White,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -260,16 +290,19 @@ fun EditableProfileContent(
         ) {
             ProfileSection(
                 title = "Personal Information",
+                profileImageColors = profileImageColors,
                 content = {
                     ProfileField(
-                        icon = Icons.Default.Person,
+                        icon = Icons.Filled.Person,
                         label = "Name",
-                        value = user.name
+                        value = user.name,
+                        profileImageColors = profileImageColors
                     )
                     ProfileField(
-                        icon = Icons.Default.Email,
+                        icon = Icons.Filled.Email,
                         label = "Email",
-                        value = user.email
+                        value = user.email,
+                        profileImageColors = profileImageColors
                     )
                 }
             )
@@ -278,21 +311,25 @@ fun EditableProfileContent(
 
             ProfileSection(
                 title = "Role & Credits",
+                profileImageColors = profileImageColors,
                 content = {
                     ProfileField(
-                        icon = Icons.Default.Badge,
+                        icon = Icons.Filled.Badge,
                         label = "Role",
-                        value = user.role.name
+                        value = user.role.name,
+                        profileImageColors = profileImageColors
                     )
                     ProfileField(
-                        icon = Icons.Default.Domain,
+                        icon = Icons.Filled.Domain,
                         label = "Team",
-                        value = DomainUtils.getDomainName(user.domainId)
+                        value = "Domain Name",
+                        profileImageColors = profileImageColors
                     )
                     ProfileField(
-                        icon = Icons.Default.Star,
+                        icon = Icons.Filled.Star,
                         label = "Total Credits",
-                        value = "${user.totalCredits} points"
+                        value = "${user.totalCredits} points",
+                        profileImageColors = profileImageColors
                     )
                 }
             )
@@ -302,11 +339,13 @@ fun EditableProfileContent(
                 Spacer(modifier = Modifier.height(16.dp))
                 ProfileSection(
                     title = "Achievements",
+                    profileImageColors = profileImageColors,
                     content = {
                         AchievementItem(
-                            icon = Icons.Default.EmojiEvents,
+                            icon = Icons.Filled.EmojiEvents,
                             title = "Active Contributor",
-                            description = "Earned ${user.totalCredits} credits"
+                            description = "Earned ${user.totalCredits} credits",
+                            profileImageColors = profileImageColors
                         )
                     }
                 )
@@ -365,16 +404,31 @@ fun EditableProfileContent(
     }
 }
 
+private fun calculateTextColor(backgroundColor: String): String {
+    val color = Color.parseColor(backgroundColor)
+    // Extract RGB values
+    val red = Color.red(color)
+    val green = Color.green(color)
+    val blue = Color.blue(color)
+    
+    // Calculate relative luminance using the formula from WCAG 2.0
+    val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
+    
+    // Use black text for light backgrounds and white text for dark backgrounds
+    return if (luminance > 0.5) "#000000" else "#FFFFFF"
+}
+
 @Composable
 private fun ProfileSection(
     title: String,
+    profileImageColors: Map<String, String>,
     content: @Composable () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = GFGCardBackground,
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -384,7 +438,7 @@ private fun ProfileSection(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = GFGPrimary,
+                color = ColorUi(parserColor(profileImageColors["vibrant"] ?: "#2E8B57")),
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -397,7 +451,8 @@ private fun ProfileSection(
 private fun ProfileField(
     icon: ImageVector,
     label: String,
-    value: String
+    value: String,
+    profileImageColors: Map<String, String>
 ) {
     Row(
         modifier = Modifier
@@ -408,7 +463,7 @@ private fun ProfileField(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = GFGPrimary,
+            tint = ColorUi(parserColor(profileImageColors["vibrant"] ?: "#2E8B57")),
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -416,12 +471,12 @@ private fun ProfileField(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
-                color = GFGTextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -431,7 +486,8 @@ private fun ProfileField(
 private fun AchievementItem(
     icon: ImageVector,
     title: String,
-    description: String
+    description: String,
+    profileImageColors: Map<String, String>
 ) {
     Row(
         modifier = Modifier
@@ -442,7 +498,7 @@ private fun AchievementItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFFFFD700),
+            tint = ColorUi(0xFFFFD700),
             modifier = Modifier.size(32.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -450,13 +506,44 @@ private fun AchievementItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun rememberDominantColorState(
+    context: Context,
+    imageUrl: String?,
+    defaultColor: ColorUi,
+    onColorCalculated: (Map<String, String>) -> Unit = {}
+) {
+    LaunchedEffect(key1 = imageUrl) {
+        if (imageUrl != null) {
+            try {
+                val bitmap = PaletteGenerator.convertImageUrlToBitmap(imageUrl, context)
+                bitmap?.let {
+                    val colors = PaletteGenerator.extractColorsFromBitmap(it)
+                    onColorCalculated(colors)
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileDetail", "Error extracting colors: ${e.message}")
+                // Fallback to default colors
+                onColorCalculated(
+                    mapOf(
+                        "vibrant" to "#2E8B57",
+                        "darkVibrant" to "#1A5D3A",
+                        "onDarkVibrant" to "#FFFFFF"
+                    )
+                )
+            }
         }
     }
 }

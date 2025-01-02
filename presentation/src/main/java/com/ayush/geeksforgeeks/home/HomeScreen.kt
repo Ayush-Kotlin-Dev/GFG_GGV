@@ -21,9 +21,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -33,7 +30,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -49,7 +45,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -73,7 +68,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -81,11 +75,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import coil.compose.AsyncImage
 import com.ayush.data.model.Event
-import com.ayush.geeksforgeeks.utils.AddEventScreen
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.home.components.SectionHeader
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
+import com.ayush.geeksforgeeks.utils.AddEventScreen
 import com.ayush.geeksforgeeks.utils.TripleOrbitLoadingAnimation
 
 data class HomeScreenEvent(
