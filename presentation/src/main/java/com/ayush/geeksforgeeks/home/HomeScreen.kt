@@ -86,6 +86,7 @@ import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.home.components.SectionHeader
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
+import com.ayush.geeksforgeeks.utils.TripleOrbitLoadingAnimation
 
 data class HomeScreenEvent(
     val isAdmin: Boolean = false
@@ -381,8 +382,6 @@ private fun FeaturedEventCard(
     onAddEventClick: () -> Unit,
     context: android.content.Context
 ) {
-    val pagerState = rememberPagerState(pageCount = { events.size })
-
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
@@ -396,26 +395,51 @@ private fun FeaturedEventCard(
             }
         )
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.height(200.dp)
-        ) { page ->
-            EventCard(event = events[page], onClick = { onEventClick(events[page]) })
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            repeat(events.size) { iteration ->
-                val color = if (pagerState.currentPage == iteration) GFGPrimary else Color.LightGray
+        if (events.isEmpty()) {
+            // Loading state
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(4.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
                 Box(
                     modifier = Modifier
-                        .padding(2.dp)
-                        .clip(CircleShape)
-                        .background(color)
-                        .size(8.dp)
-                )
+                        .fillMaxSize()
+                        .background(GFGLightGray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TripleOrbitLoadingAnimation(
+                        modifier = Modifier.size(140.dp),
+                        color = GFGPrimary
+                    )
+                }
+            }
+        } else {
+            val pagerState = rememberPagerState(pageCount = { events.size })
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.height(200.dp)
+            ) { page ->
+                EventCard(event = events[page], onClick = { onEventClick(events[page]) })
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                repeat(events.size) { iteration ->
+                    val color = if (pagerState.currentPage == iteration) GFGPrimary else Color.LightGray
+                    Box(
+                        modifier = Modifier
+                            .padding(2.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .size(8.dp)
+                    )
+                }
             }
         }
     }
@@ -431,12 +455,32 @@ private fun EventCard(event: Event, onClick: () -> Unit) {
         onClick = onClick
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+            var isLoading by remember { mutableStateOf(true) }
+
             AsyncImage(
                 model = event.imageRes,
                 contentDescription = "Event Image",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                onLoading = { isLoading = true },
+                onSuccess = { isLoading = false },
+                onError = { isLoading = false }
             )
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White.copy(alpha = 0.8f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TripleOrbitLoadingAnimation(
+                        modifier = Modifier.size(140.dp),
+                        color = GFGPrimary
+                    )
+                }
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()

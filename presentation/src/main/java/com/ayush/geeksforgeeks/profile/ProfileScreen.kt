@@ -79,6 +79,7 @@ import com.ayush.geeksforgeeks.utils.AboutUsContent
 import com.ayush.geeksforgeeks.utils.ContributorsContent
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
+import com.ayush.geeksforgeeks.utils.PulseAnimation
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import kotlin.text.Charsets.UTF_8
@@ -236,6 +237,7 @@ fun ProfileContent(
         ContributorsBottomSheet(onDismiss = { showContributorsBottomSheet = false })
     }
 }
+
 @Composable
 fun ContactDialog(
     onDismiss: () -> Unit,
@@ -267,31 +269,52 @@ fun ContactDialog(
         containerColor = GFGBackground,
     )
 }
+
 @Composable
 fun ProfileHeader(user: UserSettings) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        AsyncImage(
-            model = user.profilePicUrl,
-            contentDescription = "Profile Picture",
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .drawBehind {
-                    drawCircle(
-                        color = Color.Black,
-                        radius = size.width / 2,
-                        style = Stroke(width = 2.dp.toPx())
-                    )
-                },
-            contentScale = ContentScale.Crop,
-        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(100.dp)
+        ) {
+            var isLoading by remember { mutableStateOf(true) }
+
+            AsyncImage(
+                model = user.profilePicUrl,
+                contentDescription = "Profile Picture",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .drawBehind {
+                        drawCircle(
+                            color = Color.Black,
+                            radius = size.width / 2,
+                            style = Stroke(width = 2.dp.toPx())
+                        )
+                    },
+                contentScale = ContentScale.Crop,
+                onLoading = { isLoading = true },
+                onSuccess = { isLoading = false },
+                onError = { isLoading = false }
+            )
+
+            if (isLoading) {
+                PulseAnimation(
+                    modifier = Modifier.fillMaxSize(),
+                    color = GFGPrimary
+                )
+            }
+
+        }
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
+        
+            Text(
             text = user.name,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
@@ -304,6 +327,7 @@ fun ProfileHeader(user: UserSettings) {
         )
     }
 }
+
 @Composable
 fun ProfileMenuItem(
     icon: ImageVector,
@@ -406,6 +430,7 @@ fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () ->
         containerColor = GFGBackground,
     )
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContributorsBottomSheet(onDismiss: () -> Unit) {
@@ -428,6 +453,7 @@ fun ContributorsBottomSheet(onDismiss: () -> Unit) {
         )
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutUsBottomSheet(onDismiss: () -> Unit) {

@@ -49,9 +49,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -72,6 +74,7 @@ import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import com.ayush.geeksforgeeks.utils.DomainUtils
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
+import com.ayush.geeksforgeeks.utils.PulseAnimation
 
 class ProfileDetailScreen : Screen {
     @Composable
@@ -194,14 +197,32 @@ fun EditableProfileContent(
                             .clip(CircleShape)
                             .border(2.dp, Color.White, CircleShape)
                     ) {
+                        var isLoading by remember { mutableStateOf(true) }
                         AsyncImage(
                             model = user.profilePicUrl ?: R.drawable.geeksforgeeks_logo,
                             contentDescription = "Profile Picture",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                                .clip(CircleShape)
+                                .drawBehind {
+                                    drawCircle(
+                                        color = Color.Black,
+                                        radius = size.width / 2,
+                                        style = Stroke(width = 2.dp.toPx())
+                                    )
+                                },
+                            contentScale = ContentScale.Crop,
+                            onLoading = { isLoading = true },
+                            onSuccess = { isLoading = false },
+                            onError = { isLoading = false }
                         )
+
+                        if (isLoading) {
+                            PulseAnimation(
+                                modifier = Modifier.fillMaxSize(),
+                                color = GFGPrimary
+                            )
+                        }
                     }
 
                     IconButton(
