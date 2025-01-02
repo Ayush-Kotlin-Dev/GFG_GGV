@@ -35,84 +35,112 @@ class NotificationService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
-        super.onMessageReceived(message)
+        try {
+            Log.d("FCM", "Starting notification processing")
+            Log.d("FCM", "Form Link: ${message.data["formLink"]}")
+            Log.d("FCM", "Image URL: ${message.data["imageUrl"]}")
 
-        // Debug logging
-        Log.d("FCM", "Message data: ${message.data}")
-        Log.d("FCM", "Form link: ${message.data["formLink"]}")
-        Log.d("FCM", "Image URL: ${message.data["imageUrl"]}")
-
-        // Create intent with flags for browser opening
-        val intent = when {
-            !message.data["formLink"].isNullOrEmpty() -> {
+            // Create browser intent
+            val formLink = message.data["formLink"]
+            val intent = if (!formLink.isNullOrEmpty()) {
                 Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse(message.data["formLink"])
+                    data = Uri.parse(formLink)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    // Add this flag to prefer external browser
                     addCategory(Intent.CATEGORY_BROWSABLE)
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                }
+            } else {
+                Intent(this, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             }
-            else -> Intent(this, MainActivity::class.java)
+
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                System.currentTimeMillis().toInt(),
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+            )
+
+            // Build notification
+            val notificationBuilder = NotificationCompat.Builder(this, "events_channel")
+                .setContentTitle(message.notification?.title)
+                .setContentText(message.notification?.body)
+                .setSmallIcon(R.drawable.geeksforgeeks_logo)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+
+            // Handle image loading synchronously
+            message.data["imageUrl"]?.let { imageUrl ->
+                if (imageUrl.isNotEmpty()) {
+                    try {
+                        val connection = URL(imageUrl).openConnection().apply {
+                            connectTimeout = 5000
+                            readTimeout = 5000
+                            doInput = true
+                        }
+                        connection.connect()
+
+                        connection.getInputStream()?.use { input ->
+                            // Load image at a smaller size initially
+                            val options = BitmapFactory.Options().apply {
+                                inSampleSize = 2
+                            }
+                            val bitmap = BitmapFactory.decodeStream(input, null, options)
+                            
+                            bitmap?.let { originalBitmap ->
+                                // Scale down to exact size needed
+                                val finalBitmap = Bitmap.createScaledBitmap(
+                                    originalBitmap, 
+                                    100, 
+                                    100, 
+                                    true
+                                )
+                                notificationBuilder.setLargeIcon(finalBitmap)
+                                
+                                // Clean up
+                                if (finalBitmap != originalBitmap) {
+                                    originalBitmap.recycle()
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("FCM", "Error loading image", e)
+                    }
+                }
+            }
+
+            // Set style after image handling
+            notificationBuilder.setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(message.notification?.body)
+            )
+
+            // Show notification
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
+
+        } catch (e: Exception) {
+            Log.e("FCM", "Error showing notification", e)
+            showSimpleNotification(message)
         }
+    }
+     
 
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        // Build notification with big picture style if image exists
-        val notificationBuilder = NotificationCompat.Builder(this, "events_channel")
+    private fun showSimpleNotification(message: RemoteMessage) {
+        val builder = NotificationCompat.Builder(this, "events_channel")
             .setContentTitle(message.notification?.title)
             .setContentText(message.notification?.body)
             .setSmallIcon(R.drawable.geeksforgeeks_logo)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message.notification?.body))
 
-        // Add image as large icon if exists
-        if (!message.data["imageUrl"].isNullOrEmpty()) {
-            try {
-                val bitmap = getBitmapFromUrl(message.data["imageUrl"]!!)
-                bitmap?.let {
-                    notificationBuilder.setLargeIcon(it)
-                }
-            } catch (e: Exception) {
-                Log.e("FCM", "Error loading image", e)
-            }
-        }
-
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
+        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
     }
 
-    private fun getBitmapFromUrl(imageUrl: String): Bitmap? {
-        return try {
-            val url = URL(imageUrl)
-            BitmapFactory.decodeStream(url.openConnection().getInputStream())
-        } catch (e: Exception) {
-            Log.e("FCM", "Error loading image: ${e.message}")
-            null
-        }
-    }
-
-    private fun scaleBitmap(bitmap: Bitmap, maxSize: Int): Bitmap {
-        val width = bitmap.width
-        val height = bitmap.height
-
-        val ratio = maxSize.toFloat() / Math.max(width, height)
-
-        return if (ratio < 1) {
-            val newWidth = (width * ratio).toInt()
-            val newHeight = (height * ratio).toInt()
-            Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
-        } else {
-            bitmap
-        }
-    }
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
