@@ -104,7 +104,16 @@ class MainActivity : ComponentActivity() {
                         splashScreen.setKeepOnScreenCondition { false }
                     }
                 }
+                if (intent?.action == "UPDATE_APP") {
+                    val downloadUrl = intent.getStringExtra("downloadUrl")
+                    val version = intent.getStringExtra("version")
+                    val releaseNotes = intent.getStringExtra("releaseNotes")
 
+                    if (!downloadUrl.isNullOrEmpty()) {
+                        // Show your existing update dialog
+                        Navigator(screen = SettingsScreen())
+                    }
+                }
                 when (val state = uiState) {
                     MainViewModel.UiState.Loading -> {
                         // The splash screen will be shown
