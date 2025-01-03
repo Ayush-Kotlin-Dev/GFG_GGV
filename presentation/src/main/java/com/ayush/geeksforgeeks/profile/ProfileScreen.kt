@@ -1,7 +1,9 @@
 package com.ayush.geeksforgeeks.profile
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,6 +36,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -80,6 +83,7 @@ import com.ayush.geeksforgeeks.utils.ContributorsContent
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import com.ayush.geeksforgeeks.utils.PulseAnimation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import kotlin.text.Charsets.UTF_8
@@ -92,6 +96,7 @@ class ProfileScreen : Screen {
         val navigator = LocalNavigator.current
         val logoutState by viewModel.logoutState.collectAsState()
         val context = LocalContext.current
+        val activity = (context as? Activity)
 
         when (val state = uiState) {
             is ProfileViewModel.ProfileUiState.Loading -> LoadingIndicator()
@@ -100,7 +105,6 @@ class ProfileScreen : Screen {
                 viewModel,
                 onLogout = {
                     viewModel.logOut()
-                    navigator?.replaceAll(AuthScreen())
                 }
             )
             is ProfileViewModel.ProfileUiState.Error -> ErrorScreen(state.message)
@@ -109,15 +113,18 @@ class ProfileScreen : Screen {
         LaunchedEffect(logoutState) {
             when (logoutState) {
                 is ProfileViewModel.LogoutState.Success -> {
-                    navigator?.replaceAll(AuthScreen())
+                    Toast.makeText(context, "Goodbye! See you again soon!", Toast.LENGTH_SHORT).show()
+                    delay(1500)
+                    activity?.finishAffinity()
                 }
                 is ProfileViewModel.LogoutState.Error -> {
-                    // Show error toast or snackbar
-                    Toast.makeText(context, (logoutState as ProfileViewModel.LogoutState.Error).message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        (logoutState as ProfileViewModel.LogoutState.Error).message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-                else -> {
-
-                } // Handle other states
+                else -> {}
             }
         }
     }
@@ -135,9 +142,30 @@ fun ProfileContent(
     var showContactDialog by rememberSaveable { mutableStateOf(false) }
     var showContributorsBottomSheet by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
-    val appLink = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
     val navigator = LocalNavigator.current
+    var shouldShareOnLoad by remember { mutableStateOf(false) }
+    val releaseState by viewModel.releaseState.collectAsState()
 
+    LaunchedEffect(releaseState) {
+        if (shouldShareOnLoad && !releaseState.isLoading && releaseState.release != null) {
+            // Reset the flag
+            shouldShareOnLoad = false
+
+            // Share the release
+            val releaseUrl = releaseState.release?.htmlUrl ?: "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
+            val version = releaseState.release?.tagName?.let { " (Version $it)" } ?: ""
+            val sendIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(
+                    Intent.EXTRA_TEXT,
+                    "Check out this app of our coding club: $releaseUrl$version"
+                )
+                type = "text/plain"
+            }
+            val shareIntent = Intent.createChooser(sendIntent, null)
+            context.startActivity(shareIntent)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -164,14 +192,31 @@ fun ProfileContent(
                     navigator?.push(SettingsScreen())
                 }
                 ProfileMenuItem(Icons.AutoMirrored.Filled.ContactSupport, "Contact") { showContactDialog = true }
-                ProfileMenuItem(Icons.Default.Share, "Share App") {
-                    val sendIntent: Intent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, "Check out this app of our coding club : $appLink")
-                        type = "text/plain"
+                ProfileMenuItem(
+                    icon = Icons.Default.Share,
+                    title = "Share App",
+                    enabled = !releaseState.isLoading,
+                    isLoading = releaseState.isLoading,
+                ) {
+                    if (releaseState.release == null) {
+                        // Set flag to share when data is loaded
+                        shouldShareOnLoad = true
+                        viewModel.fetchLatestRelease()
+                    } else {
+                        // If we already have the data, share immediately
+                        val releaseUrl = releaseState.release?.htmlUrl ?: "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
+                        val version = releaseState.release?.tagName?.let { " (Version $it)" } ?: ""
+                        val sendIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "Check out this app of our coding club : $releaseUrl $version"
+                            )
+                            type = "text/plain"
+                        }
+                        val shareIntent = Intent.createChooser(sendIntent, null)
+                        context.startActivity(shareIntent)
                     }
-                    val shareIntent = Intent.createChooser(sendIntent, null)
-                    context.startActivity(shareIntent)
                 }
                 ProfileMenuItem(Icons.AutoMirrored.Filled.HelpCenter, "Help") { showHelpDialog = true }
                 ProfileMenuItem(Icons.Default.Engineering, "Contributors") { showContributorsBottomSheet = true }
@@ -194,7 +239,6 @@ fun ProfileContent(
             )
         }
     }
-
 
     if (showLogoutDialog) {
         AlertDialog(
@@ -259,7 +303,66 @@ fun ProfileContent(
         ContributorsBottomSheet(onDismiss = { showContributorsBottomSheet = false })
     }
 }
-
+@Composable
+fun ProfileMenuItem(
+    icon: ImageVector,
+    title: String,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    onClick: () -> Unit = { }
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                enabled = enabled && !isLoading,
+                onClick = onClick
+            ),
+        color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFFF0F0F0), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color(0xFF4CAF50),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (enabled) Color.Black else Color.Black.copy(alpha = 0.5f),
+                modifier = Modifier.weight(1f)
+            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color(0xFF4CAF50),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = if (enabled) Color.Gray else Color.Gray.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+    Divider(color = Color.LightGray, thickness = 0.5.dp)
+}
 @Composable
 fun ContactDialog(
     onDismiss: () -> Unit,
@@ -268,7 +371,7 @@ fun ContactDialog(
     onWhatsApp: () -> Unit
 ) {
     AlertDialog(
-        icon = { 
+        icon = {
             Icon(
                 imageVector = Icons.Default.Call,
                 contentDescription = "Call Icon",
@@ -336,7 +439,7 @@ fun ProfileHeader(user: UserSettings) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         
-            Text(
+        Text(
             text = user.name,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
@@ -350,53 +453,7 @@ fun ProfileHeader(user: UserSettings) {
     }
 }
 
-@Composable
-fun ProfileMenuItem(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit = { }
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = Color.White
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color(0xFFF0F0F0), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color(0xFF4CAF50),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Black,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = Color.Gray,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-    Divider(color = Color.LightGray, thickness = 0.5.dp)
-}
+
 
 @Composable
 fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () -> Unit) {

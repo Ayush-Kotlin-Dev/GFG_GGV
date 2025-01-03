@@ -1,6 +1,7 @@
 package com.ayush.geeksforgeeks.profile
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserSettings
@@ -8,17 +9,36 @@ import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.QueryRepository
 import com.ayush.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.URL
 import javax.inject.Inject
+data class GitHubRelease(
+    val tagName: String,
+    val htmlUrl: String,
+    val name: String
+)
 
+data class ReleaseState(
+    val isLoading: Boolean = false,
+    val release: GitHubRelease? = null,
+    val error: String? = null
+)
+private var lastFetchTime: Long = 0
+private val CACHE_DURATION = 1000 * 60 * 60
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
     private val queryRepository: QueryRepository
 ) : ViewModel() {
+
+    private val _releaseState = MutableStateFlow(ReleaseState())
+    val releaseState: StateFlow<ReleaseState> = _releaseState
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState
@@ -95,7 +115,62 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
+    fun fetchLatestRelease() {
+        val currentTime = System.currentTimeMillis()
+        if (releaseState.value.release != null &&
+            currentTime - lastFetchTime < CACHE_DURATION) {
+            return
+        }
 
+        viewModelScope.launch {
+            _releaseState.value = ReleaseState(isLoading = true)
+            try {
+                Log.d("ProfileViewModel", "Fetching latest release...")
+                val response = withContext(Dispatchers.IO) {
+                    val connection = URL("https://api.github.com/repos/Ayush-Kotlin-Dev/GFG_GGV/releases/latest")
+                        .openConnection()
+                        .apply {
+                            setRequestProperty("Accept", "application/vnd.github.v3+json")
+                            setRequestProperty("User-Agent", "GFG-App")
+                            connectTimeout = 5000
+                            readTimeout = 5000
+                        }
+
+                    try {
+                        connection.getInputStream().bufferedReader().use { it.readText() }
+                    } catch (e: Exception) {
+                        Log.e("ProfileViewModel", "Network error: ${e.message}")
+                        null
+                    }
+                }
+
+                if (response != null) {
+                    try {
+                        val jsonObject = JSONObject(response)
+                        Log.d("ProfileViewModel", "Response: $response")
+
+                        val release = GitHubRelease(
+                            tagName = jsonObject.getString("tag_name"),
+                            htmlUrl = jsonObject.getString("html_url"),
+                            name = jsonObject.getString("name")
+                        )
+                        Log.d("ProfileViewModel", "Parsed release: $release")
+                        _releaseState.value = ReleaseState(release = release)  // Add this line
+                    } catch (e: Exception) {
+                        Log.e("ProfileViewModel", "JSON parsing error: ${e.message}")
+                        _releaseState.value = ReleaseState(error = e.message)  // Add error state
+                    }
+                } else {
+                    _releaseState.value = ReleaseState(error = "Failed to fetch release")
+                }
+                lastFetchTime = currentTime
+
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error fetching release: ${e.message}", e)
+                _releaseState.value = ReleaseState(error = e.message)
+            }
+        }
+    }
     sealed class ProfileUiState {
         object Loading : ProfileUiState()
         data class Success(val user: UserSettings) : ProfileUiState()
