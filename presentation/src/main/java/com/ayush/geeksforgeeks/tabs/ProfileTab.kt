@@ -13,7 +13,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.ayush.geeksforgeeks.profile.ProfileScreen
 
-class ProfileTab(
+data class ProfileTab(
     @Transient
     private val onNavigator: (Boolean) -> Unit
 ) : Tab {

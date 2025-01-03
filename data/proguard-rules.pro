@@ -19,3 +19,33 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep Serializable classes and their members
+-keep class com.ayush.data.datastore.UserSettings { *; }
+-keep class com.ayush.data.datastore.User { *; }
+-keep class com.ayush.data.datastore.UserRole { *; }
+
+# Keep Serialization-related stuff
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+
+-keepclassmembers @kotlinx.serialization.Serializable class ** {
+    *** Companion;
+    *** INSTANCE;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Keep Firestore field names
+-keepclassmembers class com.ayush.data.datastore.** {
+    @com.google.firebase.firestore.PropertyName *;
+    @com.google.firebase.firestore.Exclude *;
+}
+
+# Keep JvmField annotations
+-keepclassmembers class com.ayush.data.datastore.** {
+    @kotlin.jvm.JvmField *;
+}
+
+# Suppress warnings
+-dontwarn java.lang.invoke.StringConcatFactory
+-dontwarn kotlinx.serialization.**

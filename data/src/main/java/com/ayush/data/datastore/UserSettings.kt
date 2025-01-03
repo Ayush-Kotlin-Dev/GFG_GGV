@@ -20,8 +20,8 @@ data class UserSettings(
 )
 
 
-@Serializable
 @Keep
+@Serializable
 data class User(
     val userId: String = "",
     val name: String = "",

@@ -1,9 +1,7 @@
 package com.ayush.geeksforgeeks.profile.profile_detail
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -23,8 +21,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Badge
@@ -41,6 +41,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,8 +57,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color as ColorUi
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -65,27 +64,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.palette.graphics.Palette
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
-import coil.ImageLoader
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import com.ayush.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.profile.ProfileViewModel
 import com.ayush.geeksforgeeks.profile.ProfileViewModel.ProfileUiState
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
-import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
-import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
-import com.ayush.geeksforgeeks.utils.DomainUtils
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import com.ayush.geeksforgeeks.utils.PaletteGenerator
 import com.ayush.geeksforgeeks.utils.PulseAnimation
 import com.ayush.geeksforgeeks.utils.parserColor
+import androidx.compose.ui.graphics.Color as ColorUi
 
 class ProfileDetailScreen : Screen {
     @Composable
@@ -129,6 +122,7 @@ fun EditableProfileContent(
             )
         )
     }
+    var isDynamicColorEnabled by remember { mutableStateOf(true) }
 
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
@@ -167,7 +161,8 @@ fun EditableProfileContent(
     rememberDominantColorState(
         context = LocalContext.current,
         imageUrl = user.profilePicUrl,
-        defaultColor = ColorUi(0xFF2E8B57)
+        defaultColor = ColorUi(0xFF2E8B57),
+        isDynamicColorEnabled = isDynamicColorEnabled
     ) { colors ->
         profileImageColors = colors
     }
@@ -192,6 +187,8 @@ fun EditableProfileContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+
             .background(GFGBackground)
     ) {
         Box(
@@ -202,7 +199,8 @@ fun EditableProfileContent(
                     brush = Brush.linearGradient(
                         colors = listOf(
                             ColorUi(parserColor(profileImageColors["vibrant"] ?: "#2E8B57")),
-                            ColorUi(parserColor(profileImageColors["darkVibrant"] ?: "#1A5D3A"))
+                            ColorUi(parserColor(profileImageColors["darkVibrant"] ?: "#1A5D3A")),
+                            ColorUi(parserColor(profileImageColors["darkMuted"] ?: "#2C3E50"))
                         ),
                         start = Offset(0f, 0f),
                         end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
@@ -351,6 +349,50 @@ fun EditableProfileContent(
                 )
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Dynamic Colors",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Enable profile-based color theming",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = isDynamicColorEnabled,
+                    onCheckedChange = { isEnabled ->
+                        isDynamicColorEnabled = isEnabled
+                        if (!isEnabled) {
+                            // Reset to default colors when disabled
+                            profileImageColors = mapOf(
+                                "vibrant" to "#2E8B57",
+                                "darkVibrant" to "#1A5D3A",
+                                "onDarkVibrant" to "#FFFFFF"
+                            )
+                        }
+                    }
+                )
+            }
+        }
     }
 
     // Image Picker and Dialog code remains the same
@@ -410,10 +452,10 @@ private fun calculateTextColor(backgroundColor: String): String {
     val red = Color.red(color)
     val green = Color.green(color)
     val blue = Color.blue(color)
-    
+
     // Calculate relative luminance using the formula from WCAG 2.0
     val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
-    
+
     // Use black text for light backgrounds and white text for dark backgrounds
     return if (luminance > 0.5) "#000000" else "#FFFFFF"
 }
@@ -523,10 +565,11 @@ private fun rememberDominantColorState(
     context: Context,
     imageUrl: String?,
     defaultColor: ColorUi,
+    isDynamicColorEnabled: Boolean,
     onColorCalculated: (Map<String, String>) -> Unit = {}
 ) {
-    LaunchedEffect(key1 = imageUrl) {
-        if (imageUrl != null) {
+    LaunchedEffect(key1 = imageUrl, key2 = isDynamicColorEnabled) {
+        if (imageUrl != null && isDynamicColorEnabled) {
             try {
                 val bitmap = PaletteGenerator.convertImageUrlToBitmap(imageUrl, context)
                 bitmap?.let {
@@ -535,7 +578,6 @@ private fun rememberDominantColorState(
                 }
             } catch (e: Exception) {
                 Log.e("ProfileDetail", "Error extracting colors: ${e.message}")
-                // Fallback to default colors
                 onColorCalculated(
                     mapOf(
                         "vibrant" to "#2E8B57",
@@ -544,6 +586,14 @@ private fun rememberDominantColorState(
                     )
                 )
             }
+        } else {
+            onColorCalculated(
+                mapOf(
+                    "vibrant" to "#2E8B57",
+                    "darkVibrant" to "#1A5D3A",
+                    "onDarkVibrant" to "#FFFFFF"
+                )
+            )
         }
     }
 }

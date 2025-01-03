@@ -16,7 +16,7 @@ import com.ayush.geeksforgeeks.admin.AdminScreen
 import com.ayush.geeksforgeeks.task.TasksScreen
 
 
-class TaskTab(
+data class TaskTab(
     @Transient
     val onNavigator: (Boolean) -> Unit,
     val userRole: UserRole
