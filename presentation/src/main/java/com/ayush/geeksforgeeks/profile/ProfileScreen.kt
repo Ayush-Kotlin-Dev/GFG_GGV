@@ -90,6 +90,8 @@ class ProfileScreen : Screen {
         val viewModel: ProfileViewModel = hiltViewModel()
         val uiState by viewModel.uiState.collectAsState()
         val navigator = LocalNavigator.current
+        val logoutState by viewModel.logoutState.collectAsState()
+        val context = LocalContext.current
 
         when (val state = uiState) {
             is ProfileViewModel.ProfileUiState.Loading -> LoadingIndicator()
@@ -102,6 +104,21 @@ class ProfileScreen : Screen {
                 }
             )
             is ProfileViewModel.ProfileUiState.Error -> ErrorScreen(state.message)
+        }
+
+        LaunchedEffect(logoutState) {
+            when (logoutState) {
+                is ProfileViewModel.LogoutState.Success -> {
+                    navigator?.replaceAll(AuthScreen())
+                }
+                is ProfileViewModel.LogoutState.Error -> {
+                    // Show error toast or snackbar
+                    Toast.makeText(context, (logoutState as ProfileViewModel.LogoutState.Error).message, Toast.LENGTH_SHORT).show()
+                }
+                else -> {
+
+                } // Handle other states
+            }
         }
     }
 }
@@ -185,7 +202,12 @@ fun ProfileContent(
             title = { Text("Confirm Logout") },
             text = { Text("Are you sure you want to logout?") },
             confirmButton = {
-                TextButton(onClick = onLogout) {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    }
+                ) {
                     Text("Yes, Logout", color = GFGPrimary)
                 }
             },

@@ -27,13 +27,6 @@ class NotificationService : FirebaseMessagingService() {
         createNotificationChannel()
     }
 
-    override fun onNewToken(token: String) {
-        super.onNewToken(token)
-        Log.d("FCM", "New token: $token")
-        // Update token in Firestore
-        updateTokenInFirestore(token)
-    }
-
     override fun onMessageReceived(message: RemoteMessage) {
         try {
             Log.d("FCM", "Starting notification processing")
@@ -158,21 +151,4 @@ class NotificationService : FirebaseMessagingService() {
         }
     }
 
-    private fun updateTokenInFirestore(token: String) {
-        FirebaseAuth.getInstance().currentUser?.let { user ->
-            FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(user.uid)
-                .update(
-                    mapOf(
-                        "fcmToken" to token,
-                        "tokenUpdatedAt" to FieldValue.serverTimestamp(),
-                        "isLoggedIn" to true // Also update login status
-                    )
-                )
-                .addOnFailureListener { e ->
-                    Log.e("FCM", "Failed to update token", e)
-                }
-        }
-    }
 }

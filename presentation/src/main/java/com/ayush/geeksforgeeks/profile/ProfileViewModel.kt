@@ -23,6 +23,9 @@ class ProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState
 
+    private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Idle)
+    val logoutState: StateFlow<LogoutState> = _logoutState
+
     init {
         loadProfileData()
     }
@@ -83,7 +86,13 @@ class ProfileViewModel @Inject constructor(
 
     fun logOut() {
         viewModelScope.launch {
-            authRepository.logout()
+            _uiState.value = ProfileUiState.Loading
+            try {
+                authRepository.logout()
+                _logoutState.value = LogoutState.Success
+            } catch (e: Exception) {
+                _logoutState.value = LogoutState.Error(e.message ?: "Logout failed")
+            }
         }
     }
 
@@ -100,4 +109,10 @@ class ProfileViewModel @Inject constructor(
         data class Error(val message: String) : QueryState()
     }
 
+    sealed class LogoutState {
+        object Idle : LogoutState()
+        object Loading : LogoutState()
+        object Success : LogoutState()
+        data class Error(val message: String) : LogoutState()
+    }
 }

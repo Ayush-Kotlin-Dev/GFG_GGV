@@ -25,6 +25,9 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
         private val IS_USER_LOGGED_IN = booleanPreferencesKey("is_user_logged_in")
         private val USER_ROLE = stringPreferencesKey("user_role")
         private val USER_DOMAIN_ID = intPreferencesKey("user_domain_id")
+        private val FCM_TOKEN = stringPreferencesKey("fcm_token")  
+        private val TOTAL_CREDITS = intPreferencesKey("total_credits")
+
     }
 
     suspend fun setUserData(userSettings: UserSettings) {
@@ -32,8 +35,7 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
             require(userSettings.userId.isNotBlank()) { "User ID cannot be blank" }
             require(userSettings.email.isNotBlank()) { "Email cannot be blank" }
             require(userSettings.name.isNotBlank()) { "Name cannot be blank" }
-            
-            Log.d("UserPreferences", "Saving user data to DataStore: ${userSettings.userId}")
+
             dataStore.edit { preferences ->
                 preferences[USER_NAME] = userSettings.name
                 preferences[USER_ID] = userSettings.userId
@@ -42,8 +44,9 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
                 preferences[IS_USER_LOGGED_IN] = userSettings.isLoggedIn
                 preferences[USER_ROLE] = userSettings.role.toString()
                 preferences[USER_DOMAIN_ID] = userSettings.domainId
+                preferences[TOTAL_CREDITS] = userSettings.totalCredits
+                userSettings.fcmToken?.let { preferences[FCM_TOKEN] = it }  
             }
-            Log.d("UserPreferences", "Successfully saved user data to DataStore")
         } catch (e: Exception) {
             Log.e("UserPreferences", "Error saving user data: ${e.message}")
             throw e
@@ -81,7 +84,9 @@ class UserPreferences @Inject constructor(private val dataStore: DataStore<Prefe
                     profilePicUrl = preferences[USER_PROFILE_PIC],
                     isLoggedIn = preferences[IS_USER_LOGGED_IN] ?: false,
                     role = UserRole.valueOf(preferences[USER_ROLE] ?: UserRole.MEMBER.toString()),
-                    domainId = preferences[USER_DOMAIN_ID] ?: 0
+                    domainId = preferences[USER_DOMAIN_ID] ?: 0,
+                    totalCredits = preferences[TOTAL_CREDITS] ?: 0,
+                    fcmToken = preferences[FCM_TOKEN]  
                 )
             } catch (e: Exception) {
                 Log.e("UserPreferences", "Error mapping preferences to UserSettings: ${e.message}")

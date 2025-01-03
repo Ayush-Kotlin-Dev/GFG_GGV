@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -54,6 +55,15 @@ class AuthRepository @Inject constructor(
         .flowOn(ioDispatcher)
         .distinctUntilChanged()
 
+    private suspend fun getFCMToken(): String? = withContext(Dispatchers.IO) {
+        try {
+            FirebaseMessaging.getInstance().token.await()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting FCM token: ${e.message}")
+            null
+        }
+    }
+
     private suspend fun saveUserDataToFirestore(
         username: String,
         user: FirebaseUser,
@@ -61,6 +71,8 @@ class AuthRepository @Inject constructor(
         role: UserRole
     ) {
         require(teamId.isNotBlank()) { "Team ID must be provided" }
+
+        val fcmToken = getFCMToken()
 
         // First fetch existing data
         val existingData = retryIO {
@@ -79,7 +91,8 @@ class AuthRepository @Inject constructor(
             Pair("isLoggedIn", false),
             Pair("domainId", teamId.toIntOrNull() ?: 0),
             Pair("role", role.name),
-            Pair("totalCredits", (existingData["totalCredits"] as? Number)?.toInt() ?: 0)
+            Pair("totalCredits", (existingData["totalCredits"] as? Number)?.toInt() ?: 0),
+            Pair("fcmToken", fcmToken)
         )
 
         retryIO {
@@ -163,6 +176,21 @@ class AuthRepository @Inject constructor(
                     return@withContext Result.failure(e)
                 }
 
+                val fcmToken = getFCMToken()
+                if (fcmToken != null) {
+                    retryIO {
+                        firestore.collection("users")
+                            .document(user.uid)
+                            .update(
+                                mapOf(
+                                    "isLoggedIn" to true,
+                                    "fcmToken" to fcmToken
+                                )
+                            )
+                            .await()
+                    }
+                }
+
                 val userDoc = retryIO {
                     firestore.collection("users")
                         .document(user.uid)
@@ -241,7 +269,6 @@ class AuthRepository @Inject constructor(
         }
     }
 
-
     suspend fun sendEmailVerification(): EmailVerificationResult = withContext(ioDispatcher) {
         try {
             val user = firebaseAuth.currentUser ?: return@withContext EmailVerificationResult.Error("No user signed in")
@@ -273,8 +300,6 @@ class AuthRepository @Inject constructor(
         val currentTime = System.currentTimeMillis()
         return (currentTime - lastVerificationEmailSent) >= minEmailInterval
     }
-
-
 
     suspend fun getUserRole(email: String): UserRole = withContext(ioDispatcher) {
         try {
@@ -351,18 +376,29 @@ class AuthRepository @Inject constructor(
         try {
             val userId = firebaseAuth.currentUser?.uid
 
-            firebaseAuth.signOut()
-
+            // Clear local data first
             userPreferences.clearUserData()
 
+            // Then sign out from Firebase
+            firebaseAuth.signOut()
+
+            // Finally update Firestore
             userId?.let {
                 try {
-                    firestore.collection("users")
-                        .document(it)
-                        .update("isLoggedIn", false)
-                        .await()
+                    retryIO {  // Use your retry mechanism
+                        firestore.collection("users")
+                            .document(it)
+                            .update(
+                                mapOf(
+                                    "isLoggedIn" to false,
+                                    "fcmToken" to null
+                                )
+                            )
+                            .await()
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error updating Firestore login status: ${e.message}")
+                    throw e  // Rethrow to trigger error state
                 }
             }
 

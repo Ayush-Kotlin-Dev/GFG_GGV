@@ -13,12 +13,12 @@ data class UserSettings(
     val email: String = "",
     val profilePicUrl: String? = null,
     @field:JvmField
-    val isLoggedIn:Boolean = false,
+    val isLoggedIn: Boolean = false,
     val role: UserRole = UserRole.MEMBER,
     val domainId: Int = 0,
-    val totalCredits: Int = 0
+    val totalCredits: Int = 0,
+    val fcmToken: String? = null
 )
-
 
 @Keep
 @Serializable

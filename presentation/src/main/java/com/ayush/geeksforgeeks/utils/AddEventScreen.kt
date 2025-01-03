@@ -49,6 +49,8 @@ fun AddEventScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showDeadlinePicker by remember { mutableStateOf(false) }
+    var urlError by remember { mutableStateOf<String?>(null) }
+    var imageError by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -56,10 +58,35 @@ fun AddEventScreen(
     val dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
+    // Enhanced URL validation function
+    fun validateUrl(url: String): Boolean {
+        return url.startsWith("http://") || url.startsWith("https://")
+    }
+
+    // Enhanced image picker with size validation
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        imageUri = uri
+        uri?.let {
+            try {
+                context.contentResolver.openFileDescriptor(uri, "r")?.use { descriptor ->
+                    val fileSize = descriptor.statSize
+                    val maxSize = 15 * 1024 * 1024 // 15MB in bytes
+                    val sizeMB = fileSize / (1024.0 * 1024.0)
+
+                    if (fileSize > maxSize) {
+                        imageError = "Image size (${String.format("%.1f", sizeMB)}MB) exceeds limit of 15MB"
+                        imageUri = null
+                    } else {
+                        imageError = null
+                        imageUri = uri
+                    }
+                }
+            } catch (e: Exception) {
+                imageError = "Failed to process image"
+                imageUri = null
+            }
+        }
     }
 
     val datePickerState = rememberDatePickerState()
@@ -126,8 +153,15 @@ fun AddEventScreen(
 
         EventInputField(
             value = eventData.formLink,
-            onValueChange = { eventData = eventData.copy(formLink = it) },
-            label = "Form Link"
+            onValueChange = { 
+                eventData = eventData.copy(formLink = it)
+                urlError = if (it.isNotBlank() && !validateUrl(it)) {
+                    "URL must start with http:// or https://"
+                } else null
+            },
+            label = "Form Link",
+            isError = urlError != null,
+            errorMessage = urlError
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -161,6 +195,16 @@ fun AddEventScreen(
             }
         }
 
+        // Add error message for image if exists
+        if (imageError != null) {
+            Text(
+                text = imageError!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(
@@ -191,7 +235,7 @@ fun AddEventScreen(
                         onDismiss()
                     }
                 },
-                enabled = eventData.isValid() && imageUri != null && !isLoading
+                enabled = eventData.isValid() && imageUri != null && !isLoading && urlError == null && imageError == null
             ) {
                 if (isLoading) {
                     SimpleLoadingIndicator(color = MaterialTheme.colorScheme.onPrimary)
@@ -229,7 +273,6 @@ fun AddEventScreen(
             )
         }
     }
-
 
     if (showTimePicker) {
         AlertDialog(
@@ -296,18 +339,31 @@ fun EventInputField(
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     readOnly: Boolean = false,
-    trailingIcon: @Composable (() -> Unit)? = null
+    trailingIcon: @Composable (() -> Unit)? = null,
+    isError: Boolean = false,
+    errorMessage: String? = null
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = modifier.fillMaxWidth(),
-        singleLine = singleLine,
-        readOnly = readOnly,
-        trailingIcon = trailingIcon
-    )
-    Spacer(modifier = Modifier.height(8.dp))
+    Column {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            modifier = modifier.fillMaxWidth(),
+            singleLine = singleLine,
+            readOnly = readOnly,
+            trailingIcon = trailingIcon,
+            isError = isError
+        )
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
 }
 
 data class EventData(
