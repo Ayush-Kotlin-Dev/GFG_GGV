@@ -1,15 +1,16 @@
 package com.ayush.geeksforgeeks
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,8 +18,18 @@ import cafe.adriel.voyager.navigator.Navigator
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import com.ayush.geeksforgeeks.utils.ErrorScreen
+import com.ayush.geeksforgeeks.utils.GithubRelease
+import com.ayush.geeksforgeeks.utils.UpdateManager
+import com.github.theapache64.fig.Fig
+import com.google.android.datatransport.BuildConfig
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import java.net.URL
 import javax.inject.Inject
+
 /**
  * Note to other developers:
  * 
@@ -42,6 +53,7 @@ import javax.inject.Inject
  * fast-build application. The business logic is minimal and handled 
  * directly between data and presentation layers.
  */
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject
@@ -59,6 +71,21 @@ class MainActivity : ComponentActivity() {
 
         // Add permission check
         checkNotificationPermission()
+
+        // Add permissions
+        val permission1 = android.Manifest.permission.INTERNET
+        val permission2 = android.Manifest.permission.REQUEST_INSTALL_PACKAGES
+        val permission3 = android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            requestPermissionLauncher.launch(permission3)
+            requestPermissionLauncher.launch(permission1)
+            requestPermissionLauncher.launch(permission2)
+        } else {
+            requestPermissionLauncher.launch(permission3)
+            requestPermissionLauncher.launch(permission1)
+            requestPermissionLauncher.launch(permission2)
+        }
 
         setContent {
             GFGGGVTheme {
@@ -108,7 +135,9 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }
+
 
 class SplashScreenProvider @Inject constructor() {
     fun provideSplashScreen(activity: Activity): SplashScreen {

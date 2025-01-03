@@ -39,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -65,6 +66,7 @@ fun SettingsContent(
     onEvent: (SettingsEvent) -> Unit,
     viewModel: SettingsViewModel
 ) {
+    val context = LocalContext.current
     val showResetDialog by viewModel.showResetDialog.collectAsState()
     val resetPasswordState by viewModel.resetPasswordState.collectAsState()
 
@@ -141,6 +143,15 @@ fun SettingsContent(
                 subtitle = "Version ${state.appVersion}",
                 icon = Icons.Default.Info,
                 onClick = null
+            )
+            SettingItem(
+                title = "Check for Updates",
+                subtitle = if (state.isLoading) "Checking for updates..."
+                else "Current version: ${state.appVersion}",
+                icon = Icons.Default.Download,
+                onClick = if (!state.isLoading) {
+                    { viewModel.checkForUpdates(context) }
+                } else null
             )
             SettingItem(
                 title = "Terms of Service",

@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.profile.settings
 
+import android.app.AlertDialog
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -7,21 +8,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.repository.AuthRepository
 import com.ayush.geeksforgeeks.auth.ResetPasswordState
+import com.ayush.geeksforgeeks.utils.GithubRelease
+import com.ayush.geeksforgeeks.utils.UpdateManager
+import com.github.theapache64.fig.Fig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import java.net.URL
 import javax.inject.Inject
-
+import com.ayush.geeksforgeeks.BuildConfig
 data class SettingsState(
     val isDarkMode: Boolean = false,
     val isNotificationsEnabled: Boolean = true,
     val isEventRemindersEnabled: Boolean = true,
-    val appVersion: String = "1.0.0",
+    val appVersion: String = BuildConfig.VERSION_NAME,
     val isLoading: Boolean = false,
 )
 
@@ -146,6 +154,95 @@ class SettingsViewModel @Inject constructor(
             ).show()
 
         }
+    }
+
+    fun checkForUpdates(context: Context) {
+        viewModelScope.launch {
+            try {
+                _state.update { it.copy(isLoading = true) }
+                Log.d("UpdateCheck", "Starting update check...")
+
+                // 1. Get latest version from spreadsheet
+                val fig = Fig()
+                fig.init("https://docs.google.com/spreadsheets/d/1a9VU0CCwSjX7x6mPCARsvtQM8mw4zgXJiUGEhEM8ESs/edit?usp=sharing")
+                val latestVersion = fig.getValue("latest_version", null)
+                Log.d("UpdateCheck", "Latest version from spreadsheet: $latestVersion")
+
+                // 2. Compare with current version
+                val currentVersion = BuildConfig.VERSION_NAME
+                Log.d("UpdateCheck", "Current app version: $currentVersion")
+
+                if (latestVersion != currentVersion) {
+                    Log.d("UpdateCheck", "Update available! Fetching from GitHub...")
+
+                    val githubUrl = "https://api.github.com/repos/Ayush-Kotlin-Dev/GFG_GGV/releases/latest"
+                    Log.d("UpdateCheck", "Fetching from GitHub URL: $githubUrl")
+
+                    val response = withContext(Dispatchers.IO) {
+                        try {
+                            URL(githubUrl)
+                                .openConnection()
+                                .apply {
+                                    setRequestProperty("Accept", "application/vnd.github.v3+json")
+                                }
+                                .getInputStream()
+                                .bufferedReader()
+                                .use { it.readText() }
+                        } catch (e: Exception) {
+                            Log.e("UpdateCheck", "Failed to fetch from GitHub", e)
+                            throw e
+                        }
+                    }
+
+                    val json = Json {
+                        ignoreUnknownKeys = true
+                        prettyPrint = true
+                    }
+
+                    Log.d("UpdateCheck", "GitHub response received, parsing JSON...")
+                    val release = json.decodeFromString<GithubRelease>(response)
+                    Log.d("UpdateCheck", "Release tag: ${release.tag_name}")
+
+                    Log.d("UpdateCheck", "Looking for APK in ${release.assets.size} assets")
+                    val apkAsset = release.assets.find { it.name.endsWith(".apk") }
+
+                    if (apkAsset != null) {
+                        Log.d("UpdateCheck", "APK found: ${apkAsset.name} at ${apkAsset.browser_download_url}")
+                        withContext(Dispatchers.Main) {
+                            showUpdateDialog(context, apkAsset.browser_download_url)
+                        }
+                    } else {
+                        Log.w("UpdateCheck", "No APK found in release assets")
+                    }
+                } else {
+                    Log.d("UpdateCheck", "App is up to date")
+                    // Show "App is up to date" message
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("UpdateCheck", "Update check failed", e)
+                e.printStackTrace()
+                // Show error message to user
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Failed to check for updates", Toast.LENGTH_SHORT).show()
+                }
+            }finally {
+                _state.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    private fun showUpdateDialog(context: Context, downloadUrl: String) {
+        AlertDialog.Builder(context)
+            .setTitle("Update Available")
+            .setMessage("A new version of the app is available. Would you like to update?")
+            .setPositiveButton("Update") { _, _ ->
+                UpdateManager(context).downloadAndInstallUpdate(downloadUrl)
+            }
+            .setNegativeButton("Later", null)
+            .show()
     }
 
     private fun handleLanguageSettings() {

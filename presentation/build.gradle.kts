@@ -15,7 +15,7 @@ android {
         minSdk = 28
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -41,6 +41,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"
@@ -76,6 +77,9 @@ dependencies {
     implementation ("org.apache.poi:poi:5.2.4")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.compose.material:material-icons-extended:1.7.6")
+
+    implementation("com.github.theapache64:fig:0.0.3")
+
 
 }
 

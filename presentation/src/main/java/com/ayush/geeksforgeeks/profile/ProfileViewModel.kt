@@ -1,5 +1,8 @@
 package com.ayush.geeksforgeeks.profile
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -9,6 +12,7 @@ import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.QueryRepository
 import com.ayush.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +21,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
 import javax.inject.Inject
+
 data class GitHubRelease(
     val tagName: String,
     val htmlUrl: String,
@@ -26,15 +31,19 @@ data class GitHubRelease(
 data class ReleaseState(
     val isLoading: Boolean = false,
     val release: GitHubRelease? = null,
-    val error: String? = null
+    val error: String? = null,
+    val isOffline: Boolean = false
 )
+
 private var lastFetchTime: Long = 0
 private val CACHE_DURATION = 1000 * 60 * 60
+
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
-    private val queryRepository: QueryRepository
+    private val queryRepository: QueryRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _releaseState = MutableStateFlow(ReleaseState())
@@ -115,6 +124,7 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
+
     fun fetchLatestRelease() {
         val currentTime = System.currentTimeMillis()
         if (releaseState.value.release != null &&
@@ -125,6 +135,19 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _releaseState.value = ReleaseState(isLoading = true)
             try {
+                // First check for internet connectivity
+                if (!isNetworkAvailable()) {
+                    _releaseState.value = ReleaseState(
+                        isOffline = true,
+                        release = GitHubRelease(
+                            tagName = "latest",
+                            htmlUrl = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/",
+                            name = "latest"
+                        )
+                    )
+                    return@launch
+                }
+
                 Log.d("ProfileViewModel", "Fetching latest release...")
                 val response = withContext(Dispatchers.IO) {
                     val connection = URL("https://api.github.com/repos/Ayush-Kotlin-Dev/GFG_GGV/releases/latest")
@@ -155,10 +178,10 @@ class ProfileViewModel @Inject constructor(
                             name = jsonObject.getString("name")
                         )
                         Log.d("ProfileViewModel", "Parsed release: $release")
-                        _releaseState.value = ReleaseState(release = release)  // Add this line
+                        _releaseState.value = ReleaseState(release = release)
                     } catch (e: Exception) {
                         Log.e("ProfileViewModel", "JSON parsing error: ${e.message}")
-                        _releaseState.value = ReleaseState(error = e.message)  // Add error state
+                        _releaseState.value = ReleaseState(error = e.message)
                     }
                 } else {
                     _releaseState.value = ReleaseState(error = "Failed to fetch release")
@@ -167,10 +190,33 @@ class ProfileViewModel @Inject constructor(
 
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error fetching release: ${e.message}", e)
-                _releaseState.value = ReleaseState(error = e.message)
+                // Set offline state if it's a network error
+                if (e is java.net.UnknownHostException || e is java.net.ConnectException) {
+                    _releaseState.value = ReleaseState(
+                        isOffline = true,
+                        release = GitHubRelease(
+                            tagName = "latest",
+                            htmlUrl = "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/",
+                            name = "latest"
+                        )
+                    )
+                } else {
+                    _releaseState.value = ReleaseState(error = e.message)
+                }
             }
         }
     }
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+        return capabilities != null && (
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+            )
+    }
+
     sealed class ProfileUiState {
         object Loading : ProfileUiState()
         data class Success(val user: UserSettings) : ProfileUiState()
