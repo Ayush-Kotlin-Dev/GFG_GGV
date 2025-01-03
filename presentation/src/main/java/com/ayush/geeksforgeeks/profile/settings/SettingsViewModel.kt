@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.repository.AuthRepository
+import com.ayush.geeksforgeeks.BuildConfig
 import com.ayush.geeksforgeeks.auth.ResetPasswordState
 import com.ayush.geeksforgeeks.utils.GithubRelease
 import com.ayush.geeksforgeeks.utils.UpdateManager
@@ -24,7 +25,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.net.URL
 import javax.inject.Inject
-import com.ayush.geeksforgeeks.BuildConfig
+
 data class SettingsState(
     val isDarkMode: Boolean = false,
     val isNotificationsEnabled: Boolean = true,
@@ -32,6 +33,8 @@ data class SettingsState(
     val appVersion: String = BuildConfig.VERSION_NAME,
     val isLoading: Boolean = false,
 )
+
+
 
 sealed class SettingsEvent {
     data class ToggleDarkMode(val enabled: Boolean) : SettingsEvent()
@@ -58,6 +61,9 @@ class SettingsViewModel @Inject constructor(
 
     private val _resetPasswordState = MutableStateFlow<ResetPasswordState>(ResetPasswordState.Idle)
     val resetPasswordState = _resetPasswordState.asStateFlow()
+
+    private val _showUpdateDialog = MutableStateFlow<Pair<String, GithubRelease>?>(null)
+    val showUpdateDialog = _showUpdateDialog.asStateFlow()
 
     fun onEvent(event: SettingsEvent) {
         when (event) {
@@ -209,7 +215,7 @@ class SettingsViewModel @Inject constructor(
                     if (apkAsset != null) {
                         Log.d("UpdateCheck", "APK found: ${apkAsset.name} at ${apkAsset.browser_download_url}")
                         withContext(Dispatchers.Main) {
-                            showUpdateDialog(context, apkAsset.browser_download_url)
+                            _showUpdateDialog.value = Pair(apkAsset.browser_download_url, release)
                         }
                     } else {
                         Log.w("UpdateCheck", "No APK found in release assets")
@@ -234,15 +240,8 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun showUpdateDialog(context: Context, downloadUrl: String) {
-        AlertDialog.Builder(context)
-            .setTitle("Update Available")
-            .setMessage("A new version of the app is available. Would you like to update?")
-            .setPositiveButton("Update") { _, _ ->
-                UpdateManager(context).downloadAndInstallUpdate(downloadUrl)
-            }
-            .setNegativeButton("Later", null)
-            .show()
+    fun dismissUpdateDialog() {
+        _showUpdateDialog.value = null
     }
 
     private fun handleLanguageSettings() {

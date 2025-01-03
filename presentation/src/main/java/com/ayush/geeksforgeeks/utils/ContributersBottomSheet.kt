@@ -8,11 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,9 +20,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
-import com.github.theapache64.fig.Fig
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 
 data class Contributor(
     val name: String,
@@ -36,21 +28,9 @@ data class Contributor(
     val githubUrl: String
 )
 
+
 @Composable
 fun ContributorsContent(onClose: () -> Unit) {
-    var contributors by remember { mutableStateOf<List<Contributor>>(emptyList()) }
-    
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            try {
-                val sheetUrl = "https://docs.google.com/spreadsheets/d/1yWZdD7-FPbYneSXY5bpatnMkp8LO1RyeCwvZ6JjVWJE/edit?usp=sharing"
-//                contributors = fetchContributors(sheetUrl)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -72,6 +52,39 @@ fun ContributorsContent(onClose: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(24.dp))
 
+        val contributors = listOf(
+            Contributor(
+                "Ayush Rai",
+                "App Developer",
+                "https://avatars.githubusercontent.com/u/143195087?v=4",
+                "https://github.com/Ayush-Kotlin-Dev"
+            ),
+            Contributor(
+                "Osim Laha",
+                "Contributor",
+                "https://avatars.githubusercontent.com/u/143195087?v=4",
+                "https://www.linkedin.com/in/osim-laha-2a6a3332b?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAFNEsN4BLqGtnOciwD4x3NyyPzsRcBakbqI&lipi=urn%3Ali%3Apage%3Ad_flagship3_search_srp_all%3BFe5asTtUSi6NMq%2Fmv6IAXw%3D%3D"
+            ),
+            Contributor(
+                "Kanderi Alekhya",
+                "Contributor",
+                "https://avatars.githubusercontent.com/u/143195087?v=4",
+                "https://www.linkedin.com/in/alekhya-kanderi-600ba0281?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAESygWABsW4lhfsweDH8en_4tdUcTWmWaOw&lipi=urn%3Ali%3Apage%3Ad_flagship3_search_srp_all%3BHzbW6tcgQd%2BwS%2B63bhtwBg%3D%3D"
+            ),
+            Contributor(
+                "Shivam",
+                "Contributor",
+                "https://avatars.githubusercontent.com/u/143195087?v=4",
+                "https://github.com/shivam01"
+            ),
+            Contributor(
+                "Saimand Roy",
+                "Contributor",
+                "https://avatars.githubusercontent.com/u/143195087?v=4",
+                "https://github.com/sairoy"
+            )
+
+        )
 
         contributors.forEach { contributor ->
             ContributorSection(contributor)
@@ -139,5 +152,3 @@ fun ContributorSection(contributor: Contributor) {
         }
     }
 }
-
-

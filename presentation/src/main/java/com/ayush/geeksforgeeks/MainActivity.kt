@@ -2,23 +2,30 @@ package com.ayush.geeksforgeeks
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.navigator.Navigator
 import com.ayush.geeksforgeeks.auth.AuthScreen
+import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import com.ayush.geeksforgeeks.utils.ErrorScreen
-import com.ayush.geeksforgeeks.utils.GithubRelease
 import com.ayush.geeksforgeeks.utils.UpdateManager
 import com.github.theapache64.fig.Fig
 import com.google.android.datatransport.BuildConfig
@@ -106,7 +113,9 @@ class MainActivity : ComponentActivity() {
                         Navigator(screen = AuthScreen())
                     }
                     is MainViewModel.UiState.LoggedIn -> {
-                        Navigator(screen = ContainerApp(userRole = state.userRole))
+                        Navigator(screen = SettingsScreen())
+
+//                        Navigator(screen = ContainerApp(userRole = state.userRole))
                     }
                     is MainViewModel.UiState.Error -> {
                         ErrorScreen(
