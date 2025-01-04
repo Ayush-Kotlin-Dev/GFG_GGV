@@ -15,7 +15,6 @@ import com.ayush.data.datastore.UserRole
 import com.ayush.geeksforgeeks.admin.AdminScreen
 import com.ayush.geeksforgeeks.task.TasksScreen
 
-
 data class TaskTab(
     @Transient
     val onNavigator: (Boolean) -> Unit,
@@ -48,7 +47,11 @@ data class TaskTab(
     override fun Content() {
         Navigator(initialScreen) { navigator ->
             LaunchedEffect(navigator.lastItem) {
-                onNavigator(navigator.lastItem == initialScreen)
+                // Fix: Check if the last item is either TasksScreen or AdminScreen
+                onNavigator(when (userRole) {
+                    UserRole.TEAM_LEAD -> navigator.lastItem is AdminScreen
+                    else -> navigator.lastItem is TasksScreen
+                })
             }
             SlideTransition(navigator)
         }

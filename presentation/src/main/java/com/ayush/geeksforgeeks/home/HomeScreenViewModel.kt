@@ -76,9 +76,9 @@ object SampleData {
     val recentActivities = listOf(
         RecentActivity(
             id = 1,
-            userName = "Ayush Rai & Team",
-            action = "Won Sih 2024 Hackathon",
-            timestamp = "2 hours ago",
+            userName = "GFG Team",
+            action = "conducted an introductory session",
+            timestamp = "21 oct 2024",
             userAvatar = R.drawable.sih
         ),
         RecentActivity(
@@ -87,32 +87,6 @@ object SampleData {
             action = "won the coding competition at GFG HackFest",
             timestamp = "1 day ago",
             userAvatar = R.drawable.pixelcut_export
-        ),
-    )
-
-    val infoItems = listOf(
-        InfoItem(
-            id = 1,
-            title = "New Course Available",
-            description = "Introduction to Machine Learning course is now open for registration.",
-            type = InfoType.ANNOUNCEMENT
-        ),
-        InfoItem(
-            id = 2,
-            title = "Hackathon 2023",
-            description = "Annual Hackathon event scheduled for August 15-17. Register now!",
-            type = InfoType.EVENT
-        )
-    )
-
-    val recentAchievements = listOf(
-        RecentAchievement(
-            icon = R.drawable.coding,
-            id = 1,
-            title = "Won Sih 2024 Hackathon",
-            description = "Our team won the Smart India Hackathon 2024.",
-            date = "2 hours ago",
-            imageRes = R.drawable.sih
         ),
     )
 }
@@ -126,7 +100,7 @@ data class HomeScreenState(
 )
 
 data class ClubStats(
-    val yearsActive: Int = 3,
+    val yearsActive: Int = 4,
     val studentsBenefited: Int = 1000,
     val activeMembers: Int = 150
 )

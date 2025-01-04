@@ -394,9 +394,16 @@ fun EnhancedTaskItem(
     onDelete: (Task) -> Unit,
     onUpdateStatus: (Task, TaskStatus) -> Unit
 ) {
+    val viewModel: AdminViewModel = hiltViewModel()
+    val teamMembers by viewModel.teamMembers.collectAsState()
+
     var expanded by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var menuOffset by remember { mutableStateOf(DpOffset.Zero) }
+
+    val assignedMemberName = remember(task.assignedTo, teamMembers) {
+        teamMembers.find { it.userId == task.assignedTo }?.name ?: "Unknown User"
+    }
 
     Card(
         modifier = Modifier
@@ -452,7 +459,7 @@ fun EnhancedTaskItem(
                     Spacer(modifier = Modifier.height(8.dp))
                     if (task.assignedTo.isNotEmpty()) {
                         Text(
-                            "Assigned to: ${task.assignedTo}",
+                            "Assigned to: $assignedMemberName",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(8.dp))

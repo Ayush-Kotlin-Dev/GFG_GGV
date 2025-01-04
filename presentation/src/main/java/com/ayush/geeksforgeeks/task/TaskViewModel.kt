@@ -3,6 +3,7 @@ package com.ayush.geeksforgeeks.task
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.model.Task
+import com.ayush.data.model.TaskStatus
 import com.ayush.data.repository.TaskRepository
 import com.ayush.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,16 +33,30 @@ class TasksViewModel @Inject constructor(
                 val user = userRepository.getCurrentUser()
                 currentUserId = user.userId
                 val tasks = taskRepository.getTasksForUser(currentUserId)
-                _uiState.value = TasksUiState.Success(tasks)
+                val taskCounts = TaskCounts(
+                    pending = tasks.count { it.status == TaskStatus.PENDING },
+                    inProgress = tasks.count { it.status == TaskStatus.IN_PROGRESS },
+                    completed = tasks.count { it.status == TaskStatus.COMPLETED }
+                )
+                _uiState.value = TasksUiState.Success(tasks, taskCounts)
             } catch (e: Exception) {
                 _uiState.value = TasksUiState.Error(e.message ?: "An error occurred")
             }
         }
     }
 
+    data class TaskCounts(
+        val pending: Int = 0,
+        val inProgress: Int = 0,
+        val completed: Int = 0
+    )
+
     sealed class TasksUiState {
         object Loading : TasksUiState()
-        data class Success(val tasks: List<Task>) : TasksUiState()
+        data class Success(
+            val tasks: List<Task>,
+            val taskCounts: TaskCounts
+        ) : TasksUiState()
         data class Error(val message: String) : TasksUiState()
     }
 }

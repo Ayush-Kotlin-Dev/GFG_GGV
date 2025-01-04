@@ -57,17 +57,13 @@ class AdminViewModel @Inject constructor(
 
     private suspend fun loadData() {
         try {
-            Log.d("AdminViewModel", "Starting loadData()")
             val currentUser = userRepository.getCurrentUser()
             currentUserDomainId = currentUser.domainId
-            Log.d("AdminViewModel", "Current user domain ID: $currentUserDomainId")
 
             val teamMembers = userRepository.getTeamMembers()
-            Log.d("AdminViewModel", "Loaded ${teamMembers.size} team members")
             _teamMembers.value = teamMembers
 
             val tasks = taskRepository.getTasks(currentUserDomainId)
-            Log.d("AdminViewModel", "Loaded ${tasks.size} tasks")
             _tasks.value = tasks
 
             updateTaskStats()
@@ -81,10 +77,6 @@ class AdminViewModel @Inject constructor(
         val allMembers = _teamMembers.value
         val stats = mutableMapOf<String, Int>()
 
-        Log.d(
-            "AdminViewModel",
-            "Updating stats. Tasks: ${allTasks.size}, Members: ${allMembers.size}"
-        )
 
         // Overall statistics
         stats["total"] = allTasks.size

@@ -65,8 +65,8 @@ import com.ayush.data.model.Task
 import com.ayush.data.model.TaskStatus
 import com.ayush.geeksforgeeks.admin.TaskStatusChip
 import com.ayush.geeksforgeeks.utils.ErrorScreen
-import com.ayush.geeksforgeeks.utils.formatDate
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
+import com.ayush.geeksforgeeks.utils.formatDate
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
@@ -85,7 +85,7 @@ class TasksScreen : Screen {
                 .background(GFGBackground)
                 .padding(16.dp)
         ) {
-            TaskScreenHeader()
+            TaskScreenHeader(uiState)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -103,8 +103,23 @@ class TasksScreen : Screen {
     }
 }
 
+data class TaskCounts(
+    val pending: Int = 0,
+    val inProgress: Int = 0,
+    val completed: Int = 0
+)
+
+sealed class TasksUiState {
+    object Loading : TasksUiState()
+    data class Success(
+        val tasks: List<Task>,
+        val taskCounts: TaskCounts
+    ) : TasksUiState()
+    data class Error(val message: String) : TasksUiState()
+}
+
 @Composable
-fun TaskScreenHeader() {
+fun TaskScreenHeader(uiState: TasksViewModel.TasksUiState) {
     Column {
         Text(
             "Task Board",
@@ -118,27 +133,55 @@ fun TaskScreenHeader() {
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            StatusCard(
-                count = 10,
-                label = "Pending",
-                color = Color(0xFFF57C00)
-            )
-            StatusCard(
-                count = 20,
-                label = "In Progress",
-                color = GFGPrimary
-            )
-            StatusCard(
-                count = 30,
-                label = "Completed",
-                color = Color(0xFF2E7D32)
-            )
+        when (val state = uiState) {
+            is TasksViewModel.TasksUiState.Success -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatusCard(
+                        count = state.taskCounts.pending,
+                        label = "Pending",
+                        color = Color(0xFFF57C00)
+                    )
+                    StatusCard(
+                        count = state.taskCounts.inProgress,
+                        label = "In Progress",
+                        color = GFGPrimary
+                    )
+                    StatusCard(
+                        count = state.taskCounts.completed,
+                        label = "Completed",
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+            }
+            else -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatusCard(
+                        count = 0,
+                        label = "Pending",
+                        color = Color(0xFFF57C00)
+                    )
+                    StatusCard(
+                        count = 0,
+                        label = "In Progress",
+                        color = GFGPrimary
+                    )
+                    StatusCard(
+                        count = 0,
+                        label = "Completed",
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+            }
         }
     }
 }

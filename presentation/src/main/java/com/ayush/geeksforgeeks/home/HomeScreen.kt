@@ -1,9 +1,11 @@
 package com.ayush.geeksforgeeks.home
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,11 +78,13 @@ import cafe.adriel.voyager.core.screen.Screen
 import coil.compose.AsyncImage
 import com.ayush.data.model.Event
 import com.ayush.geeksforgeeks.R
+import com.ayush.geeksforgeeks.home.components.EventDetailsDialog
 import com.ayush.geeksforgeeks.home.components.SectionHeader
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.utils.AddEventScreen
 import com.ayush.geeksforgeeks.utils.TripleOrbitLoadingAnimation
+
 
 data class HomeScreenEvent(
     val isAdmin: Boolean = false
@@ -439,14 +443,20 @@ private fun FeaturedEventCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EventCard(event: Event, onClick: () -> Unit) {
+    var showDetailsDialog by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxSize()
-            .padding(4.dp),
-        shape = RoundedCornerShape(8.dp),
-        onClick = onClick
+            .padding(4.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { showDetailsDialog = true }
+            ),
+        shape = RoundedCornerShape(8.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             var isLoading by remember { mutableStateOf(true) }
@@ -505,6 +515,14 @@ private fun EventCard(event: Event, onClick: () -> Unit) {
                 }
             }
         }
+    }
+    
+    // Show dialog when long pressed
+    if (showDetailsDialog) {
+        EventDetailsDialog(
+            event = event,
+            onDismiss = { showDetailsDialog = false }
+        )
     }
 }
 

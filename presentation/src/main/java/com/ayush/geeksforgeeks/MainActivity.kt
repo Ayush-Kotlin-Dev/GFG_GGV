@@ -122,9 +122,9 @@ class MainActivity : ComponentActivity() {
                         Navigator(screen = AuthScreen())
                     }
                     is MainViewModel.UiState.LoggedIn -> {
-                        Navigator(screen = SettingsScreen())
+//                        Navigator(screen = SettingsScreen())
 
-//                        Navigator(screen = ContainerApp(userRole = state.userRole))
+                        Navigator(screen = ContainerApp(userRole = state.userRole))
                     }
                     is MainViewModel.UiState.Error -> {
                         ErrorScreen(
