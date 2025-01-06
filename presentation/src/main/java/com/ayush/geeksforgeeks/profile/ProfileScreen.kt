@@ -169,18 +169,22 @@ fun ProfileContent(
         }
     }
     LaunchedEffect(contributorsState) {
-        when (contributorsState) {
-            is ProfileViewModel.ContributorsState.Success -> {
+        if (!contributorsState.isLoading) {
+            if (contributorsState.contributors != null) {
                 showContributorsBottomSheet = true
-            }
-            is ProfileViewModel.ContributorsState.Error -> {
+            } else if (contributorsState.error != null) {
                 Toast.makeText(
                     context,
-                    (contributorsState as ProfileViewModel.ContributorsState.Error).message,
+                    contributorsState.error,
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else if (contributorsState.isOffline) {
+                Toast.makeText(
+                    context,
+                    "You're offline. Please check your internet connection.",
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            else -> {}
         }
     }
 
@@ -240,10 +244,14 @@ fun ProfileContent(
                 ProfileMenuItem(
                     Icons.Default.Engineering,
                     "Contributors",
-                    enabled = contributorsState !is ProfileViewModel.ContributorsState.Loading,
-                    isLoading = contributorsState is ProfileViewModel.ContributorsState.Loading,
+                    enabled = !contributorsState.isLoading,
+                    isLoading = contributorsState.isLoading
                 ) {
-                    viewModel.loadContributors()
+                    if (contributorsState.contributors == null) {
+                        viewModel.loadContributors()
+                    } else {
+                        showContributorsBottomSheet = true
+                    }
                 }
                 ProfileMenuItem(Icons.Rounded.Groups, "About Us") { showAboutUsBottomSheet = true }
             }
@@ -326,11 +334,9 @@ fun ProfileContent(
     }
     if (showContributorsBottomSheet) {
         ContributorsBottomSheet(
-            contributors = (contributorsState as? ProfileViewModel.ContributorsState.Success)?.contributors ?: emptyList(),
+            contributors = contributorsState.contributors ?: emptyList(),
             onDismiss = {
                 showContributorsBottomSheet = false
-                // Reset state when dismissing
-                viewModel._contributorsState.value = ProfileViewModel.ContributorsState.Initial
             }
         )
     }

@@ -36,8 +36,12 @@ data class ReleaseState(
     val isOffline: Boolean = false
 )
 
-private var lastFetchTime: Long = 0
-private val CACHE_DURATION = 1000 * 60 * 60
+data class ContributorsState(
+    val isLoading: Boolean = false,
+    val contributors: List<ContributorData>? = null,
+    val error: String? = null,
+    val isOffline: Boolean = false
+)
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -50,14 +54,20 @@ class ProfileViewModel @Inject constructor(
     private val _releaseState = MutableStateFlow(ReleaseState())
     val releaseState: StateFlow<ReleaseState> = _releaseState
 
+    companion object {
+        private const val CACHE_DURATION = 1000 * 60 * 60
+        private var lastReleasesFetchTime: Long = 0
+        private var lastContributorsFetchTime: Long = 0
+    }
+
+    private val _contributorsState = MutableStateFlow(ContributorsState())  // Add private modifier
+    val contributorsState: StateFlow<ContributorsState> = _contributorsState
+
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState
 
     private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Idle)
     val logoutState: StateFlow<LogoutState> = _logoutState
-
-    val _contributorsState = MutableStateFlow<ContributorsState>(ContributorsState.Initial)
-    val contributorsState: StateFlow<ContributorsState> = _contributorsState
 
     init {
         loadProfileData()
@@ -132,7 +142,8 @@ class ProfileViewModel @Inject constructor(
     fun fetchLatestRelease() {
         val currentTime = System.currentTimeMillis()
         if (releaseState.value.release != null &&
-            currentTime - lastFetchTime < CACHE_DURATION) {
+            currentTime - lastReleasesFetchTime < CACHE_DURATION
+        ) {
             return
         }
 
@@ -190,8 +201,7 @@ class ProfileViewModel @Inject constructor(
                 } else {
                     _releaseState.value = ReleaseState(error = "Failed to fetch release")
                 }
-                lastFetchTime = currentTime
-
+                lastReleasesFetchTime = currentTime
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error fetching release: ${e.message}", e)
                 // Set offline state if it's a network error
@@ -211,6 +221,34 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun loadContributors() {
+        Log.d("ProfileViewModel", "loadContributors called")
+        val currentTime = System.currentTimeMillis()
+        if (contributorsState.value.contributors != null &&
+            currentTime - lastContributorsFetchTime < CACHE_DURATION
+        ) {
+            return
+        }
+
+        viewModelScope.launch {
+            _contributorsState.value = ContributorsState(isLoading = true)
+            try {
+                if (!isNetworkAvailable()) {
+                    _contributorsState.value = ContributorsState(
+                        isOffline = true,
+                        contributors = emptyList()
+                    )
+                    return@launch
+                }
+
+                val contributors = userRepository.getContributors()
+                _contributorsState.value = ContributorsState(contributors = contributors)
+                lastContributorsFetchTime = currentTime
+            } catch (e: Exception) {
+                _contributorsState.value = ContributorsState(error = e.message)
+            }
+        }
+    }
     private fun isNetworkAvailable(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
@@ -221,24 +259,7 @@ class ProfileViewModel @Inject constructor(
             )
     }
 
-    fun loadContributors() {
-        viewModelScope.launch {
-            _contributorsState.value = ContributorsState.Loading
-            try {
-                val contributors = userRepository.getContributors()
-                _contributorsState.value = ContributorsState.Success(contributors)
-            } catch (e: Exception) {
-                _contributorsState.value = ContributorsState.Error(e.message ?: "Failed to load contributors")
-            }
-        }
-    }
 
-    sealed class ContributorsState {
-        object Initial : ContributorsState()
-        object Loading : ContributorsState()
-        data class Success(val contributors: List<ContributorData>) : ContributorsState()
-        data class Error(val message: String) : ContributorsState()
-    }
 
     sealed class ProfileUiState {
         object Loading : ProfileUiState()

@@ -151,6 +151,12 @@ class UserRepository @Inject constructor(
                 .get()
                 .await()
                 .toObjects(ContributorData::class.java)
+                .sortedWith(compareBy<ContributorData> {
+                    it.name != "Ayush Rai"
+                }.thenBy {
+                    // Then sort others by name
+                    it.name
+                })
         } catch (e: Exception) {
             Log.e("UserRepository", "Error fetching contributors: ${e.message}", e)
             throw e
