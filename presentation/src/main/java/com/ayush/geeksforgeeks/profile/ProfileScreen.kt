@@ -72,6 +72,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import coil.compose.AsyncImage
 import com.ayush.data.datastore.UserSettings
+import com.ayush.data.model.ContributorData
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.profile.profile_detail.ProfileDetailScreen
 import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
@@ -145,6 +146,7 @@ fun ProfileContent(
     val navigator = LocalNavigator.current
     var shouldShareOnLoad by remember { mutableStateOf(false) }
     val releaseState by viewModel.releaseState.collectAsState()
+    val contributorsState by viewModel.contributorsState.collectAsState()
 
     LaunchedEffect(releaseState) {
         if (shouldShareOnLoad && !releaseState.isLoading && releaseState.release != null) {
@@ -166,6 +168,22 @@ fun ProfileContent(
             context.startActivity(shareIntent)
         }
     }
+    LaunchedEffect(contributorsState) {
+        when (contributorsState) {
+            is ProfileViewModel.ContributorsState.Success -> {
+                showContributorsBottomSheet = true
+            }
+            is ProfileViewModel.ContributorsState.Error -> {
+                Toast.makeText(
+                    context,
+                    (contributorsState as ProfileViewModel.ContributorsState.Error).message,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            else -> {}
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -219,7 +237,14 @@ fun ProfileContent(
                     }
                 }
                 ProfileMenuItem(Icons.AutoMirrored.Filled.HelpCenter, "Help") { showHelpDialog = true }
-                ProfileMenuItem(Icons.Default.Engineering, "Contributors") { showContributorsBottomSheet = true }
+                ProfileMenuItem(
+                    Icons.Default.Engineering,
+                    "Contributors",
+                    enabled = contributorsState !is ProfileViewModel.ContributorsState.Loading,
+                    isLoading = contributorsState is ProfileViewModel.ContributorsState.Loading,
+                ) {
+                    viewModel.loadContributors()
+                }
                 ProfileMenuItem(Icons.Rounded.Groups, "About Us") { showAboutUsBottomSheet = true }
             }
         }
@@ -300,7 +325,14 @@ fun ProfileContent(
         AboutUsBottomSheet(onDismiss = { showAboutUsBottomSheet = false })
     }
     if (showContributorsBottomSheet) {
-        ContributorsBottomSheet(onDismiss = { showContributorsBottomSheet = false })
+        ContributorsBottomSheet(
+            contributors = (contributorsState as? ProfileViewModel.ContributorsState.Success)?.contributors ?: emptyList(),
+            onDismiss = {
+                showContributorsBottomSheet = false
+                // Reset state when dismissing
+                viewModel._contributorsState.value = ProfileViewModel.ContributorsState.Initial
+            }
+        )
     }
 }
 @Composable
@@ -512,7 +544,10 @@ fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () ->
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContributorsBottomSheet(onDismiss: () -> Unit) {
+fun ContributorsBottomSheet(
+    contributors: List<ContributorData>,
+    onDismiss: () -> Unit
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val scope = rememberCoroutineScope()
 
@@ -523,6 +558,7 @@ fun ContributorsBottomSheet(onDismiss: () -> Unit) {
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         ContributorsContent(
+            contributors = contributors,
             onClose = {
                 scope.launch {
                     sheetState.hide()
@@ -532,6 +568,7 @@ fun ContributorsBottomSheet(onDismiss: () -> Unit) {
         )
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

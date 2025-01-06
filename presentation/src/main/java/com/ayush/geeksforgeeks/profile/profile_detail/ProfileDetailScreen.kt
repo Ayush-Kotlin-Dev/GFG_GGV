@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Domain
@@ -167,23 +168,6 @@ fun EditableProfileContent(
         profileImageColors = colors
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
-        IconButton(
-            onClick = { navigation?.pop() },
-            modifier = Modifier.align(Alignment.TopStart)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = ColorUi.White
-            )
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -207,6 +191,22 @@ fun EditableProfileContent(
                     )
                 )
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp , start = 16.dp),
+            ) {
+                IconButton(
+                    onClick = { navigation?.pop() },
+                    modifier = Modifier.align(Alignment.TopStart)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = ColorUi.White
+                    )
+                }
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -320,7 +320,7 @@ fun EditableProfileContent(
                     ProfileField(
                         icon = Icons.Filled.Domain,
                         label = "Team",
-                        value = "Domain Name",
+                        value =  user.domainId.toString(),
                         profileImageColors = profileImageColors
                     )
                     ProfileField(

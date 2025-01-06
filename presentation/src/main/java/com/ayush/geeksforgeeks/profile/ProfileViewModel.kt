@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserSettings
+import com.ayush.data.model.ContributorData
 import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.QueryRepository
 import com.ayush.data.repository.UserRepository
@@ -54,6 +55,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Idle)
     val logoutState: StateFlow<LogoutState> = _logoutState
+
+    val _contributorsState = MutableStateFlow<ContributorsState>(ContributorsState.Initial)
+    val contributorsState: StateFlow<ContributorsState> = _contributorsState
 
     init {
         loadProfileData()
@@ -215,6 +219,25 @@ class ProfileViewModel @Inject constructor(
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
             )
+    }
+
+    fun loadContributors() {
+        viewModelScope.launch {
+            _contributorsState.value = ContributorsState.Loading
+            try {
+                val contributors = userRepository.getContributors()
+                _contributorsState.value = ContributorsState.Success(contributors)
+            } catch (e: Exception) {
+                _contributorsState.value = ContributorsState.Error(e.message ?: "Failed to load contributors")
+            }
+        }
+    }
+
+    sealed class ContributorsState {
+        object Initial : ContributorsState()
+        object Loading : ContributorsState()
+        data class Success(val contributors: List<ContributorData>) : ContributorsState()
+        data class Error(val message: String) : ContributorsState()
     }
 
     sealed class ProfileUiState {

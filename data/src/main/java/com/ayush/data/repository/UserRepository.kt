@@ -5,6 +5,7 @@ import android.util.Log
 import com.ayush.data.datastore.User
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserSettings
+import com.ayush.data.model.ContributorData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -141,6 +142,18 @@ class UserRepository @Inject constructor(
             // Log the error or handle it as needed
             println("Error getting total members count: ${e.message}")
             0 // Return 0 if there's an error
+        }
+    }
+
+    suspend fun getContributors(): List<ContributorData> {
+        return try {
+            firestore.collection("contributors")
+                .get()
+                .await()
+                .toObjects(ContributorData::class.java)
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error fetching contributors: ${e.message}", e)
+            throw e
         }
     }
 }

@@ -17,20 +17,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.ayush.data.model.ContributorData
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 
-data class Contributor(
-    val name: String,
-    val role: String,
-    val imageUrl: String,
-    val githubUrl: String
-)
-
 
 @Composable
-fun ContributorsContent(onClose: () -> Unit) {
+fun ContributorsContent(
+    contributors: List<ContributorData>,
+    onClose: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -52,40 +49,6 @@ fun ContributorsContent(onClose: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        val contributors = listOf(
-            Contributor(
-                "Ayush Rai",
-                "App Developer",
-                "https://avatars.githubusercontent.com/u/143195087?v=4",
-                "https://github.com/Ayush-Kotlin-Dev"
-            ),
-            Contributor(
-                "Osim Laha",
-                "Contributor",
-                "https://avatars.githubusercontent.com/u/143195087?v=4",
-                "https://www.linkedin.com/in/osim-laha-2a6a3332b?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAFNEsN4BLqGtnOciwD4x3NyyPzsRcBakbqI&lipi=urn%3Ali%3Apage%3Ad_flagship3_search_srp_all%3BFe5asTtUSi6NMq%2Fmv6IAXw%3D%3D"
-            ),
-            Contributor(
-                "Kanderi Alekhya",
-                "Contributor",
-                "https://avatars.githubusercontent.com/u/143195087?v=4",
-                "https://www.linkedin.com/in/alekhya-kanderi-600ba0281?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAESygWABsW4lhfsweDH8en_4tdUcTWmWaOw&lipi=urn%3Ali%3Apage%3Ad_flagship3_search_srp_all%3BHzbW6tcgQd%2BwS%2B63bhtwBg%3D%3D"
-            ),
-            Contributor(
-                "Shivam",
-                "Contributor",
-                "https://avatars.githubusercontent.com/u/143195087?v=4",
-                "https://github.com/shivam01"
-            ),
-            Contributor(
-                "Saimand Roy",
-                "Contributor",
-                "https://avatars.githubusercontent.com/u/143195087?v=4",
-                "https://github.com/sairoy"
-            )
-
-        )
-
         contributors.forEach { contributor ->
             ContributorSection(contributor)
         }
@@ -101,7 +64,7 @@ fun ContributorsContent(onClose: () -> Unit) {
 }
 
 @Composable
-fun ContributorSection(contributor: Contributor) {
+fun ContributorSection(contributor: ContributorData) {
     val uriHandler = LocalUriHandler.current
 
     Row(
