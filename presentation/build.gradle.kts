@@ -80,7 +80,6 @@ dependencies {
 
     implementation("com.github.theapache64:fig:0.0.3")
 
-
 }
 
 tasks.register("copyProguardRules", Copy::class) {

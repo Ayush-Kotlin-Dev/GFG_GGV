@@ -3,7 +3,6 @@ package com.ayush.geeksforgeeks.profile
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ContactSupport
 import androidx.compose.material.icons.automirrored.filled.HelpCenter
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Engineering
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ManageAccounts
@@ -40,6 +41,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -67,23 +69,25 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import coil.compose.AsyncImage
 import com.ayush.data.datastore.UserSettings
 import com.ayush.data.model.ContributorData
-import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.profile.profile_detail.ProfileDetailScreen
 import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
-import com.ayush.geeksforgeeks.utils.AboutUsContent
-import com.ayush.geeksforgeeks.utils.ContributorsContent
+import com.ayush.geeksforgeeks.profile.components.AboutUsContent
+import com.ayush.geeksforgeeks.profile.components.ContributorsContent
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import com.ayush.geeksforgeeks.utils.PulseAnimation
+import com.ayush.geeksforgeeks.utils.SimpleLoadingIndicator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
@@ -213,7 +217,10 @@ fun ProfileContent(
                 ProfileMenuItem(Icons.Default.AdminPanelSettings, "Setting") {
                     navigator?.push(SettingsScreen())
                 }
-                ProfileMenuItem(Icons.AutoMirrored.Filled.ContactSupport, "Contact") { showContactDialog = true }
+                ProfileMenuItem(
+                    Icons.AutoMirrored.Filled.ContactSupport,
+                    "Contact"
+                ) { showContactDialog = true }
                 ProfileMenuItem(
                     icon = Icons.Default.Share,
                     title = "Share App",
@@ -341,6 +348,7 @@ fun ProfileContent(
         )
     }
 }
+
 @Composable
 fun ProfileMenuItem(
     icon: ImageVector,
@@ -401,6 +409,7 @@ fun ProfileMenuItem(
     }
     Divider(color = Color.LightGray, thickness = 0.5.dp)
 }
+
 @Composable
 fun ContactDialog(
     onDismiss: () -> Unit,
@@ -436,6 +445,8 @@ fun ContactDialog(
 @Composable
 fun ProfileHeader(user: UserSettings) {
     val context = LocalContext.current
+    var showEnlargedImage by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -444,7 +455,9 @@ fun ProfileHeader(user: UserSettings) {
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(100.dp)
+            modifier = Modifier
+                .size(100.dp)
+                .clickable { showEnlargedImage = true }
         ) {
             var isLoading by remember { mutableStateOf(true) }
 
@@ -473,10 +486,9 @@ fun ProfileHeader(user: UserSettings) {
                     color = GFGPrimary
                 )
             }
-
         }
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = user.name,
             style = MaterialTheme.typography.headlineSmall,
@@ -489,9 +501,62 @@ fun ProfileHeader(user: UserSettings) {
             color = GFGTextPrimary.copy(alpha = 0.7f)
         )
     }
+
+    if (showEnlargedImage) {
+        Dialog(
+            onDismissRequest = { showEnlargedImage = false },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
+                var isDialogImageLoading by remember { mutableStateOf(true) }
+
+                AsyncImage(
+                    model = user.profilePicUrl,
+                    contentDescription = "Enlarged Profile Picture",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop,
+                    onLoading = { isDialogImageLoading = true },
+                    onSuccess = { isDialogImageLoading = false },
+                    onError = { isDialogImageLoading = false }
+                )
+
+                if (isDialogImageLoading) {
+                    SimpleLoadingIndicator()
+                }
+
+                IconButton(
+                    onClick = { showEnlargedImage = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(32.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
 }
-
-
 
 @Composable
 fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () -> Unit) {
@@ -574,7 +639,6 @@ fun ContributorsBottomSheet(
         )
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

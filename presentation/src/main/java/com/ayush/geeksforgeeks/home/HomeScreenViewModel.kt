@@ -7,12 +7,15 @@ import com.ayush.data.model.Event
 import com.ayush.data.repository.HomeRepository
 import com.ayush.geeksforgeeks.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
-
+import kotlin.random.Random
 
 
 @HiltViewModel
@@ -57,16 +60,17 @@ class HomeScreenViewModel @Inject constructor(
             }
         }
     }
-    fun addEventWithImage(event: Event, imageUri: Uri) {
-        viewModelScope.launch {
+    suspend fun addEventWithImage(event: Event, imageUri: Uri): Boolean {
+        return try {
             val success = homeRepository.createEventWithImage(event, imageUri)
             if (success) {
                 val currentEvents = _uiState.value.events.toMutableList()
                 currentEvents.add(event)
                 _uiState.value = _uiState.value.copy(events = currentEvents)
-            } else {
-                // Handle error (e.g., show an error message)
             }
+            success
+        } catch (e: Exception) {
+            false
         }
     }
 }

@@ -1,8 +1,7 @@
-package com.ayush.geeksforgeeks.utils
+package com.ayush.geeksforgeeks.home.components
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -32,20 +31,22 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
+import com.ayush.geeksforgeeks.utils.SimpleLoadingIndicator
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEventScreen(
-    onEventAdded: (Event, Uri) -> Unit,
+    onEventAdded: suspend (Event, Uri) -> Boolean,
     onDismiss: () -> Unit
 ) {
     var eventData by remember { mutableStateOf(EventData()) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+    var isAddingEvent by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showDeadlinePicker by remember { mutableStateOf(false) }
@@ -75,7 +76,7 @@ fun AddEventScreen(
                     val sizeMB = fileSize / (1024.0 * 1024.0)
 
                     if (fileSize > maxSize) {
-                        imageError = "Image size (${String.format("%.1f", sizeMB)}MB) exceeds limit of 15MB"
+                        imageError = "Image size (${String.format(Locale.ROOT, "%.1f", sizeMB)}MB) exceeds limit of 15MB"
                         imageUri = null
                     } else {
                         imageError = null
@@ -211,33 +212,41 @@ fun AddEventScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Button(onClick = onDismiss) {
+            Button(
+                onClick = onDismiss,
+                enabled = !isAddingEvent
+            ) {
                 Text("Cancel")
             }
             Button(
                 onClick = {
                     coroutineScope.launch {
-                        isLoading = true
-                        val newEvent = Event(
-                            id = System.currentTimeMillis().toString(),
-                            title = eventData.title,
-                            description = eventData.description,
-                            date = eventData.date,
-                            time = eventData.time,
-                            registrationDeadline = eventData.registrationDeadline,
-                            formLink = eventData.formLink,
-                            imageRes = ""
-                        )
+                        isAddingEvent = true
                         imageUri?.let { uri ->
-                            onEventAdded(newEvent, uri)
+                            val newEvent = Event(
+                                id = System.currentTimeMillis().toString(),
+                                title = eventData.title,
+                                description = eventData.description,
+                                date = eventData.date,
+                                time = eventData.time,
+                                registrationDeadline = eventData.registrationDeadline,
+                                formLink = eventData.formLink,
+                                imageRes = ""
+                            )
+                            val success = onEventAdded(newEvent, uri)
+                            if (success) {
+                                Toast.makeText(context, "Woohoo! Event added successfully! 🎉✨", Toast.LENGTH_SHORT).show()
+                                onDismiss()
+                            } else {
+                                Toast.makeText(context, "Oopsie! Something went wrong. give it another shot! 🙈", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                        isLoading = false
-                        onDismiss()
+                        isAddingEvent = false
                     }
                 },
-                enabled = eventData.isValid() && imageUri != null && !isLoading && urlError == null && imageError == null
+                enabled = eventData.isValid() && imageUri != null && !isAddingEvent && urlError == null && imageError == null
             ) {
-                if (isLoading) {
+                if (isAddingEvent) {
                     SimpleLoadingIndicator(color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text("Add Event")

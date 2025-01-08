@@ -27,6 +27,11 @@ class NotificationService : FirebaseMessagingService() {
         createNotificationChannels()
     }
 
+    override fun onNewToken(token: String) {
+        super.onNewToken(token)
+        Log.d("FCM", "New token: $token")
+    }
+
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channels = listOf(

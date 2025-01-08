@@ -1,4 +1,4 @@
-package com.ayush.geeksforgeeks.utils
+package com.ayush.geeksforgeeks.profile.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border

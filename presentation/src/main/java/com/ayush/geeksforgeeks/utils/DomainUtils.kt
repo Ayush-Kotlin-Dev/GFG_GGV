@@ -6,7 +6,7 @@ object DomainUtils {
             0 -> "Core Leadership"
             1 -> "Web Development"
             2 -> "CP/DSA"
-            3 -> "Android Development"
+            3 -> "App Development"
             4 -> "AI/ML"
             5 -> "Game Development"
             6 -> "IoT"

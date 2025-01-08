@@ -1,23 +1,14 @@
 package com.ayush.geeksforgeeks
 
 import android.app.Activity
-import android.app.AlertDialog
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -26,15 +17,7 @@ import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import com.ayush.geeksforgeeks.utils.ErrorScreen
-import com.ayush.geeksforgeeks.utils.UpdateManager
-import com.github.theapache64.fig.Fig
-import com.google.android.datatransport.BuildConfig
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import java.net.URL
 import javax.inject.Inject
 
 /**
@@ -106,9 +89,6 @@ class MainActivity : ComponentActivity() {
                 }
                 if (intent?.action == "UPDATE_APP") {
                     val downloadUrl = intent.getStringExtra("downloadUrl")
-                    val version = intent.getStringExtra("version")
-                    val releaseNotes = intent.getStringExtra("releaseNotes")
-
                     if (!downloadUrl.isNullOrEmpty()) {
                         // Show your existing update dialog
                         Navigator(screen = SettingsScreen())

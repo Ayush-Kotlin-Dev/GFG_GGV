@@ -27,7 +27,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Domain
 import androidx.compose.material.icons.filled.Edit
@@ -74,11 +73,12 @@ import com.ayush.geeksforgeeks.profile.ProfileViewModel
 import com.ayush.geeksforgeeks.profile.ProfileViewModel.ProfileUiState
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
+import com.ayush.geeksforgeeks.utils.DomainUtils
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
-import com.ayush.geeksforgeeks.utils.PaletteGenerator
+import com.ayush.geeksforgeeks.profile.components.PaletteGenerator
 import com.ayush.geeksforgeeks.utils.PulseAnimation
-import com.ayush.geeksforgeeks.utils.parserColor
+import com.ayush.geeksforgeeks.profile.components.parserColor
 import androidx.compose.ui.graphics.Color as ColorUi
 
 class ProfileDetailScreen : Screen {
@@ -320,7 +320,7 @@ fun EditableProfileContent(
                     ProfileField(
                         icon = Icons.Filled.Domain,
                         label = "Team",
-                        value =  user.domainId.toString(),
+                        value = DomainUtils.getDomainName(user.domainId),
                         profileImageColors = profileImageColors
                     )
                     ProfileField(

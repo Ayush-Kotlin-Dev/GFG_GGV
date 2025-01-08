@@ -82,7 +82,7 @@ import com.ayush.geeksforgeeks.home.components.EventDetailsDialog
 import com.ayush.geeksforgeeks.home.components.SectionHeader
 import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
-import com.ayush.geeksforgeeks.utils.AddEventScreen
+import com.ayush.geeksforgeeks.home.components.AddEventScreen
 import com.ayush.geeksforgeeks.utils.TripleOrbitLoadingAnimation
 
 
@@ -180,7 +180,6 @@ fun HomeScreen(
                 AddEventScreen(
                     onEventAdded = { event, imageUri ->
                         viewModel.addEventWithImage(event, imageUri)
-                        showAddEventDialog = false
                     },
                     onDismiss = { showAddEventDialog = false }
                 )
