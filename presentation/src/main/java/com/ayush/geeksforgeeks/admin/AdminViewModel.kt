@@ -278,20 +278,24 @@ class AdminViewModel @Inject constructor(
     }
 
     private fun shareFile(file: File) {
-        val uri = FileProvider.getUriForFile(
-            application,
-            "${application.packageName}.fileprovider",
-            file
-        )
+        try {
+            val uri = FileProvider.getUriForFile(
+                application,
+                "${application.packageName}.provider",
+                file
+            )
 
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            val chooser = Intent.createChooser(intent, "Share Weekly Report")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            application.startActivity(chooser)
+        } catch (e: Exception) {
+            Log.e("AdminViewModel", "Error sharing file: ${e.message}")
         }
-
-        val chooser = Intent.createChooser(intent, "Share Weekly Report")
-        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        application.startActivity(chooser)
     }
 }

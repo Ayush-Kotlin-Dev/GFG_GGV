@@ -62,6 +62,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -151,6 +153,7 @@ fun ProfileContent(
     var shouldShareOnLoad by remember { mutableStateOf(false) }
     val releaseState by viewModel.releaseState.collectAsState()
     val contributorsState by viewModel.contributorsState.collectAsState()
+    var isLoadingContributors by remember { mutableStateOf(false) }
 
     LaunchedEffect(releaseState) {
         if (shouldShareOnLoad && !releaseState.isLoading && releaseState.release != null) {
@@ -172,8 +175,11 @@ fun ProfileContent(
             context.startActivity(shareIntent)
         }
     }
+
     LaunchedEffect(contributorsState) {
-        if (!contributorsState.isLoading) {
+        if (isLoadingContributors && !contributorsState.isLoading) {
+            isLoadingContributors = false  // Reset the loading flag
+
             if (contributorsState.contributors != null) {
                 showContributorsBottomSheet = true
             } else if (contributorsState.error != null) {
@@ -255,6 +261,7 @@ fun ProfileContent(
                     isLoading = contributorsState.isLoading
                 ) {
                     if (contributorsState.contributors == null) {
+                        isLoadingContributors = true
                         viewModel.loadContributors()
                     } else {
                         showContributorsBottomSheet = true
@@ -562,6 +569,12 @@ fun ProfileHeader(user: UserSettings) {
 fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () -> Unit) {
     var query by remember { mutableStateOf("") }
     val queryState by viewModel.queryState.collectAsState()
+    val focusRequester = remember { FocusRequester() }
+
+    // Request focus when dialog opens
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     AlertDialog(
         icon = {
@@ -580,7 +593,9 @@ fun HelpDialog(user: UserSettings, viewModel: ProfileViewModel, onDismiss: () ->
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester)
                 )
                 when (val state = queryState) {
                     is ProfileViewModel.QueryState.Loading -> LoadingIndicator()

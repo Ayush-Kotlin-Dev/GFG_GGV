@@ -33,19 +33,29 @@ class TaskRepository @Inject constructor(
     suspend fun updateTaskStatus(taskId: String, newStatus: TaskStatus) {
         try {
             require(taskId.isNotBlank()) { "Task ID must not be blank" }
+
             firestore.collection("tasks")
                 .document(taskId)
                 .update("status", newStatus.name)
                 .await()
-            val task = getTaskById(taskId)
-            task?.let { t ->
-                if (newStatus == TaskStatus.COMPLETED) {
+
+            if (newStatus == TaskStatus.COMPLETED) {
+                val task = getTaskById(taskId)
+                task?.let { t ->
                     val assignedUserId = t.assignedTo
                     val userRef = firestore.collection("users").document(assignedUserId)
+
                     firestore.runTransaction { transaction ->
                         val userSnapshot = transaction.get(userRef)
+                        // Update completed tasks count
                         val currentCompletedTasks = userSnapshot.getLong("completedTasks") ?: 0
-                        transaction.update(userRef, "completedTasks", currentCompletedTasks + 1)
+                        // Update total credits
+                        val currentCredits = userSnapshot.getLong("credits") ?: 0
+
+                        transaction.update(userRef, mapOf(
+                            "completedTasks" to currentCompletedTasks + 1,
+                            "credits" to currentCredits + t.credits
+                        ))
                     }.await()
                 }
             }
@@ -53,7 +63,7 @@ class TaskRepository @Inject constructor(
             Log.e("TaskRepository", "Invalid task ID: ${illegalArgumentException.message}")
         } catch (e: Exception) {
             Log.e("TaskRepository", "Error updating task status: ${e.message}")
-            throw e // Optionally rethrow when necessary
+            throw e
         }
     }
 

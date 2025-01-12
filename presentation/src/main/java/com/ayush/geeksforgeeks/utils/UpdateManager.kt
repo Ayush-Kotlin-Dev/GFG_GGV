@@ -18,7 +18,7 @@ class UpdateManager(private val context: Context) {
             .setTitle("App Update")
             .setDescription("Downloading latest version")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "app-update.apk")
+            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "GFG_${android.text.format.DateFormat.format("dd MMM yyyy", System.currentTimeMillis())}_app-update.apk")
             .setMimeType("application/vnd.android.package-archive")
 
         val downloadId = downloadManager.enqueue(request)

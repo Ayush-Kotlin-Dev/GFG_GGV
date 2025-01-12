@@ -2,8 +2,16 @@
 package com.ayush.geeksforgeeks.profile.settings
 
 import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,8 +23,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DarkMode
@@ -29,6 +39,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,6 +49,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -49,17 +61,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import com.ayush.geeksforgeeks.auth.components.ForgotPasswordDialog
+import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.utils.UpdateManager
+import com.ayush.geeksforgeeks.utils.VibratorService
 
 class SettingsScreen : Screen {
     @Composable
@@ -283,7 +301,7 @@ fun SettingsContent(
         )
     }
 
-    if ( appInfoDialog.value ) {
+    if (appInfoDialog.value) {
         AlertDialog(
             onDismissRequest = {
                 appInfoDialog.value = false
@@ -330,7 +348,8 @@ fun SettingsContent(
                     Text("Got it")
                 }
             },
-            shape = MaterialTheme.shapes.large
+            shape = MaterialTheme.shapes.large,
+            containerColor = GFGBackground
         )
     }
 }
@@ -368,48 +387,112 @@ private fun SettingItem(
     isToggleable: Boolean = false,
     checked: Boolean = false,
     onToggle: ((Boolean) -> Unit)? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true
 ) {
-    Row(
+    val animatedColor by animateColorAsState(
+        targetValue = if (enabled)
+            GFGPrimary
+        else
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    )
+
+    val animatedBgColor by animateColorAsState(
+        targetValue = if (enabled)
+            GFGPrimary.copy(alpha = 0.1f)
+        else
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.95f
+    )
+    val context = LocalContext.current
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = onClick != null, onClick = onClick ?: {})
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .scale(scale),
+        onClick = {
+            VibratorService.vibrate(context, VibratorService.VibrationPattern.Click)
+            onClick?.invoke()
+        },
+        enabled = enabled && onClick != null,
+        color = MaterialTheme.colorScheme.surface
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (isToggleable) {
-            Switch(
-                checked = checked,
-                onCheckedChange = { onToggle?.invoke(it) },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        animatedBgColor, 
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = animatedColor,  
+                    modifier = Modifier.size(24.dp)
                 )
-            )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = if (enabled)
+                        MaterialTheme.colorScheme.onSurface
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (isToggleable) {
+                Switch(
+                    checked = checked,
+                    onCheckedChange = { onToggle?.invoke(it) },
+                    enabled = enabled,
+                    colors = SwitchDefaults.colors(
+                        // Checked (ON) state
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = GFGPrimary,
+                        checkedBorderColor = GFGPrimary,
+
+                        // Unchecked (OFF) state
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f),  // Light gray background
+                        uncheckedBorderColor = Color.Gray.copy(alpha = 0.5f), // Slightly darker border
+
+                        // Disabled states
+                        disabledCheckedThumbColor = Color.White,
+                        disabledCheckedTrackColor = GFGPrimary.copy(alpha = 0.38f),
+                        disabledUncheckedThumbColor = Color.White,
+                        disabledUncheckedTrackColor = Color.Gray.copy(alpha = 0.12f)
+                    )
+                )
+            }
         }
+
+        HorizontalDivider(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+        )
     }
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-    )
 }
