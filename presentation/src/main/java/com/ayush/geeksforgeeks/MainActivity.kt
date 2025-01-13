@@ -1,6 +1,8 @@
 package com.ayush.geeksforgeeks
 
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -17,6 +19,7 @@ import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import com.ayush.geeksforgeeks.utils.ErrorScreen
+import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -59,23 +62,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val splashScreen = splashScreenProvider.provideSplashScreen(this)
 
-        // Add permission check
-        checkNotificationPermission()
+        installSplashScreen()
+        requestRequiredPermissions()
 
-        // Add permissions
-        val permission1 = android.Manifest.permission.INTERNET
-        val permission2 = android.Manifest.permission.REQUEST_INSTALL_PACKAGES
-        val permission3 = android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            requestPermissionLauncher.launch(permission3)
-            requestPermissionLauncher.launch(permission1)
-            requestPermissionLauncher.launch(permission2)
-        } else {
-            requestPermissionLauncher.launch(permission3)
-            requestPermissionLauncher.launch(permission1)
-            requestPermissionLauncher.launch(permission2)
-        }
 
         setContent {
             GFGGGVTheme {
@@ -96,7 +86,7 @@ class MainActivity : ComponentActivity() {
                 }
                 when (val state = uiState) {
                     MainViewModel.UiState.Loading -> {
-                        // The splash screen will be shown
+                        LoadingIndicator()
                     }
                     MainViewModel.UiState.NotLoggedIn -> {
                         Navigator(screen = AuthScreen())
@@ -121,16 +111,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun checkNotificationPermission() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            when {
-                checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED -> {
-                    Log.d("FCM", "Notification permission granted")
-                }
-                else -> {
-                    requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                }
+    private fun requestRequiredPermissions() {
+        val permissions = mutableListOf(
+            android.Manifest.permission.INTERNET,
+            android.Manifest.permission.REQUEST_INSTALL_PACKAGES,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ).apply {
+            // Add POST_NOTIFICATIONS permission only for Android 13+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(android.Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+
+        // Filter only non-granted permissions
+        val permissionsToRequest = permissions.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        // Request all needed permissions at once
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray().toString())
         }
     }
 

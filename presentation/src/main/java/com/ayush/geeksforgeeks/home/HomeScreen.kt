@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.home
 
+import android.telephony.PhoneNumberUtils.formatNumber
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -84,7 +85,14 @@ import com.ayush.geeksforgeeks.ui.theme.GFGLightGray
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.home.components.AddEventScreen
 import com.ayush.geeksforgeeks.utils.TripleOrbitLoadingAnimation
-
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 
 data class HomeScreenEvent(
     val isAdmin: Boolean = false
@@ -231,7 +239,42 @@ private fun HomeTopBar(
         )
     )
 }
+@Composable
+private fun HeaderSection(clubStats: ClubStats) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF2E8B57),
+                            Color(0xFF1A5D3A),
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "Welcome to GFG",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            StatsRow(clubStats = clubStats)
+        }
+    }
+}
 @Composable
 private fun StatsRow(clubStats: ClubStats) {
     Row(
@@ -260,7 +303,8 @@ private fun StatsRow(clubStats: ClubStats) {
 private fun StatCounter(
     count: Int,
     label: String,
-    icon: ImageVector
+    icon: ImageVector,
+    duration: Int = 1000
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -275,12 +319,15 @@ private fun StatCounter(
                     if (count > 0) 1f else 0.8f
                 ).value)
         )
-        Text(
-            text = count.toString(),
+
+        RollingCounter(
+            targetValue = count,
+            duration = duration,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onPrimary,
             fontWeight = FontWeight.Bold
         )
+
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
@@ -288,6 +335,108 @@ private fun StatCounter(
             textAlign = TextAlign.Center
         )
     }
+}
+
+@Composable
+private fun RollingCounter(
+    targetValue: Int,
+    duration: Int,
+    style: TextStyle,
+    color: Color,
+    fontWeight: FontWeight
+) {
+    val animationProgress = remember { Animatable(0f) }
+    val formattedTarget = remember(targetValue) { formatNumber(targetValue) }
+
+    // Calculate starting value (3 digits before target)
+    val startingValue = remember(targetValue) {
+        val offset = minOf(targetValue - 3, (targetValue * 0.95).toInt())
+        maxOf(0, offset)
+    }
+
+    LaunchedEffect(targetValue) {
+        animationProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = duration,
+                easing = LinearEasing
+            )
+        )
+    }
+
+    val currentValue = lerp(
+        start = startingValue,
+        stop = targetValue,
+        fraction = animationProgress.value
+    )
+
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(horizontal = 4.dp)
+    ) {
+        formatNumber(currentValue).forEach { char ->
+            FlippingDigit(
+                digit = char,
+                style = style,
+                color = color,
+                fontWeight = fontWeight
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+        }
+    }
+}
+
+@Composable
+private fun FlippingDigit(
+    digit: Char,
+    style: TextStyle,
+    color: Color,
+    fontWeight: FontWeight
+) {
+    val rotation = remember { Animatable(0f) }
+
+    LaunchedEffect(digit) {
+        rotation.animateTo(
+            targetValue = 360f,
+            animationSpec = tween(
+                durationMillis = 300,
+                easing = FastOutSlowInEasing
+            )
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                rotationX = rotation.value
+                cameraDistance = 12f * density
+            }
+    ) {
+        Text(
+            text = digit.toString(),
+            style = style,
+            color = color,
+            fontWeight = fontWeight,
+            modifier = Modifier.graphicsLayer {
+                if (rotation.value >= 180f) {
+                    rotationX = 0f
+                    alpha = if (rotation.value <= 270f) 0f else 1f
+                }
+            }
+        )
+    }
+}
+private fun formatNumber(number: Int): String {
+    return when {
+        number >= 1_000_000 -> String.format("%.1fM", number / 1_000_000.0)
+        number >= 1_000 -> String.format("%.1fK", number / 1_000.0)
+        else -> number.toString()
+    }
+}
+// Helper function for linear interpolation
+private fun lerp(start: Int, stop: Int, fraction: Float): Int {
+    return (start + (stop - start) * fraction).toInt()
 }
 
 @Composable
@@ -747,39 +896,3 @@ private fun NotificationIcon(
     }
 }
 
-@Composable
-private fun HeaderSection(clubStats: ClubStats) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(24.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF2E8B57),
-                            Color(0xFF1A5D3A),
-                        ),
-                        start = Offset(0f, 0f),
-                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                    )
-                )
-                .padding(24.dp)
-        ) {
-            Text(
-                text = "Welcome to GFG",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            StatsRow(clubStats = clubStats)
-        }
-    }
-}

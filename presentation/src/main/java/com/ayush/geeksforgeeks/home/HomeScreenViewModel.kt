@@ -104,7 +104,7 @@ data class HomeScreenState(
 )
 
 data class ClubStats(
-    val yearsActive: Int = 4,
+    val yearsActive: Int = 3,
     val studentsBenefited: Int = 1000,
     val activeMembers: Int = 150
 )
