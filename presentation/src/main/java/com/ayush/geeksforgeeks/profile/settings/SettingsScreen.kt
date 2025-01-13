@@ -330,8 +330,10 @@ fun SettingsContent(
                     Text("Got it")
                 }
             },
-            shape = MaterialTheme.shapes.large
-        )
+            shape = MaterialTheme.shapes.large,
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
+            )
     }
 }
 
@@ -401,10 +403,17 @@ private fun SettingItem(
                 checked = checked,
                 onCheckedChange = { onToggle?.invoke(it) },
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    // Thumb (the moving circle)
+                    checkedThumbColor = Color.White,  // White circle when ON
+                    uncheckedThumbColor = Color.White,  // White circle when OFF
+
+                    // Track (the background)
+                    checkedTrackColor = GFGPrimary,  // Green background when ON
+                    uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f),  // Light gray when OFF
+
+                    // Border
+                    uncheckedBorderColor = Color.Gray.copy(alpha = 0.5f),  // Gray border when OFF
+                    checkedBorderColor = GFGPrimary  // Green border when ON
                 )
             )
         }

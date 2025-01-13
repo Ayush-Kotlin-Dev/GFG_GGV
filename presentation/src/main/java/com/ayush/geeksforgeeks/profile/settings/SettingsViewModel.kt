@@ -172,17 +172,13 @@ class SettingsViewModel @Inject constructor(
                 val fig = Fig()
                 fig.init("https://docs.google.com/spreadsheets/d/1a9VU0CCwSjX7x6mPCARsvtQM8mw4zgXJiUGEhEM8ESs/edit?usp=sharing")
                 val latestVersion = fig.getValue("latest_version", null)
-                Log.d("UpdateCheck", "Latest version from spreadsheet: $latestVersion")
 
                 // 2. Compare with current version
                 val currentVersion = BuildConfig.VERSION_NAME
-                Log.d("UpdateCheck", "Current app version: $currentVersion")
 
                 if (latestVersion != currentVersion) {
-                    Log.d("UpdateCheck", "Update available! Fetching from GitHub...")
 
                     val githubUrl = "https://api.github.com/repos/Ayush-Kotlin-Dev/GFG_GGV/releases/latest"
-                    Log.d("UpdateCheck", "Fetching from GitHub URL: $githubUrl")
 
                     val response = withContext(Dispatchers.IO) {
                         try {
@@ -205,30 +201,23 @@ class SettingsViewModel @Inject constructor(
                         prettyPrint = true
                     }
 
-                    Log.d("UpdateCheck", "GitHub response received, parsing JSON...")
                     val release = json.decodeFromString<GithubRelease>(response)
-                    Log.d("UpdateCheck", "Release tag: ${release.tag_name}")
 
-                    Log.d("UpdateCheck", "Looking for APK in ${release.assets.size} assets")
                     val apkAsset = release.assets.find { it.name.endsWith(".apk") }
 
                     if (apkAsset != null) {
-                        Log.d("UpdateCheck", "APK found: ${apkAsset.name} at ${apkAsset.browser_download_url}")
                         withContext(Dispatchers.Main) {
                             _showUpdateDialog.value = Pair(apkAsset.browser_download_url, release)
                         }
                     } else {
-                        Log.w("UpdateCheck", "No APK found in release assets")
                     }
                 } else {
-                    Log.d("UpdateCheck", "App is up to date")
                     // Show "App is up to date" message
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
-                Log.e("UpdateCheck", "Update check failed", e)
                 e.printStackTrace()
                 // Show error message to user
                 withContext(Dispatchers.Main) {
