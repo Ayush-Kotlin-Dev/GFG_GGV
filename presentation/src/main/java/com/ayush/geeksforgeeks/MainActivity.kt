@@ -36,14 +36,14 @@ import javax.inject.Inject
  *    - Contains Firebase API calls
  *    - Manages data models and repositories
  *    - Handles data source interactions
- * 
+ *
  * 3. presentation - Contains the UI layer
  *    - Implements Jetpack Compose UI
  *    - Contains ViewModels and UI states
  *    - Handles user interactions
- * 
- * Note: Domain layer was intentionally omitted since this is a small, 
- * fast-build application. The business logic is minimal and handled 
+ *
+ * Note: Domain layer was intentionally omitted since this is a small,
+ * fast-build application. The business logic is minimal and handled
  * directly between data and presentation layers.
  */
 
@@ -53,30 +53,28 @@ class MainActivity : ComponentActivity() {
     lateinit var splashScreenProvider: SplashScreenProvider
 
     private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        Log.d("FCM", "Notification permission granted: $isGranted")
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        permissions.entries.forEach { entry ->
+            Log.d("FCM", "${entry.key} permission granted: ${entry.value}")
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val splashScreen = splashScreenProvider.provideSplashScreen(this)
+        val splashScreen = installSplashScreen()
 
-        installSplashScreen()
         requestRequiredPermissions()
-
-
 
         setContent {
             GFGGGVTheme {
                 val viewModel: MainViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
 
-                LaunchedEffect(uiState) {
-                    if (uiState !is MainViewModel.UiState.Loading) {
-                        splashScreen.setKeepOnScreenCondition { false }
-                    }
+                if (uiState !is MainViewModel.UiState.Loading) {
+                    splashScreen.setKeepOnScreenCondition { false }
                 }
+
                 if (intent?.action == "UPDATE_APP") {
                     val downloadUrl = intent.getStringExtra("downloadUrl")
                     if (!downloadUrl.isNullOrEmpty()) {
@@ -117,7 +115,6 @@ class MainActivity : ComponentActivity() {
             android.Manifest.permission.REQUEST_INSTALL_PACKAGES,
             android.Manifest.permission.WRITE_EXTERNAL_STORAGE
         ).apply {
-            // Add POST_NOTIFICATIONS permission only for Android 13+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 add(android.Manifest.permission.POST_NOTIFICATIONS)
             }
@@ -128,14 +125,12 @@ class MainActivity : ComponentActivity() {
             checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
         }
 
-        // Request all needed permissions at once
-        if (permissionsToRequest.isNotEmpty()) {
-            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray().toString())
+        // Request permissions one by one since RequestPermission() only handles single permissions
+        permissionsToRequest.forEach { permission ->
+            requestPermissionLauncher.launch(arrayOf(permission))
         }
     }
-
 }
-
 
 class SplashScreenProvider @Inject constructor() {
     fun provideSplashScreen(activity: Activity): SplashScreen {
