@@ -34,8 +34,6 @@ data class SettingsState(
     val isLoading: Boolean = false,
 )
 
-
-
 sealed class SettingsEvent {
     data class ToggleDarkMode(val enabled: Boolean) : SettingsEvent()
     data class ToggleNotifications(val enabled: Boolean) : SettingsEvent()
@@ -64,6 +62,9 @@ class SettingsViewModel @Inject constructor(
 
     private val _showUpdateDialog = MutableStateFlow<Pair<String, GithubRelease>?>(null)
     val showUpdateDialog = _showUpdateDialog.asStateFlow()
+
+    private var lastUpdateCheck = 0L
+    private val UPDATE_CHECK_COOLDOWN = 5000L
 
     fun onEvent(event: SettingsEvent) {
         when (event) {
@@ -112,7 +113,6 @@ class SettingsViewModel @Inject constructor(
             ).show()
             _state.update { it.copy(isEventRemindersEnabled = enabled) }
         }
-
     }
 
     fun handleChangePassword() {
@@ -158,11 +158,23 @@ class SettingsViewModel @Inject constructor(
                 "Downloads? Coming soon to a screen near you! 📥",
                 Toast.LENGTH_SHORT
             ).show()
-
         }
     }
 
     fun checkForUpdates(context: Context) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastUpdateCheck < UPDATE_CHECK_COOLDOWN) {
+            val remainingSeconds = ((UPDATE_CHECK_COOLDOWN - (currentTime - lastUpdateCheck)) / 1000) + 1
+            Toast.makeText(
+                context,
+                "Please wait ${remainingSeconds}s before checking again",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        lastUpdateCheck = currentTime
+
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isLoading = true) }
@@ -223,7 +235,7 @@ class SettingsViewModel @Inject constructor(
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Failed to check for updates", Toast.LENGTH_SHORT).show()
                 }
-            }finally {
+            } finally {
                 _state.update { it.copy(isLoading = false) }
             }
         }
@@ -244,5 +256,4 @@ class SettingsViewModel @Inject constructor(
     private fun handlePrivacyPolicy() {
         // Open privacy policy
     }
-
 }

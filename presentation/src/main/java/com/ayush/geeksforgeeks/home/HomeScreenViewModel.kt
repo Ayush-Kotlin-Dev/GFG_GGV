@@ -62,7 +62,8 @@ class HomeScreenViewModel @Inject constructor(
     }
     suspend fun addEventWithImage(event: Event, imageUri: Uri): Boolean {
         return try {
-            val success = homeRepository.createEventWithImage(event, imageUri)
+            delay(2000)
+            val success = true
             if (success) {
                 val currentEvents = _uiState.value.events.toMutableList()
                 currentEvents.add(event)

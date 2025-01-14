@@ -12,7 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -30,8 +30,8 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
-import com.ayush.geeksforgeeks.utils.SimpleLoadingIndicator
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -100,159 +100,63 @@ fun AddEventScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp)
     ) {
-        Text("Add New Event", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+        Header(onDismiss)
 
-        EventInputField(
-            value = eventData.title,
-            onValueChange = { eventData = eventData.copy(title = it) },
-            label = "Title"
+        EventDetailsSection(eventData, onEventDataChange = { eventData = it })
+        DateTimeSection(
+            eventData = eventData,
+            onEventDataChange = { eventData = it },
+            showDatePicker = { showDatePicker = true },
+            showTimePicker = { showTimePicker = true },
+            showDeadlinePicker = { showDeadlinePicker = true }
         )
-
-        EventInputField(
-            value = eventData.description,
-            onValueChange = { eventData = eventData.copy(description = it) },
-            label = "Description",
-            singleLine = false
-        )
-
-        EventInputField(
-            value = eventData.date,
-            onValueChange = {},
-            label = "Event Date",
-            readOnly = true,
-            trailingIcon = {
-                IconButton(onClick = { showDatePicker = true }) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Select Date")
-                }
-            }
-        )
-
-        EventInputField(
-            value = eventData.time,
-            onValueChange = {},
-            label = "Event Time",
-            readOnly = true,
-            trailingIcon = {
-                IconButton(onClick = { showTimePicker = true }) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Select Time")
-                }
-            }
-        )
-
-        EventInputField(
-            value = eventData.registrationDeadline,
-            onValueChange = {},
-            label = "Registration Deadline",
-            readOnly = true,
-            trailingIcon = {
-                IconButton(onClick = { showDeadlinePicker = true }) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Select Registration Deadline")
-                }
-            }
-        )
-
-        EventInputField(
-            value = eventData.formLink,
-            onValueChange = { 
+        FormLinkSection(
+            formLink = eventData.formLink,
+            onFormLinkChange = {
                 eventData = eventData.copy(formLink = it)
                 urlError = if (it.isNotBlank() && !validateUrl(it)) {
                     "URL must start with http:// or https://"
                 } else null
             },
-            label = "Form Link",
-            isError = urlError != null,
-            errorMessage = urlError
+            error = urlError
+        )
+        ImageSection(
+            imageUri = imageUri,
+            onImagePick = { imagePicker.launch("image/*") },
+            error = imageError
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { imagePicker.launch("image/*") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Select Image")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        imageUri?.let { uri ->
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { imagePicker.launch("image/*") },
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(uri),
-                    contentDescription = "Selected Image",
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        }
-
-        // Add error message for image if exists
-        if (imageError != null) {
-            Text(
-                text = imageError!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(start = 16.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Button(
-                onClick = onDismiss,
-                enabled = !isAddingEvent
-            ) {
-                Text("Cancel")
-            }
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        isAddingEvent = true
-                        imageUri?.let { uri ->
-                            val newEvent = Event(
-                                id = System.currentTimeMillis().toString(),
-                                title = eventData.title,
-                                description = eventData.description,
-                                date = eventData.date,
-                                time = eventData.time,
-                                registrationDeadline = eventData.registrationDeadline,
-                                formLink = eventData.formLink,
-                                imageRes = ""
-                            )
-                            val success = onEventAdded(newEvent, uri)
-                            if (success) {
-                                Toast.makeText(context, "Woohoo! Event added successfully! 🎉✨", Toast.LENGTH_SHORT).show()
-                                onDismiss()
-                            } else {
-                                Toast.makeText(context, "Oopsie! Something went wrong. give it another shot! 🙈", Toast.LENGTH_SHORT).show()
-                            }
+        ActionButtons(
+            isValid = eventData.isValid() && imageUri != null && !isAddingEvent &&
+                    urlError == null && imageError == null,
+            isLoading = isAddingEvent,
+            onCancel = onDismiss,
+            onAdd = {
+                coroutineScope.launch {
+                    isAddingEvent = true
+                    imageUri?.let { uri ->
+                        val newEvent = Event(
+                            id = System.currentTimeMillis().toString(),
+                            title = eventData.title,
+                            description = eventData.description,
+                            date = eventData.date,
+                            time = eventData.time,
+                            registrationDeadline = eventData.registrationDeadline,
+                            formLink = eventData.formLink,
+                            imageRes = ""
+                        )
+                        val success = onEventAdded(newEvent, uri)
+                        if (success) {
+                            Toast.makeText(context, "Woohoo! Event added successfully!", Toast.LENGTH_SHORT).show()
+                            onDismiss()
+                        } else {
+                            Toast.makeText(context, "Oopsie! Something went wrong. give it another shot!", Toast.LENGTH_SHORT).show()
                         }
-                        isAddingEvent = false
                     }
-                },
-                enabled = eventData.isValid() && imageUri != null && !isAddingEvent && urlError == null && imageError == null
-            ) {
-                if (isAddingEvent) {
-                    SimpleLoadingIndicator(color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Text("Add Event")
+                    isAddingEvent = false
                 }
             }
-        }
+        )
     }
 
     if (showDatePicker) {
@@ -339,6 +243,252 @@ fun AddEventScreen(
     }
 }
 
+@Composable
+private fun Header(onDismiss: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Add New Event",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold
+            )
+        )
+        IconButton(onClick = onDismiss) {
+            Icon(Icons.Default.Close, contentDescription = "Close")
+        }
+    }
+    Spacer(modifier = Modifier.height(24.dp))
+}
+
+@Composable
+private fun EventDetailsSection(
+    eventData: EventData,
+    onEventDataChange: (EventData) -> Unit
+) {
+    SectionTitle("Event Details")
+    EventInputField(
+        value = eventData.title,
+        onValueChange = { onEventDataChange(eventData.copy(title = it)) },
+        label = "Title",
+        leadingIcon = { Icon(Icons.Default.Event, null) }
+    )
+    EventInputField(
+        value = eventData.description,
+        onValueChange = { onEventDataChange(eventData.copy(description = it)) },
+        label = "Description",
+        singleLine = false,
+        minLines = 3,
+        leadingIcon = { Icon(Icons.Default.Description, null) }
+    )
+}
+
+@Composable
+private fun DateTimeSection(
+    eventData: EventData,
+    onEventDataChange: (EventData) -> Unit,
+    showDatePicker: () -> Unit,
+    showTimePicker: () -> Unit,
+    showDeadlinePicker: () -> Unit
+) {
+    SectionTitle("Date & Time")
+
+    // Event Date and Time in separate rows
+    EventInputField(
+        value = eventData.date,
+        onValueChange = {},
+        label = "Event Date",
+        readOnly = true,
+        leadingIcon = { Icon(Icons.Default.CalendarToday, null) },
+        trailingIcon = {
+            IconButton(onClick = showDatePicker) {
+                Icon(
+                    Icons.Default.DateRange,
+                    contentDescription = "Select Date",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    )
+
+    EventInputField(
+        value = eventData.time,
+        onValueChange = {},
+        label = "Event Time",
+        readOnly = true,
+        leadingIcon = { Icon(Icons.Default.Schedule, null) },
+        trailingIcon = {
+            IconButton(onClick = showTimePicker) {
+                Icon(
+                    Icons.Default.AccessTime,
+                    contentDescription = "Select Time",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    )
+
+    // Registration Deadline
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                "Registration Deadline",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            EventInputField(
+                value = eventData.registrationDeadline,
+                onValueChange = {},
+                label = "Select Deadline",
+                readOnly = true,
+                leadingIcon = { Icon(Icons.Default.Timer, null) },
+                trailingIcon = {
+                    IconButton(onClick = showDeadlinePicker) {
+                        Icon(
+                            Icons.Default.DateRange,
+                            contentDescription = "Select Registration Deadline",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun FormLinkSection(
+    formLink: String,
+    onFormLinkChange: (String) -> Unit,
+    error: String?
+) {
+    SectionTitle("Form Link")
+    EventInputField(
+        value = formLink,
+        onValueChange = onFormLinkChange,
+        label = "Form Link",
+        leadingIcon = { Icon(Icons.Default.Link, null) },
+        isError = error != null,
+        errorMessage = error,
+        singleLine = true
+    )
+}
+
+@Composable
+private fun ImageSection(
+    imageUri: Uri?,
+    onImagePick: () -> Unit,
+    error: String?
+) {
+    SectionTitle("Event Image")
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clickable(onClick = onImagePick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            if (imageUri != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(imageUri),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.AddPhotoAlternate,
+                        null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        "Click to add image",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+    if (error != null) {
+        Text(
+            text = error,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun ActionButtons(
+    isValid: Boolean,
+    isLoading: Boolean,
+    onCancel: () -> Unit,
+    onAdd: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        OutlinedButton(
+            onClick = onCancel,
+            modifier = Modifier.weight(1f),
+            enabled = !isLoading
+        ) {
+            Text("Cancel")
+        }
+        Button(
+            onClick = onAdd,
+            modifier = Modifier.weight(1f),
+            enabled = isValid && !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Add Event")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(vertical = 8.dp)
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventInputField(
@@ -349,26 +499,37 @@ fun EventInputField(
     singleLine: Boolean = true,
     readOnly: Boolean = false,
     trailingIcon: @Composable (() -> Unit)? = null,
+    leadingIcon: @Composable (() -> Unit)? = null,
     isError: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
+    minLines: Int = 1
 ) {
-    Column {
+    Column(modifier = modifier) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             label = { Text(label) },
-            modifier = modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             singleLine = singleLine,
             readOnly = readOnly,
+            leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
-            isError = isError
+            isError = isError,
+            minLines = minLines,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            shape = RoundedCornerShape(8.dp)
         )
         if (errorMessage != null) {
             Text(
                 text = errorMessage,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(start = 16.dp)
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
