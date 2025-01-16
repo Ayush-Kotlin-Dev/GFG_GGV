@@ -44,6 +44,7 @@ class AuthViewModel @Inject constructor(
         data class TimeoutWarning(val remainingSeconds: Int) : VerificationState()
         object Timeout : VerificationState()
         data class Error(val message: String) : VerificationState()
+        object RegularStudentSignupSuccess : VerificationState()
     }
 
     private var currentAuthJob: Job? = null
@@ -53,6 +54,21 @@ class AuthViewModel @Inject constructor(
         private set
     var password by mutableStateOf(savedStateHandle.get<String>("password") ?: "")
         private set
+    var regularStudentName by mutableStateOf(savedStateHandle.get<String>("regularStudentName") ?: "")
+        private set
+
+    var isRegularSignup by mutableStateOf(savedStateHandle.get<Boolean>("isRegularSignup") ?: false)
+        private set
+
+    fun updateRegularStudentName(name: String) {
+        regularStudentName = name
+        savedStateHandle["regularStudentName"] = name
+    }
+
+    fun updateSignupMode(isRegular: Boolean) {
+        isRegularSignup = isRegular
+        savedStateHandle["isRegularSignup"] = isRegular
+    }
 
     private val _teams = MutableStateFlow<List<AuthRepository.Team>>(emptyList())
     val teams = _teams.asStateFlow()
@@ -65,13 +81,67 @@ class AuthViewModel @Inject constructor(
     var selectedMember by mutableStateOf<AuthRepository.TeamMember?>(null)
         private set
 
+    fun signUpRegularStudent() {
+        currentAuthJob?.cancel()
+        currentAuthJob = viewModelScope.launch {
+            try {
+                if (!validateRegularStudentInput()) {
+                    return@launch
+                }
+
+                _authState.value = AuthState.Loading
+                Log.d("AuthViewModel", "Starting regular student signup for $regularStudentName")
+
+                val result = authRepository.signUpRegularStudent(
+                    email = email,
+                    password = password,
+                    name = regularStudentName
+                )
+
+                result.fold(
+                    onSuccess = {
+                        Log.d("AuthViewModel", "Regular student signup successful")
+                        _authState.value = AuthState.EmailVerificationRequired
+                    },
+                    onFailure = { e ->
+                        Log.e("AuthViewModel", "Regular student signup failed: ${e.message}")
+                        _authState.value = AuthState.Error(e.message ?: "Sign up failed", e)
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Regular student signup error: ${e.message}")
+                _authState.value = AuthState.Error(e.message ?: "Sign up failed", e)
+            }
+        }
+    }
+
+    private fun validateRegularStudentInput(): Boolean {
+        if (email.isBlank() || password.isBlank() || regularStudentName.isBlank()) {
+            _authState.value = AuthState.Error("All fields are required", Exception())
+            return false
+        }
+        if (!email.endsWith("@gmail.com")) {  // TODO// Assuming college domain
+            _authState.value = AuthState.Error("Please use your college email", Exception())
+            return false
+        }
+        if (password.length < 6) {
+            _authState.value = AuthState.Error("Password must be at least 6 characters", Exception())
+            return false
+        }
+        return true
+    }
+
     init {
         viewModelScope.launch {
             savedStateHandle.setSavedStateProvider("email") { Bundle().apply { putString("email", email) } }
             savedStateHandle.setSavedStateProvider("password") { Bundle().apply { putString("password", password) } }
+            savedStateHandle.setSavedStateProvider("regularStudentName") { Bundle().apply { putString("regularStudentName", regularStudentName) } }
+            savedStateHandle.setSavedStateProvider("isRegularSignup") { Bundle().apply { putBoolean("isRegularSignup", isRegularSignup) } }
             // Restore saved state
             savedStateHandle.get<String>("email")?.let { updateEmail(it) }
             savedStateHandle.get<String>("password")?.let { updatePassword(it) }
+            savedStateHandle.get<String>("regularStudentName")?.let { updateRegularStudentName(it) }
+            savedStateHandle.get<Boolean>("isRegularSignup")?.let { updateSignupMode(it) }
             
             loadTeams()
         }

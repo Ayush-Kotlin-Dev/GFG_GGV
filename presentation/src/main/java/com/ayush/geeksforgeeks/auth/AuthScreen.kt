@@ -30,9 +30,12 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -166,12 +169,14 @@ private fun LoginContent(
                         isLoginMode = isLoginMode,
                         email = viewModel.email,
                         password = viewModel.password,
+                        regularStudentName = viewModel.regularStudentName,
                         teams = teams,
                         teamMembers = teamMembers,
                         selectedTeam = viewModel.selectedTeam,
                         selectedMember = viewModel.selectedMember,
                         onEmailChange = viewModel::updateEmail,
                         onPasswordChange = viewModel::updatePassword,
+                        onRegularStudentNameChange = viewModel::updateRegularStudentName,
                         onTeamSelect = viewModel::selectTeam,
                         onMemberSelect = viewModel::selectMember,
                         onModeChange = { isLoginMode = it },
@@ -182,10 +187,16 @@ private fun LoginContent(
                             if (isLoginMode) {
                                 viewModel.login()
                             } else {
-                                viewModel.signUp()
+                                if (viewModel.isRegularSignup) {
+                                    viewModel.signUpRegularStudent()
+                                } else {
+                                    viewModel.signUp()
+                                }
                             }
                         },
-                        onForgotPasswordClick = { showForgotPasswordDialog = true }
+                        onForgotPasswordClick = { showForgotPasswordDialog = true },
+                        isRegularSignup = viewModel.isRegularSignup,
+                        onRegularSignupChange = viewModel::updateSignupMode
                     )
                 }
             }
@@ -205,19 +216,20 @@ private fun LoginContent(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LoginCard(
     isLoginMode: Boolean,
     email: String,
     password: String,
+    regularStudentName: String,
     teams: List<AuthRepository.Team>,
     teamMembers: List<AuthRepository.TeamMember>,
     selectedTeam: AuthRepository.Team?,
     selectedMember: AuthRepository.TeamMember?,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
+    onRegularStudentNameChange: (String) -> Unit,
     onTeamSelect: (AuthRepository.Team) -> Unit,
     onMemberSelect: (AuthRepository.TeamMember) -> Unit,
     onModeChange: (Boolean) -> Unit,
@@ -225,8 +237,12 @@ private fun LoginCard(
     emailFocus: FocusRequester,
     passwordFocus: FocusRequester,
     onSubmitButtonClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit = { }
+    onForgotPasswordClick: () -> Unit = { },
+    isRegularSignup: Boolean,
+    onRegularSignupChange: (Boolean) -> Unit
 ) {
+    var expandedTeam by remember { mutableStateOf(false) }
+    var expandedMember by remember { mutableStateOf(false) }
     var showContactAdminDialog by remember { mutableStateOf(false) }
     var newEmail by remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -242,7 +258,11 @@ private fun LoginCard(
                 .padding(16.dp)
         ) {
             Text(
-                text = if (isLoginMode) "Login" else "Sign Up",
+                text = when {
+                    isLoginMode -> "Login"
+                    isRegularSignup -> "Student Sign Up"
+                    else -> "Club Member Sign Up"
+                },
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = GFGBlack
@@ -250,118 +270,72 @@ private fun LoginCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (!isLoginMode) {
-                var expandedTeam by remember { mutableStateOf(false) }
-                var expandedMember by remember { mutableStateOf(false) }
-
-                ExposedDropdownMenuBox(
-                    expanded = expandedTeam,
-                    onExpandedChange = { expandedTeam = it },
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
-                        value = selectedTeam?.name ?: "Select Team",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Team") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTeam) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GFGStatusPendingText,
-                            unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
-                            focusedLabelColor = GFGStatusPendingText,
-                            unfocusedLabelColor = GFGBlack,
-                            focusedTextColor = GFGBlack,
-                            unfocusedTextColor = GFGBlack
+                    Text(
+                        text = "Regular Student",
+                        color = GFGBlack
+                    )
+                    Switch(
+                        checked = !isRegularSignup,
+                        onCheckedChange = { onRegularSignupChange(!it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = GFGStatusPendingText,
+                            checkedTrackColor = GFGStatusPending,
+                            uncheckedThumbColor = GFGBlack,
+                            uncheckedTrackColor = GFGBlack.copy(alpha = 0.5f)
                         )
                     )
-                    ExposedDropdownMenu(
-                        expanded = expandedTeam,
-                        onDismissRequest = { expandedTeam = false },
-                        modifier = Modifier
-                            .exposedDropdownSize()
-                            .background(GFGStatusPending)
-                            .alpha(0.8f)
-                    ) {
-                        // Leadership Team
-                        teams.filter { it.id.toInt() == 0 }.forEach { team ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        team.name,
-                                        color = GFGBlack,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                onClick = {
-                                    onTeamSelect(team)
-                                    expandedTeam = false
-                                },
-                            )
-                        }
-                        Divider(color = GFGStatusPendingText, thickness = 1.dp)
-
-                        // Tech Teams
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "Tech Teams",
-                                    fontWeight = FontWeight.Bold,
-                                    color = GFGStatusPendingText
-                                )
-                            },
-                            onClick = { },
-                            enabled = false
-                        )
-                        teams.filter { it.id.toInt() in 1..7 }.forEach { team ->
-                            DropdownMenuItem(
-                                text = { Text(team.name, color = GFGBlack) },
-                                onClick = {
-                                    onTeamSelect(team)
-                                    expandedTeam = false
-                                },
-                            )
-                        }
-                        Divider(color = GFGStatusPendingText, thickness = 1.dp)
-
-                        // Non-Tech Teams
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "Non-Tech Teams",
-                                    fontWeight = FontWeight.Bold,
-                                    color = GFGStatusPendingText
-                                )
-                            },
-                            onClick = { },
-                            enabled = false
-                        )
-                        teams.filter { it.id.toInt() > 7 }.forEach { team ->
-                            DropdownMenuItem(
-                                text = { Text(team.name, color = GFGBlack) },
-                                onClick = {
-                                    onTeamSelect(team)
-                                    expandedTeam = false
-                                },
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Club Member",
+                        color = GFGBlack
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                if (selectedTeam != null) {
+                if (isRegularSignup) {
+                    InputField(
+                        value = regularStudentName,
+                        onValueChange = onRegularStudentNameChange,
+                        label = "Full Name",
+                        focusManager = focusManager,
+                        focusRequester = FocusRequester()
+                    )
+                    InputField(
+                        value = email,
+                        onValueChange = onEmailChange,
+                        label = "College Email (@ggv.ac.in)",
+                        keyboardType = KeyboardType.Email,
+                        focusManager = focusManager,
+                        focusRequester = FocusRequester()
+                    )
+                    InputField(
+                        value = password,
+                        onValueChange = onPasswordChange,
+                        label = "Password",
+                        isPassword = true,
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                        focusRequester = FocusRequester(),
+                        focusManager = focusManager
+                    )
+                } else {
                     ExposedDropdownMenuBox(
-                        expanded = expandedMember,
-                        onExpandedChange = { expandedMember = it },
+                        expanded = expandedTeam,
+                        onExpandedChange = { expandedTeam = it },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         OutlinedTextField(
-                            value = selectedMember?.name ?: "Select Your Name",
+                            value = selectedTeam?.name ?: "Select Team",
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Your Name") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMember) },
+                            label = { Text("Team") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTeam) },
                             modifier = Modifier
                                 .menuAnchor()
                                 .fillMaxWidth(),
@@ -375,82 +349,208 @@ private fun LoginCard(
                             )
                         )
                         ExposedDropdownMenu(
-                            expanded = expandedMember,
-                            onDismissRequest = { expandedMember = false },
+                            expanded = expandedTeam,
+                            onDismissRequest = { expandedTeam = false },
                             modifier = Modifier
                                 .exposedDropdownSize()
                                 .background(GFGStatusPending)
                                 .alpha(0.8f)
                         ) {
-                            teamMembers.forEach { member ->
+                            teams.filter { it.id.toInt() == 0 }.forEach { team ->
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            "${member.name} (${member.role})",
-                                            color = GFGBlack
+                                            team.name,
+                                            color = GFGBlack,
+                                            fontWeight = FontWeight.Bold
                                         )
                                     },
                                     onClick = {
-                                        onMemberSelect(member)
-                                        expandedMember = false
+                                        onTeamSelect(team)
+                                        expandedTeam = false
                                     },
-                                    colors = MenuDefaults.itemColors(
-                                        textColor = GFGBlack,
-                                        leadingIconColor = GFGBlack,
-                                        trailingIconColor = GFGBlack,
-                                        disabledTextColor = GFGBlack.copy(alpha = 0.5f),
-                                        disabledLeadingIconColor = GFGBlack.copy(alpha = 0.5f),
-                                        disabledTrailingIconColor = GFGBlack.copy(alpha = 0.5f)
+                                )
+                            }
+                            Divider(color = GFGStatusPendingText, thickness = 1.dp)
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "Tech Teams",
+                                        fontWeight = FontWeight.Bold,
+                                        color = GFGStatusPendingText
                                     )
+                                },
+                                onClick = { },
+                                enabled = false
+                            )
+                            teams.filter { it.id.toInt() in 1..7 }.forEach { team ->
+                                DropdownMenuItem(
+                                    text = { Text(team.name, color = GFGBlack) },
+                                    onClick = {
+                                        onTeamSelect(team)
+                                        expandedTeam = false
+                                    },
+                                )
+                            }
+                            HorizontalDivider(color = GFGStatusPendingText, thickness = 1.dp)
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "Non-Tech Teams",
+                                        fontWeight = FontWeight.Bold,
+                                        color = GFGStatusPendingText
+                                    )
+                                },
+                                onClick = { },
+                                enabled = false
+                            )
+                            teams.filter { it.id.toInt() > 7 }.forEach { team ->
+                                DropdownMenuItem(
+                                    text = { Text(team.name, color = GFGBlack) },
+                                    onClick = {
+                                        onTeamSelect(team)
+                                        expandedTeam = false
+                                    },
                                 )
                             }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
+
+                    if (selectedTeam != null) {
+                        ExposedDropdownMenuBox(
+                            expanded = expandedMember,
+                            onExpandedChange = { expandedMember = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = selectedMember?.name ?: "Select Your Name",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Your Name") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMember) },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = GFGStatusPendingText,
+                                    unfocusedBorderColor = GFGBlack.copy(alpha = 0.5f),
+                                    focusedLabelColor = GFGStatusPendingText,
+                                    unfocusedLabelColor = GFGBlack,
+                                    focusedTextColor = GFGBlack,
+                                    unfocusedTextColor = GFGBlack
+                                )
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expandedMember,
+                                onDismissRequest = { expandedMember = false },
+                                modifier = Modifier
+                                    .exposedDropdownSize()
+                                    .background(GFGStatusPending)
+                                    .alpha(0.8f)
+                            ) {
+                                teamMembers.forEach { member ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "${member.name} (${member.role})",
+                                                color = GFGBlack
+                                            )
+                                        },
+                                        onClick = {
+                                            onMemberSelect(member)
+                                            expandedMember = false
+                                        },
+                                        colors = MenuDefaults.itemColors(
+                                            textColor = GFGBlack,
+                                            leadingIconColor = GFGBlack,
+                                            trailingIconColor = GFGBlack,
+                                            disabledTextColor = GFGBlack.copy(alpha = 0.5f),
+                                            disabledLeadingIconColor = GFGBlack.copy(alpha = 0.5f),
+                                            disabledTrailingIconColor = GFGBlack.copy(alpha = 0.5f)
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    InputField(
+                        value = email,
+                        onValueChange = onEmailChange,
+                        label = "Email",
+                        focusRequester = emailFocus,
+                        nextFocusRequester = passwordFocus,
+                        focusManager = focusManager,
+                        keyboardType = KeyboardType.Email,
+                        readOnly = true  // Email is set from selected member
+                    )
+                    if (selectedTeam != null && selectedMember != null) {
+                        Text(
+                            text = "Incorrect email?",
+                            color = GFGStatusPendingText,
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showContactAdminDialog = true }
+                                .padding(top = 4.dp, bottom = 8.dp),
+                            textAlign = TextAlign.End
+                        )
+                    }
+                    InputField(
+                        value = password,
+                        onValueChange = onPasswordChange,
+                        label = "Password",
+                        isPassword = true,
+                        focusRequester = passwordFocus,
+                        focusManager = focusManager,
+                        imeAction = ImeAction.Done
+                    )
                 }
-            }
-
-            InputField(
-                value = email,
-                onValueChange = onEmailChange,
-                label = "Email",
-                focusRequester = emailFocus,
-                nextFocusRequester = passwordFocus,
-                focusManager = focusManager,
-                keyboardType = KeyboardType.Email,
-                readOnly = !isLoginMode
-            )
-            if (!isLoginMode && selectedTeam != null && selectedMember != null) {
-                Text(
-                    text = "Incorrect email?",
-                    color = GFGStatusPendingText,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showContactAdminDialog = true }
-                        .padding(top = 4.dp, bottom = 8.dp),
-                    textAlign = TextAlign.End
+            } else {
+                InputField(
+                    value = email,
+                    onValueChange = onEmailChange,
+                    label = "Email",
+                    focusRequester = emailFocus,
+                    nextFocusRequester = passwordFocus,
+                    focusManager = focusManager,
+                    keyboardType = KeyboardType.Email
                 )
-            }
-            InputField(
-                value = password,
-                onValueChange = onPasswordChange,
-                label = "Password",
-                isPassword = true,
-                focusRequester = passwordFocus,
-                focusManager = focusManager,
-                imeAction = ImeAction.Done
-            )
-
-            if (isLoginMode) {
+                InputField(
+                    value = password,
+                    onValueChange = onPasswordChange,
+                    label = "Password",
+                    isPassword = true,
+                    focusRequester = passwordFocus,
+                    focusManager = focusManager,
+                    imeAction = ImeAction.Done
+                )
                 ForgotPasswordText(onClick = onForgotPasswordClick)
             }
 
-            LoginButton(
-                isLoginMode,
-                focusManager,
-                onSubmitButtonClick,
-            )
+            Button(
+                onClick = {
+                    onSubmitButtonClick()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = GFGStatusPendingText)
+            ) {
+                Text(
+                    text = when {
+                        isLoginMode -> "Login"
+                        isRegularSignup -> "Sign Up as Student"
+                        else -> "Sign Up as Club Member"
+                    },
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             ToggleModeText(isLoginMode, onModeChange)
         }
@@ -529,8 +629,6 @@ private fun WelcomeText(textColor: Color) {
     Spacer(modifier = Modifier.height(24.dp))
 }
 
-
-
 @Composable
 private fun ForgotPasswordText(onClick: () -> Unit) {
     Row(
@@ -546,27 +644,6 @@ private fun ForgotPasswordText(onClick: () -> Unit) {
         )
     }
     Spacer(modifier = Modifier.height(8.dp))
-}
-
-@Composable
-private fun LoginButton(
-    isLoginMode: Boolean,
-    focusManager: FocusManager,
-    onSubmitButtonClick: () -> Unit
-) {
-    Button(
-        onClick = {
-            focusManager.clearFocus()
-            onSubmitButtonClick()
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = GFGStatusPendingText)
-    ) {
-        Text(if (isLoginMode) "Login" else "Sign Up", color = Color.White)
-    }
-    Spacer(modifier = Modifier.height(16.dp))
 }
 
 @Composable
@@ -588,4 +665,3 @@ private fun ToggleModeText(isLoginMode: Boolean, onModeChange: (Boolean) -> Unit
         )
     }
 }
-

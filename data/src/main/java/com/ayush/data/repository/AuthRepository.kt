@@ -40,6 +40,15 @@ sealed class EmailVerificationResult {
     data class Error(val message: String) : EmailVerificationResult()
 }
 
+sealed class VerificationState {
+    object Idle : VerificationState()
+    object Loading : VerificationState()
+    data class TimeoutWarning(val remainingSeconds: Int) : VerificationState()
+    object Timeout : VerificationState()
+    data class Error(val message: String) : VerificationState()
+    object RegularStudentSignupSuccess : VerificationState()
+}
+
 class AuthRepository @Inject constructor(
     val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
@@ -141,6 +150,54 @@ class AuthRepository @Inject constructor(
             } ?: Result.failure(IllegalStateException("User creation failed"))
         } catch (e: Exception) {
             Log.e(TAG, "Signup failed: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun signUpRegularStudent(
+        email: String,
+        password: String,
+        name: String
+    ): Result<FirebaseUser> = withContext(ioDispatcher) {
+        try {
+            require(email.isNotBlank()) { "Email is required" }
+            require(password.isNotBlank()) { "Password is required" }
+            require(name.isNotBlank()) { "Name is required" }
+
+            // Create user account
+            val result = retryIO {
+                firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            }
+
+            result.user?.let { user ->
+                val verificationResult = sendEmailVerification()
+                if (verificationResult is EmailVerificationResult.Error) {
+                    return@withContext Result.failure(Exception(verificationResult.message))
+                }
+
+                // Save regular student data
+                retryIO {
+                    firestore.collection("users")
+                        .document(user.uid)
+                        .set(
+                            mapOf(
+                                "name" to name,
+                                "userId" to user.uid,
+                                "email" to email,
+                                "isLoggedIn" to false,
+                                "role" to UserRole.REGULAR_STUDENT.name,
+                                "totalCredits" to 0,
+                                "fcmToken" to getFCMToken(),
+
+                            )
+                        )
+                        .await()
+                }
+
+                Result.success(user)
+            } ?: Result.failure(IllegalStateException("User creation failed"))
+        } catch (e: Exception) {
+            Log.e(TAG, "Regular student signup failed: ${e.message}")
             Result.failure(e)
         }
     }
