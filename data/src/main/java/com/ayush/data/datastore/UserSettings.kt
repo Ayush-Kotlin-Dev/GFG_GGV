@@ -38,9 +38,7 @@ enum class UserRole {
     MEMBER,
     TEAM_LEAD,
     ADMIN,
-    REGULAR_STUDENT  ;
-
-
+    GUEST;
 
     companion object {
         fun fromString(role: String): UserRole {
@@ -48,8 +46,8 @@ enum class UserRole {
                 "MEMBER" -> MEMBER
                 "TEAM_LEAD" -> TEAM_LEAD
                 "ADMIN" -> ADMIN
-                "REGULAR_STUDENT" -> REGULAR_STUDENT
-                else -> MEMBER // Default to MEMBER if unknown role
+                "GUEST" -> GUEST  // Updated
+                else -> MEMBER
             }
         }
     }

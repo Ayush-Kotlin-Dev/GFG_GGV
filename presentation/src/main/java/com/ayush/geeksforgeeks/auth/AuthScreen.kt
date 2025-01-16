@@ -31,11 +31,20 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -169,14 +178,14 @@ private fun LoginContent(
                         isLoginMode = isLoginMode,
                         email = viewModel.email,
                         password = viewModel.password,
-                        regularStudentName = viewModel.regularStudentName,
+                        regularStudentName = viewModel.guestName,
                         teams = teams,
                         teamMembers = teamMembers,
                         selectedTeam = viewModel.selectedTeam,
                         selectedMember = viewModel.selectedMember,
                         onEmailChange = viewModel::updateEmail,
                         onPasswordChange = viewModel::updatePassword,
-                        onRegularStudentNameChange = viewModel::updateRegularStudentName,
+                        onRegularStudentNameChange = viewModel::updateGuestName,
                         onTeamSelect = viewModel::selectTeam,
                         onMemberSelect = viewModel::selectMember,
                         onModeChange = { isLoginMode = it },
@@ -187,15 +196,15 @@ private fun LoginContent(
                             if (isLoginMode) {
                                 viewModel.login()
                             } else {
-                                if (viewModel.isRegularSignup) {
-                                    viewModel.signUpRegularStudent()
+                                if (viewModel.isGuestSignup) {
+                                    viewModel.signUpGuest()
                                 } else {
                                     viewModel.signUp()
                                 }
                             }
                         },
                         onForgotPasswordClick = { showForgotPasswordDialog = true },
-                        isRegularSignup = viewModel.isRegularSignup,
+                        isRegularSignup = viewModel.isGuestSignup,
                         onRegularSignupChange = viewModel::updateSignupMode
                     )
                 }
@@ -260,7 +269,7 @@ private fun LoginCard(
             Text(
                 text = when {
                     isLoginMode -> "Login"
-                    isRegularSignup -> "Student Sign Up"
+                    isRegularSignup -> "Guest / Visitor Sign Up"
                     else -> "Club Member Sign Up"
                 },
                 fontSize = 20.sp,
@@ -270,31 +279,42 @@ private fun LoginCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (!isLoginMode) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = "Regular Student",
-                        color = GFGBlack
-                    )
-                    Switch(
-                        checked = !isRegularSignup,
-                        onCheckedChange = { onRegularSignupChange(!it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = GFGStatusPendingText,
-                            checkedTrackColor = GFGStatusPending,
-                            uncheckedThumbColor = GFGBlack,
-                            uncheckedTrackColor = GFGBlack.copy(alpha = 0.5f)
+                    SegmentedButton(
+                        selected = !isRegularSignup,
+                        onClick = { onRegularSignupChange(false) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContainerColor = GFGStatusPendingText,
+                            activeContentColor = Color.White,
+                            inactiveContainerColor = GFGStatusPending,
+                            inactiveContentColor = GFGBlack
                         )
-                    )
-                    Text(
-                        text = "Club Member",
-                        color = GFGBlack
-                    )
+                    ) {
+                        Text(
+                            text = "Club Member",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+
+                    SegmentedButton(
+                        selected = isRegularSignup,
+                        onClick = { onRegularSignupChange(true) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContainerColor = GFGStatusPendingText,
+                            activeContentColor = Color.White,
+                            inactiveContainerColor = GFGStatusPending,
+                            inactiveContentColor = GFGBlack
+                        )
+                    ) {
+                        Text(
+                            text = "Guest User",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -543,7 +563,7 @@ private fun LoginCard(
                 Text(
                     text = when {
                         isLoginMode -> "Login"
-                        isRegularSignup -> "Sign Up as Student"
+                        isRegularSignup -> "Sign Up as Guest"
                         else -> "Sign Up as Club Member"
                     },
                     color = Color.White

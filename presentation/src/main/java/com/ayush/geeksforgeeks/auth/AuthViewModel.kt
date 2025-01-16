@@ -44,7 +44,7 @@ class AuthViewModel @Inject constructor(
         data class TimeoutWarning(val remainingSeconds: Int) : VerificationState()
         object Timeout : VerificationState()
         data class Error(val message: String) : VerificationState()
-        object RegularStudentSignupSuccess : VerificationState()
+        object GuestSignupSuccess : VerificationState()
     }
 
     private var currentAuthJob: Job? = null
@@ -54,20 +54,20 @@ class AuthViewModel @Inject constructor(
         private set
     var password by mutableStateOf(savedStateHandle.get<String>("password") ?: "")
         private set
-    var regularStudentName by mutableStateOf(savedStateHandle.get<String>("regularStudentName") ?: "")
+    var guestName by mutableStateOf(savedStateHandle.get<String>("guestName") ?: "")
         private set
 
-    var isRegularSignup by mutableStateOf(savedStateHandle.get<Boolean>("isRegularSignup") ?: false)
+    var isGuestSignup by mutableStateOf(savedStateHandle.get<Boolean>("isGuestSignup") ?: false)
         private set
 
-    fun updateRegularStudentName(name: String) {
-        regularStudentName = name
-        savedStateHandle["regularStudentName"] = name
+    fun updateGuestName(name: String) {
+        guestName = name
+        savedStateHandle["guestName"] = name
     }
 
-    fun updateSignupMode(isRegular: Boolean) {
-        isRegularSignup = isRegular
-        savedStateHandle["isRegularSignup"] = isRegular
+    fun updateSignupMode(isGuest: Boolean) {
+        isGuestSignup = isGuest
+        savedStateHandle["isGuestSignup"] = isGuest
     }
 
     private val _teams = MutableStateFlow<List<AuthRepository.Team>>(emptyList())
@@ -81,42 +81,42 @@ class AuthViewModel @Inject constructor(
     var selectedMember by mutableStateOf<AuthRepository.TeamMember?>(null)
         private set
 
-    fun signUpRegularStudent() {
+    fun signUpGuest() {
         currentAuthJob?.cancel()
         currentAuthJob = viewModelScope.launch {
             try {
-                if (!validateRegularStudentInput()) {
+                if (!validateGuestInput()) {
                     return@launch
                 }
 
                 _authState.value = AuthState.Loading
-                Log.d("AuthViewModel", "Starting regular student signup for $regularStudentName")
+                Log.d("AuthViewModel", "Starting guest signup for $guestName")
 
-                val result = authRepository.signUpRegularStudent(
+                val result = authRepository.signUpGuest(
                     email = email,
                     password = password,
-                    name = regularStudentName
+                    name = guestName
                 )
 
                 result.fold(
                     onSuccess = {
-                        Log.d("AuthViewModel", "Regular student signup successful")
+                        Log.d("AuthViewModel", "Guest signup successful")
                         _authState.value = AuthState.EmailVerificationRequired
                     },
                     onFailure = { e ->
-                        Log.e("AuthViewModel", "Regular student signup failed: ${e.message}")
+                        Log.e("AuthViewModel", "Guest signup failed: ${e.message}")
                         _authState.value = AuthState.Error(e.message ?: "Sign up failed", e)
                     }
                 )
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Regular student signup error: ${e.message}")
+                Log.e("AuthViewModel", "Guest signup error: ${e.message}")
                 _authState.value = AuthState.Error(e.message ?: "Sign up failed", e)
             }
         }
     }
 
-    private fun validateRegularStudentInput(): Boolean {
-        if (email.isBlank() || password.isBlank() || regularStudentName.isBlank()) {
+    private fun validateGuestInput(): Boolean {
+        if (email.isBlank() || password.isBlank() || guestName.isBlank()) {
             _authState.value = AuthState.Error("All fields are required", Exception())
             return false
         }
@@ -135,14 +135,14 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             savedStateHandle.setSavedStateProvider("email") { Bundle().apply { putString("email", email) } }
             savedStateHandle.setSavedStateProvider("password") { Bundle().apply { putString("password", password) } }
-            savedStateHandle.setSavedStateProvider("regularStudentName") { Bundle().apply { putString("regularStudentName", regularStudentName) } }
-            savedStateHandle.setSavedStateProvider("isRegularSignup") { Bundle().apply { putBoolean("isRegularSignup", isRegularSignup) } }
+            savedStateHandle.setSavedStateProvider("guestName") { Bundle().apply { putString("guestName", guestName) } }
+            savedStateHandle.setSavedStateProvider("isGuestSignup") { Bundle().apply { putBoolean("isGuestSignup", isGuestSignup) } }
             // Restore saved state
             savedStateHandle.get<String>("email")?.let { updateEmail(it) }
             savedStateHandle.get<String>("password")?.let { updatePassword(it) }
-            savedStateHandle.get<String>("regularStudentName")?.let { updateRegularStudentName(it) }
-            savedStateHandle.get<Boolean>("isRegularSignup")?.let { updateSignupMode(it) }
-            
+            savedStateHandle.get<String>("guestName")?.let { updateGuestName(it) }
+            savedStateHandle.get<Boolean>("isGuestSignup")?.let { updateSignupMode(it) }
+            // ... rest of init ...
             loadTeams()
         }
     }

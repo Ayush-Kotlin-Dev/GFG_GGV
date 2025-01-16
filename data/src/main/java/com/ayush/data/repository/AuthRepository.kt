@@ -46,7 +46,7 @@ sealed class VerificationState {
     data class TimeoutWarning(val remainingSeconds: Int) : VerificationState()
     object Timeout : VerificationState()
     data class Error(val message: String) : VerificationState()
-    object RegularStudentSignupSuccess : VerificationState()
+    object GuestSignupSuccess : VerificationState()
 }
 
 class AuthRepository @Inject constructor(
@@ -154,7 +154,7 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun signUpRegularStudent(
+    suspend fun signUpGuest(
         email: String,
         password: String,
         name: String
@@ -175,7 +175,7 @@ class AuthRepository @Inject constructor(
                     return@withContext Result.failure(Exception(verificationResult.message))
                 }
 
-                // Save regular student data
+                // Save guest data
                 retryIO {
                     firestore.collection("users")
                         .document(user.uid)
@@ -185,10 +185,9 @@ class AuthRepository @Inject constructor(
                                 "userId" to user.uid,
                                 "email" to email,
                                 "isLoggedIn" to false,
-                                "role" to UserRole.REGULAR_STUDENT.name,
+                                "role" to UserRole.GUEST.name,
                                 "totalCredits" to 0,
-                                "fcmToken" to getFCMToken(),
-
+                                "fcmToken" to getFCMToken()
                             )
                         )
                         .await()
@@ -197,7 +196,7 @@ class AuthRepository @Inject constructor(
                 Result.success(user)
             } ?: Result.failure(IllegalStateException("User creation failed"))
         } catch (e: Exception) {
-            Log.e(TAG, "Regular student signup failed: ${e.message}")
+            Log.e(TAG, "Guest signup failed: ${e.message}")
             Result.failure(e)
         }
     }
