@@ -2,7 +2,8 @@ package com.ayush.data.repository
 
 import android.content.ContentValues.TAG
 import android.util.Log
-import com.ayush.data.repository.MentorshipThread
+import com.ayush.data.datastore.UserPreferences
+import com.ayush.data.model.Team
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import dagger.hilt.android.scopes.ViewModelScoped
@@ -15,9 +16,16 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import androidx.annotation.Keep
-import com.ayush.data.datastore.UserPreferences
-import com.ayush.data.model.Team
+import com.ayush.data.datastore.UserRole
+import com.google.firebase.encoders.annotations.Encodable.Field
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.PropertyName
+import com.google.firebase.firestore.snapshots
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Transient
 
 class MentorshipRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
@@ -28,6 +36,7 @@ class MentorshipRepository @Inject constructor(
         private const val MENTORSHIP_COLLECTION = "mentorship"
         private const val TEAMS_COLLECTION = "teams"
         private const val THREADS_COLLECTION = "threads"
+        private const val MESSAGES_COLLECTION = "messages"
     }
 
     suspend fun getTeams(): List<Team> = withContext(ioDispatcher) {
@@ -45,7 +54,7 @@ class MentorshipRepository @Inject constructor(
         }
     }
 
-    suspend fun getThreads(teamId: String): List<MentorshipThread> = withContext(ioDispatcher) {
+    suspend fun getThreads(teamId: String): List<ThreadDetails> = withContext(ioDispatcher) {
         try {
             retryIO {
                 val snapshot = firestore.collection(MENTORSHIP_COLLECTION)
@@ -56,7 +65,7 @@ class MentorshipRepository @Inject constructor(
                     .await()
 
                 snapshot.documents.mapNotNull { doc ->
-                    doc.toObject(MentorshipThread::class.java)?.copy(id = doc.id)
+                    doc.toObject(ThreadDetails::class.java)?.copy(id = doc.id)
                 }
             }
         } catch (e: Exception) {
@@ -69,16 +78,19 @@ class MentorshipRepository @Inject constructor(
         teamId: String,
         title: String,
         message: String
-    ): Result<MentorshipThread> = withContext(ioDispatcher) {
+    ): Result<ThreadDetails> = withContext(ioDispatcher) {
         try {
             val userData = userPreferences.userData.first()
-            val thread = MentorshipThread(
+            val thread = ThreadDetails(
                 title = title,
                 message = message,
                 authorId = userData.userId,
                 authorName = userData.name,
                 teamId = teamId,
-                createdAt = System.currentTimeMillis()
+                createdAt = System.currentTimeMillis(),
+                isEnabled = false,
+                lastMessageAt = System.currentTimeMillis(),
+                repliesCount = 0
             )
 
             retryIO {
@@ -95,6 +107,104 @@ class MentorshipRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun getThreadDetails(teamId: String, threadId: String): ThreadDetails? = 
+        withContext(ioDispatcher) {
+            try {
+                retryIO {
+                    firestore.collection(MENTORSHIP_COLLECTION)
+                        .document(teamId)
+                        .collection(THREADS_COLLECTION)
+                        .document(threadId)
+                        .get()
+                        .await()
+                        .toObject(ThreadDetails::class.java)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting thread details: ${e.message}")
+                null
+            }
+        }
+
+    fun getThreadDetailsFlow(teamId: String, threadId: String): Flow<ThreadDetails?> =
+        firestore.collection(MENTORSHIP_COLLECTION)
+            .document(teamId)
+            .collection(THREADS_COLLECTION)
+            .document(threadId)
+            .snapshots()
+            .map { snapshot -> 
+                snapshot.toObject(ThreadDetails::class.java)?.copy(id = snapshot.id)
+            }
+
+    suspend fun getMessages(teamId: String, threadId: String): Flow<List<ThreadMessage>> =
+        firestore.collection(MENTORSHIP_COLLECTION)
+            .document(teamId)
+            .collection(THREADS_COLLECTION)
+            .document(threadId)
+            .collection(MESSAGES_COLLECTION)
+            .orderBy("createdAt", Query.Direction.ASCENDING)
+            .snapshots()
+            .map { snapshot ->
+                snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(ThreadMessage::class.java)?.copy(id = doc.id)
+                }
+            }
+
+    suspend fun sendMessage(
+        teamId: String, 
+        threadId: String, 
+        message: String
+    ): Result<ThreadMessage> = withContext(ioDispatcher) {
+        try {
+            val userData = userPreferences.userData.first()
+            val isTeamLead = userData.role == UserRole.TEAM_LEAD
+
+            val threadMessage = ThreadMessage(
+                threadId = threadId,
+                senderId = userData.userId,
+                senderName = userData.name,
+                message = message,
+                createdAt = System.currentTimeMillis(),
+                isTeamLead = isTeamLead
+            )
+
+            retryIO {
+                // Add message
+                val messageRef = firestore.collection(MENTORSHIP_COLLECTION)
+                    .document(teamId)
+                    .collection(THREADS_COLLECTION)
+                    .document(threadId)
+                    .collection(MESSAGES_COLLECTION)
+                    .add(threadMessage)
+                    .await()
+
+                // Update thread details atomically
+                val batch = firestore.batch()
+                
+                // Update thread document
+                val threadRef = firestore.collection(MENTORSHIP_COLLECTION)
+                    .document(teamId)
+                    .collection(THREADS_COLLECTION)
+                    .document(threadId)
+
+                batch.update(threadRef, mapOf(
+                    "id" to threadId,  
+                    "repliesCount" to FieldValue.increment(1),
+                    "lastMessageAt" to threadMessage.createdAt,
+                    "isEnabled" to if (isTeamLead) true else FieldValue.delete()  
+                ))
+
+                // Execute batch
+                batch.commit().await()
+
+                Result.success(threadMessage.copy(id = messageRef.id))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending message: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
     suspend fun <T> retryIO(
         times: Int = 3,
         initialDelay: Long = 100,
@@ -118,7 +228,18 @@ class MentorshipRepository @Inject constructor(
 
 @Keep
 @Serializable
-data class MentorshipThread(
+data class ThreadMessage(
+    val id: String = "",
+    val threadId: String = "",
+    val senderId: String = "",
+    val senderName: String = "",
+    val message: String = "",
+    val createdAt: Long = 0,
+    val isTeamLead: Boolean = false
+)
+@Keep
+@Serializable
+data class ThreadDetails(
     val id: String = "",
     val title: String = "",
     val message: String = "",
@@ -126,5 +247,8 @@ data class MentorshipThread(
     val authorName: String = "",
     val teamId: String = "",
     val createdAt: Long = 0,
+    @get:PropertyName("isEnabled") @set:PropertyName("isEnabled")
+    var isEnabled: Boolean = false,
+    val lastMessageAt: Long = 0,
     val repliesCount: Int = 0
 )

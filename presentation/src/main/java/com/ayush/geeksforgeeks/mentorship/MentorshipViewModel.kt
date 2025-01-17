@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.model.Team
-import com.ayush.data.repository.MentorshipThread
+import com.ayush.data.repository.ThreadDetails
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,8 +24,8 @@ class MentorshipViewModel @Inject constructor(
     private val _selectedTeam = MutableStateFlow<Team?>(null)
     val selectedTeam: StateFlow<Team?> = _selectedTeam.asStateFlow()
 
-    private val _threads = MutableStateFlow<List<MentorshipThread>>(emptyList())
-    val threads: StateFlow<List<MentorshipThread>> = _threads.asStateFlow()
+    private val _threads = MutableStateFlow<List<ThreadDetails>>(emptyList())
+    val threads: StateFlow<List<ThreadDetails>> = _threads.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

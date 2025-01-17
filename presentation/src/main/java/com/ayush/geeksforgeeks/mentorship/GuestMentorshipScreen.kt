@@ -22,7 +22,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.model.Team
-import com.ayush.data.repository.MentorshipThread
+import com.ayush.data.repository.ThreadDetails
 import com.ayush.geeksforgeeks.mentorship.components.CreateThreadDialog
 import com.ayush.geeksforgeeks.ui.theme.*
 import com.ayush.geeksforgeeks.utils.DomainUtils
@@ -160,7 +160,13 @@ class TeamThreadsScreen(private val team: Team) : Screen {
                         contentPadding = PaddingValues(16.dp)
                     ) {
                         items(threads) { thread ->
-                            ThreadItem(thread = thread)
+                            ThreadItem(
+                                thread = thread,
+                                team = team,
+                                onClick = {
+                                    navigator.push(ThreadDiscussionScreen(team, thread.id))
+                                }
+                            )
                         }
                     }
                 }
@@ -191,18 +197,21 @@ class TeamThreadsScreen(private val team: Team) : Screen {
     }
 }
 
-// ThreadItem.kt
 @Composable
-fun ThreadItem(thread: MentorshipThread) {
+private fun ThreadItem(
+    thread: ThreadDetails,  // Note: Using ThreadDetails instead of MentorshipThread
+    team: Team,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = thread.title,
@@ -223,11 +232,29 @@ fun ThreadItem(thread: MentorshipThread) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "By ${thread.authorName}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = GFGBlack.copy(alpha = 0.5f)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "By ${thread.authorName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GFGBlack.copy(alpha = 0.5f)
+                    )
+                    if (!thread.isEnabled) {
+                        Surface(
+                            color = GFGStatusPending,
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = "Pending",
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GFGStatusPendingText
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = "${thread.repliesCount} replies",
                     style = MaterialTheme.typography.bodySmall,
