@@ -164,7 +164,6 @@ class AuthRepository @Inject constructor(
             require(password.isNotBlank()) { "Password is required" }
             require(name.isNotBlank()) { "Name is required" }
 
-            // Create user account
             val result = retryIO {
                 firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             }
@@ -175,23 +174,28 @@ class AuthRepository @Inject constructor(
                     return@withContext Result.failure(Exception(verificationResult.message))
                 }
 
+                val guestSettings = UserSettings(
+                    userId = user.uid,
+                    name = name,
+                    email = email,
+                    profilePicUrl = null,  // Explicitly set to null
+                    isLoggedIn = false,
+                    role = UserRole.GUEST,
+                    domainId = 0,  // Guest domain ID set to 0
+                    totalCredits = 0,
+                    fcmToken = getFCMToken()
+                )
+
                 // Save guest data
                 retryIO {
                     firestore.collection("users")
                         .document(user.uid)
-                        .set(
-                            mapOf(
-                                "name" to name,
-                                "userId" to user.uid,
-                                "email" to email,
-                                "isLoggedIn" to false,
-                                "role" to UserRole.GUEST.name,
-                                "totalCredits" to 0,
-                                "fcmToken" to getFCMToken()
-                            )
-                        )
+                        .set(guestSettings)
                         .await()
                 }
+
+                // Save to preferences as well
+                userPreferences.setUserData(guestSettings)
 
                 Result.success(user)
             } ?: Result.failure(IllegalStateException("User creation failed"))
@@ -253,7 +257,6 @@ class AuthRepository @Inject constructor(
                         .get()
                         .await()
                 }
-
                 val userSettings = userDoc.toObject(UserSettings::class.java)
                     ?: throw IllegalStateException("User data not found")
 

@@ -1,6 +1,5 @@
 package com.ayush.geeksforgeeks.home
 
-import android.telephony.PhoneNumberUtils.formatNumber
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -92,6 +91,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.animation.core.tween
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.graphicsLayer
 
 data class HomeScreenEvent(
@@ -698,7 +698,7 @@ private fun AchievementsSection(context: android.content.Context) {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Divider()
+                HorizontalDivider()
 
                 AchievementItem(
                     icon = Icons.Filled.Star,
@@ -706,9 +706,9 @@ private fun AchievementsSection(context: android.content.Context) {
                     description = "1st place in regional coding competition",
                     date = "February 2024",
                     iconTint = MaterialTheme.colorScheme.tertiary
-                )
+                 )
 
-                Divider()
+                HorizontalDivider()
 
                 AchievementItem(
                     icon = Icons.Filled.Person,
@@ -832,7 +832,7 @@ private fun ActivitySection(activities: List<RecentActivity> , context: android.
                 activities.forEach { activity ->
                     ActivityItem(activity = activity)
                     if (activity != activities.last()) {
-                        Divider(
+                        HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp)
                         )
                     }

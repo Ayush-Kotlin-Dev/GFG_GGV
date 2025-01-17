@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,13 +38,12 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -82,13 +79,13 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import coil.compose.AsyncImage
 import com.ayush.data.datastore.UserSettings
 import com.ayush.data.model.ContributorData
+import com.ayush.geeksforgeeks.profile.components.AboutUsContent
+import com.ayush.geeksforgeeks.profile.components.ContributorsContent
 import com.ayush.geeksforgeeks.profile.profile_detail.ProfileDetailScreen
 import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
-import com.ayush.geeksforgeeks.profile.components.AboutUsContent
-import com.ayush.geeksforgeeks.profile.components.ContributorsContent
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import com.ayush.geeksforgeeks.utils.PulseAnimation
@@ -417,7 +414,7 @@ fun ProfileMenuItem(
             }
         }
     }
-    Divider(color = Color.LightGray, thickness = 0.5.dp)
+    HorizontalDivider(color = Color.LightGray, thickness = 0.5.dp)
 }
 
 @Composable

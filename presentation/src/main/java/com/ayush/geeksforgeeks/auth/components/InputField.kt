@@ -49,7 +49,8 @@ fun InputField(
     focusManager: FocusManager,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
-    readOnly: Boolean = false
+    readOnly: Boolean = false,
+    onImeAction: (() -> Unit)? = null
 ) {
     val backgroundColor = if (readOnly) GFGBackground.copy(alpha = 0.6f) else GFGBackground
     val textColor = if (readOnly) GFGBlack.copy(alpha = 0.6f) else GFGBlack
@@ -116,8 +117,13 @@ fun InputField(
             imeAction = imeAction
         ),
         keyboardActions = KeyboardActions(
-            onNext = { nextFocusRequester?.requestFocus() },
-            onDone = { focusManager.clearFocus() }
+            onNext = { 
+                nextFocusRequester?.requestFocus() 
+            },
+            onDone = { 
+                focusManager.clearFocus()
+                onImeAction?.invoke()  
+            }
         ),
         singleLine = true,
         readOnly = readOnly,

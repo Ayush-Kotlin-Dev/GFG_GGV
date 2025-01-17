@@ -65,6 +65,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.scale
@@ -300,7 +301,7 @@ fun TopContributorsCard(topContributors: List<UserSettings>) {
             topContributors.forEachIndexed { index, contributor ->
                 ContributorItem(contributor, index + 1)
                 if (index < topContributors.lastIndex) {
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
         }

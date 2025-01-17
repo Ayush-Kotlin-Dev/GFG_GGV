@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -38,13 +39,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -61,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -255,6 +250,9 @@ private fun LoginCard(
     var showContactAdminDialog by remember { mutableStateOf(false) }
     var newEmail by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val guestNameFocus = remember { FocusRequester() }
+    val guestEmailFocus = remember { FocusRequester() }
+    val guestPasswordFocus = remember { FocusRequester() }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -323,26 +321,33 @@ private fun LoginCard(
                         value = regularStudentName,
                         onValueChange = onRegularStudentNameChange,
                         label = "Full Name",
-                        focusManager = focusManager,
-                        focusRequester = FocusRequester()
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next,
+                        focusRequester = guestNameFocus,
+                        nextFocusRequester = guestEmailFocus,
+                        focusManager = focusManager
                     )
                     InputField(
                         value = email,
                         onValueChange = onEmailChange,
                         label = "College Email (@ggv.ac.in)",
                         keyboardType = KeyboardType.Email,
-                        focusManager = focusManager,
-                        focusRequester = FocusRequester()
+                        imeAction = ImeAction.Next,
+                        focusRequester = guestEmailFocus,
+                        nextFocusRequester = guestPasswordFocus,
+                        focusManager = focusManager
                     )
                     InputField(
                         value = password,
                         onValueChange = onPasswordChange,
                         label = "Password",
                         isPassword = true,
-                        keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,
-                        focusRequester = FocusRequester(),
-                        focusManager = focusManager
+                        focusRequester = guestPasswordFocus,
+                        focusManager = focusManager,
+                        onImeAction = {
+                            focusManager.clearFocus()
+                        }
                     )
                 } else {
                     ExposedDropdownMenuBox(
@@ -391,7 +396,7 @@ private fun LoginCard(
                                     },
                                 )
                             }
-                            Divider(color = GFGStatusPendingText, thickness = 1.dp)
+                            HorizontalDivider(color = GFGStatusPendingText, thickness = 1.dp)
 
                             DropdownMenuItem(
                                 text = {

@@ -31,11 +31,16 @@ class MainViewModel @Inject constructor(
                         !userSettings.isLoggedIn -> UiState.NotLoggedIn
                         userSettings.role == UserRole.TEAM_LEAD -> UiState.LoggedIn(UserRole.TEAM_LEAD)
                         userSettings.role == UserRole.ADMIN -> UiState.LoggedIn(UserRole.ADMIN)
+                        userSettings.role == UserRole.GUEST -> UiState.LoggedIn(UserRole.GUEST)
                         else -> UiState.LoggedIn(UserRole.MEMBER)
                     }
                 }
-                .catch { _uiState.value = UiState.Error(it.message ?: "Unknown error") }
-                .collect { _uiState.value = it }
+                .catch { error ->
+                    _uiState.value = UiState.Error(error.message ?: "Unknown error")
+                }
+                .collect { state ->
+                    _uiState.value = state
+                }
         }
     }
 
