@@ -5,6 +5,8 @@ import android.util.Log
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.datastore.UserSettings
+import com.ayush.data.model.Team
+import com.ayush.data.model.TeamMember
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
@@ -486,7 +488,7 @@ class AuthRepository @Inject constructor(
         firebaseAuth.currentUser?.reload()?.await()
     }
 
-    private suspend fun <T> retryIO(
+    suspend fun <T> retryIO(
         times: Int = 3,
         initialDelay: Long = 100,
         maxDelay: Long = 1000,
@@ -506,6 +508,4 @@ class AuthRepository @Inject constructor(
         return block()
     }
 
-    data class Team(val id: String, val name: String)
-    data class TeamMember(val name: String, val email: String, val role: UserRole)
 }

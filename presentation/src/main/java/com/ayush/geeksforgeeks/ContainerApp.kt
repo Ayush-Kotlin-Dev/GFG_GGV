@@ -83,9 +83,20 @@ private fun BottomNavigationBar(
         ) {
             TabNavigationItem(HomeTab(isAdmin = userRole == UserRole.TEAM_LEAD || userRole == UserRole.ADMIN))
             TabNavigationItem(DashboardTab(onNavigator = onNavigatorChange))
-            if (userRole != UserRole.ADMIN && userRole != UserRole.GUEST) {
-                TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
+
+            when (userRole) {
+                UserRole.GUEST -> {
+                    TabNavigationItem(MentorshipTab(
+                        onNavigator = onNavigatorChange,
+                        userRole = userRole
+                    ))
+                }
+                UserRole.MEMBER, UserRole.ADMIN -> {
+                    TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
+                }
+                else -> {} 
             }
+
             TabNavigationItem(ProfileTab(onNavigator = onNavigatorChange))
         }
     }

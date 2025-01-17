@@ -18,14 +18,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import com.ayush.data.model.Team
+import com.ayush.data.model.TeamMember
 import com.ayush.data.repository.AuthRepository
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 
 @Composable
 fun ContactAdminDialog(
     currentEmail: String,
-    selectedTeam: AuthRepository.Team?,
-    selectedMember: AuthRepository.TeamMember?,
+    selectedTeam: Team?,
+    selectedMember: TeamMember?,
     onDismiss: () -> Unit
 ) {
     var newEmail by remember { mutableStateOf("") }

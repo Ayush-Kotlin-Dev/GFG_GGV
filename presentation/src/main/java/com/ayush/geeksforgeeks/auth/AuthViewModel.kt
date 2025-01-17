@@ -9,8 +9,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ayush.data.datastore.UserRole
+import com.ayush.data.model.Team
+import com.ayush.data.model.TeamMember
 import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
+import com.ayush.geeksforgeeks.profile.components.CoreTeamMember
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -70,15 +73,15 @@ class AuthViewModel @Inject constructor(
         savedStateHandle["isGuestSignup"] = isGuest
     }
 
-    private val _teams = MutableStateFlow<List<AuthRepository.Team>>(emptyList())
+    private val _teams = MutableStateFlow<List<Team>>(emptyList())
     val teams = _teams.asStateFlow()
 
-    private val _teamMembers = MutableStateFlow<List<AuthRepository.TeamMember>>(emptyList())
+    private val _teamMembers = MutableStateFlow<List<TeamMember>>(emptyList())
     val teamMembers = _teamMembers.asStateFlow()
 
-    var selectedTeam by mutableStateOf<AuthRepository.Team?>(null)
+    var selectedTeam by mutableStateOf<Team?>(null)
         private set
-    var selectedMember by mutableStateOf<AuthRepository.TeamMember?>(null)
+    var selectedMember by mutableStateOf<TeamMember?>(null)
         private set
 
     fun signUpGuest() {
@@ -157,7 +160,7 @@ class AuthViewModel @Inject constructor(
         savedStateHandle["password"] = newPassword
     }
 
-    fun selectTeam(team: AuthRepository.Team) {
+    fun selectTeam(team: Team) {
         selectedTeam = team
         selectedMember = null
         updateEmail("")
@@ -166,7 +169,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun selectMember(member: AuthRepository.TeamMember) {
+    fun selectMember(member: TeamMember) {
         selectedMember = member
         updateEmail(member.email)
     }
@@ -283,7 +286,7 @@ class AuthViewModel @Inject constructor(
     fun login() {
         currentAuthJob?.cancel()
         verificationCheckJob?.cancel()
-    
+
         currentAuthJob = viewModelScope.launch {
             try {
                 if (!validateLoginInput()) return@launch
@@ -292,7 +295,7 @@ class AuthViewModel @Inject constructor(
                 Log.d("AuthViewModel", "Starting login for email: $email")
 
                 val result = authRepository.login(email, password)
-            
+
                 result.fold(
                     onSuccess = { user ->
                         Log.d("AuthViewModel", "Login successful for user: ${user.uid}")

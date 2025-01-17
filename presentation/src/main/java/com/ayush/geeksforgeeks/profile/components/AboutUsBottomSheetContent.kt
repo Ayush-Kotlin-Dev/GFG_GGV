@@ -120,18 +120,18 @@ fun AboutUsContent(onClose: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        val coreTeamMembers = listOf(
-            TeamMember("Anshuman Mishra", "Chairperson", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FAnshu.png?alt=media&token=fed7fceb-c0e2-4de4-8ca7-3db07a496841" , "https://www.linkedin.com/in/anshuman-mishra-03329925a/"),
-            TeamMember("Aditya Raj", "Vice-ChairPerson", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FAditya.png?alt=media&token=0496b041-8b58-46d3-9061-22371321c031" , "https://www.linkedin.com/in/adityaagupta01/"),
-            TeamMember("Piyush keshari", "Event Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FPiyush.png?alt=media&token=e881fc19-9f68-4cc2-a061-ad3f3636727a" , "https://www.linkedin.com/in/piyush-keshri-ba215026b/"),
-            TeamMember("Anuj Vishwakarma", "Technical Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FAnuj.png?alt=media&token=0d99973b-3e7b-4907-976f-9b29b73da299" , "https://www.linkedin.com/in/anuj-vishwakarma1/"),
-            TeamMember("Sakshi Agrawal", "Content Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FSakshi.png?alt=media&token=772dd637-ef17-4f21-9ae8-81d965478edd" , "https://www.linkedin.com/in/agrawalsakshi04/"),
-            TeamMember("Sameer", "GD/Branding Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2Fsameer.png?alt=media&token=7c90b45b-731c-4a89-81ec-77109a1e931c" , "https://www.linkedin.com/in/sameer-1b1b3b1b3/"),
-            TeamMember("Kishan Sahu", "Social Media Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2Fkishan.png?alt=media&token=9ce62c4f-77e2-446d-bea2-eddcdbe77f5c" , "https://www.linkedin.com/in/kishansahu03/"),
-            TeamMember("Chirag shinde", "Marketing and PR Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FChirag.png?alt=media&token=56e52700-ee00-424e-b0b6-9d970fc54f68" , "https://www.linkedin.com/in/chirag-shinde-1b1b3b1b3/"),
+        val coreCoreTeamMembers = listOf(
+            CoreTeamMember("Anshuman Mishra", "Chairperson", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FAnshu.png?alt=media&token=fed7fceb-c0e2-4de4-8ca7-3db07a496841" , "https://www.linkedin.com/in/anshuman-mishra-03329925a/"),
+            CoreTeamMember("Aditya Raj", "Vice-ChairPerson", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FAditya.png?alt=media&token=0496b041-8b58-46d3-9061-22371321c031" , "https://www.linkedin.com/in/adityaagupta01/"),
+            CoreTeamMember("Piyush keshari", "Event Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FPiyush.png?alt=media&token=e881fc19-9f68-4cc2-a061-ad3f3636727a" , "https://www.linkedin.com/in/piyush-keshri-ba215026b/"),
+            CoreTeamMember("Anuj Vishwakarma", "Technical Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FAnuj.png?alt=media&token=0d99973b-3e7b-4907-976f-9b29b73da299" , "https://www.linkedin.com/in/anuj-vishwakarma1/"),
+            CoreTeamMember("Sakshi Agrawal", "Content Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FSakshi.png?alt=media&token=772dd637-ef17-4f21-9ae8-81d965478edd" , "https://www.linkedin.com/in/agrawalsakshi04/"),
+            CoreTeamMember("Sameer", "GD/Branding Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2Fsameer.png?alt=media&token=7c90b45b-731c-4a89-81ec-77109a1e931c" , "https://www.linkedin.com/in/sameer-1b1b3b1b3/"),
+            CoreTeamMember("Kishan Sahu", "Social Media Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2Fkishan.png?alt=media&token=9ce62c4f-77e2-446d-bea2-eddcdbe77f5c" , "https://www.linkedin.com/in/kishansahu03/"),
+            CoreTeamMember("Chirag shinde", "Marketing and PR Head", "https://firebasestorage.googleapis.com/v0/b/geeksforgeeks-98cf0.appspot.com/o/head_image%2FChirag.png?alt=media&token=56e52700-ee00-424e-b0b6-9d970fc54f68" , "https://www.linkedin.com/in/chirag-shinde-1b1b3b1b3/"),
         )
 
-        coreTeamMembers.forEach { member ->
+        coreCoreTeamMembers.forEach { member ->
             TeamMemberSection(member)
         }
 
@@ -146,7 +146,7 @@ fun AboutUsContent(onClose: () -> Unit) {
 }
 
 @Composable
-fun TeamMemberSection(member: TeamMember) {
+fun TeamMemberSection(member: CoreTeamMember) {
     val uriHandler = LocalUriHandler.current
 
     Row(
@@ -189,7 +189,7 @@ fun TeamMemberSection(member: TeamMember) {
     }
 }
 
-data class TeamMember(
+data class CoreTeamMember(
     val name: String,
     val role: String,
     val imageUrl: String,

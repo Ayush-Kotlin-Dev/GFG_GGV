@@ -22,6 +22,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ayush.data.model.Team
+import com.ayush.data.model.TeamMember
 import com.ayush.data.repository.AuthRepository
 import com.ayush.geeksforgeeks.auth.TeamSection
 import com.ayush.geeksforgeeks.ui.theme.GFGBlack
@@ -31,9 +33,9 @@ import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeamDropdown(
-    teams: List<AuthRepository.Team>,
-    selectedTeam: AuthRepository.Team?,
-    onTeamSelect: (AuthRepository.Team) -> Unit,
+    teams: List<Team>,
+    selectedTeam: Team?,
+    onTeamSelect: (Team) -> Unit,
     teamSections: List<TeamSection>,
     modifier: Modifier = Modifier
 ) {
@@ -109,9 +111,9 @@ fun TeamDropdown(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemberDropdown(
-    teamMembers: List<AuthRepository.TeamMember>,
-    selectedMember: AuthRepository.TeamMember?,
-    onMemberSelect: (AuthRepository.TeamMember) -> Unit,
+    teamMembers: List<TeamMember>,
+    selectedMember: TeamMember?,
+    onMemberSelect: (TeamMember) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }

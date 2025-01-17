@@ -73,6 +73,8 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.datastore.UserRole
+import com.ayush.data.model.Team
+import com.ayush.data.model.TeamMember
 import com.ayush.data.repository.AuthRepository
 import com.ayush.data.repository.AuthState
 import com.ayush.geeksforgeeks.ContainerApp
@@ -232,15 +234,15 @@ private fun LoginCard(
     email: String,
     password: String,
     regularStudentName: String,
-    teams: List<AuthRepository.Team>,
-    teamMembers: List<AuthRepository.TeamMember>,
-    selectedTeam: AuthRepository.Team?,
-    selectedMember: AuthRepository.TeamMember?,
+    teams: List<Team>,
+    teamMembers: List<TeamMember>,
+    selectedTeam: Team?,
+    selectedMember: TeamMember?,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onRegularStudentNameChange: (String) -> Unit,
-    onTeamSelect: (AuthRepository.Team) -> Unit,
-    onMemberSelect: (AuthRepository.TeamMember) -> Unit,
+    onTeamSelect: (Team) -> Unit,
+    onMemberSelect: (TeamMember) -> Unit,
     onModeChange: (Boolean) -> Unit,
     focusManager: FocusManager,
     emailFocus: FocusRequester,
