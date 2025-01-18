@@ -1,6 +1,12 @@
 // GuestMentorshipScreen.kt
 package com.ayush.geeksforgeeks.mentorship
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -24,15 +32,44 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.model.Team
 import com.ayush.data.repository.ThreadDetails
 import com.ayush.geeksforgeeks.mentorship.components.CreateThreadDialog
+import com.ayush.geeksforgeeks.mentorship.components.getTeamDescription
 import com.ayush.geeksforgeeks.ui.theme.*
-import com.ayush.geeksforgeeks.utils.DomainUtils
+import com.ayush.geeksforgeeks.utils.SimpleLoadingIndicator
+
+
+@Composable
+fun ErrorState(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = GFGBlack.copy(alpha = 0.7f)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = GFGStatusPendingText
+            )
+        ) {
+            Text("Retry")
+        }
+    }
+}
 
 class GuestMentorshipScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val viewModel: MentorshipViewModel = hiltViewModel()
-        val teams by viewModel.teams.collectAsState()
+        val teamsUiState by viewModel.teamsUiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
 
         Column(
@@ -40,167 +77,292 @@ class GuestMentorshipScreen : Screen {
                 .fillMaxSize()
                 .background(GFGBackground)
         ) {
-            // Header
             TopAppBar(
-                title = { Text("Ask Mentors") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = GFGBackground,
-                    titleContentColor = GFGBlack
-                )
-            )
-
-            // Teams List
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(1.dp)
-            ) {
-                items(teams) { team ->
-                    TeamListItem(
-                        team = team,
-                        onClick = {
-                            navigator.push(TeamThreadsScreen(team))
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TeamListItem(
-    team: Team,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = Color.White
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Team Icon
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = CircleShape,
-                color = GFGStatusPending
-            ) {
-                Text(
-                    text = team.name.take(1),
-                    modifier = Modifier.wrapContentSize(),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = GFGStatusPendingText
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Team Details
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = team.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = GFGBlack
-                )
-                Text(
-                    text = "Ask questions about ${team.name}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = GFGBlack.copy(alpha = 0.6f)
-                )
-            }
-        }
-    }
-}
-
-// TeamThreadsScreen.kt
-class TeamThreadsScreen(private val team: Team) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    override fun Content() {
-        val viewModel: MentorshipViewModel = hiltViewModel()
-        val threads by viewModel.threads.collectAsState()
-        val isLoading by viewModel.isLoading.collectAsState()
-        val navigator = LocalNavigator.currentOrThrow
-        var showCreateDialog by remember { mutableStateOf(false) }
-
-        LaunchedEffect(team) {
-            viewModel.selectTeam(team)
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(GFGBackground)
-        ) {
-            TopAppBar(
-                title = { Text(team.name) },
-                navigationIcon = {
-                    IconButton(onClick = { navigator.pop() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                title = {
+                    Column(
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        Text(
+                            "Ask Mentors",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            "Get guidance from experienced developers and mentors",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GFGBlack.copy(alpha = 0.6f)
+                        )
                     }
                 },
+                modifier = Modifier.padding(top = 8.dp),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = GFGBackground,
                     titleContentColor = GFGBlack
                 )
             )
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (threads.isEmpty()) {
-                    EmptyState(message = "No discussions yet\nBe the first to ask a question!")
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(16.dp)
-                    ) {
-                        items(threads) { thread ->
-                            ThreadItem(
-                                thread = thread,
-                                team = team,
-                                onClick = {
-                                    navigator.push(ThreadDiscussionScreen(team, thread.id))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+            ) {
+                when (teamsUiState) {
+                    TeamsUiState.Loading -> SimpleLoadingIndicator()
+                    is TeamsUiState.Error -> ErrorState(
+                        message = (teamsUiState as TeamsUiState.Error).message,
+                        onRetry = {
+                            viewModel.clearError()
+                            viewModel.loadTeams()
+                        }
+                    )
+                    is TeamsUiState.Success -> {
+                        val teams = (teamsUiState as TeamsUiState.Success).teams
+                        if (teams.isEmpty()) {
+                            EmptyState("No teams available yet")
+                        } else {
+                            TeamsContent(
+                                teams = teams,
+                                onTeamClick = { team ->
+                                    navigator.push(TeamThreadsScreen(team.id, team.name))
                                 }
                             )
                         }
                     }
                 }
+            }
+        }
+    }
 
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(16.dp),
-                    containerColor = GFGStatusPendingText,
-                    contentColor = Color.White
+    @Composable
+    private fun TeamsContent(
+        teams: List<Team>,
+        onTeamClick: (Team) -> Unit
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 8.dp), // Add only vertical padding
+            verticalArrangement = Arrangement.spacedBy(12.dp) // Increase spacing between items
+        ) {
+            items(
+                items = teams,
+                key = { it.id }
+            ) { team ->
+                TeamCard(
+                    team = team,
+                    onClick = { onTeamClick(team) }
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun TeamCard(
+        team: Team,
+        onClick: () -> Unit
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 2.dp
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Enhanced Team Icon
+                Surface(
+                    modifier = Modifier.size(56.dp),
+                    shape = CircleShape,
+                    color = GFGStatusPendingText.copy(alpha = 0.1f),
+                    border = BorderStroke(
+                        width = 2.dp,
+                        color = GFGStatusPendingText
+                    )
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Ask Question")
+                    Text(
+                        text = team.name.take(1),
+                        modifier = Modifier.wrapContentSize(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = GFGStatusPendingText
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = team.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = GFGBlack
+                    )
+                    Text(
+                        text = getTeamDescription(team.name),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GFGBlack.copy(alpha = 0.6f)
+                    )
+                }
+
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = GFGStatusPendingText
+                )
+            }
+        }
+    }
+}
+
+data class TeamThreadsScreen(
+    private val teamId: String,
+    private val teamName: String
+) : Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        val viewModel: MentorshipViewModel = hiltViewModel()
+        val threadsUiState by viewModel.threadsUiState.collectAsState()
+        val createThreadUiState by viewModel.createThreadUiState.collectAsState()
+        var showCreateDialog by remember { mutableStateOf(false) }
+
+        LaunchedEffect(teamId) {
+            viewModel.selectTeam(Team(id = teamId, name = teamName))
+        }
+
+        LaunchedEffect(createThreadUiState.isSuccess) {
+            if (createThreadUiState.isSuccess) {
+                showCreateDialog = false
+                viewModel.resetCreateThreadState()
+            }
+        }
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(teamName)
+                            Text(
+                                "Discussion Forum",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = GFGBlack.copy(alpha = 0.6f)
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navigator.pop() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = GFGBackground,
+                        titleContentColor = GFGBlack
+                    )
+                )
+            },
+            floatingActionButton = {
+                AnimatedVisibility(
+                    visible = threadsUiState !is ThreadsUiState.Loading,
+                    enter = fadeIn() + scaleIn(),
+                    exit = fadeOut() + scaleOut()
+                ) {
+                    FloatingActionButton(
+                        onClick = { showCreateDialog = true },
+                        containerColor = GFGStatusPendingText,
+                        contentColor = Color.White
+                    ) {
+                        Icon(Icons.Default.Add, "Ask Question")
+                    }
+                }
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                when (threadsUiState) {
+                    ThreadsUiState.Loading -> SimpleLoadingIndicator()
+                    is ThreadsUiState.Error -> ErrorState(
+                        message = (threadsUiState as ThreadsUiState.Error).message,
+                        onRetry = {
+                            viewModel.clearError()
+                            viewModel.selectTeam(Team(id = teamId, name = teamName))
+                        }
+                    )
+                    is ThreadsUiState.Success -> {
+                        val threads = (threadsUiState as ThreadsUiState.Success).threads
+                        if (threads.isEmpty()) {
+                            EmptyState("Start the first discussion\nin this team!")
+                        } else {
+                            ThreadsContent(
+                                threads = threads,
+                                onThreadClick = { threadId ->
+                                    navigator.push(ThreadDiscussionScreen(teamId, teamName, threadId))
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
 
+        // Inside TeamThreadsScreen Content
         if (showCreateDialog) {
             CreateThreadDialog(
-                onDismiss = { showCreateDialog = false },
+                onDismiss = {
+                    showCreateDialog = false
+                    viewModel.resetCreateThreadState()
+                },
                 onSubmit = { title, message ->
                     viewModel.createThread(title, message)
-                    showCreateDialog = false
                 },
-                isLoading = isLoading
+                isLoading = createThreadUiState.isLoading,
+                error = createThreadUiState.error
             )
+        }
+
+    }
+}
+
+@Composable
+private fun ThreadsContent(
+    threads: List<ThreadDetails>,
+    onThreadClick: (String) -> Unit
+) {
+    if (threads.isEmpty()) {
+        EmptyState("Start the first discussion\nin this team!")
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(
+                items = threads,
+                key = { it.id }
+            ) { thread ->
+                ThreadItem(
+                    thread = thread,
+                    onClick = { onThreadClick(thread.id) }
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun ThreadItem(
-    thread: ThreadDetails,  // Note: Using ThreadDetails instead of MentorshipThread
-    team: Team,
+    thread: ThreadDetails,
     onClick: () -> Unit
 ) {
     Card(
@@ -228,44 +390,32 @@ private fun ThreadItem(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "By ${thread.authorName}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = GFGBlack.copy(alpha = 0.5f)
-                    )
-                    if (!thread.isEnabled) {
-                        Surface(
-                            color = GFGStatusPending,
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Text(
-                                text = "Pending",
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = GFGStatusPendingText
-                            )
-                        }
+                Text(
+                    text = "By ${thread.authorName}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GFGBlack.copy(alpha = 0.5f)
+                )
+                if (!thread.isEnabled) {
+                    Surface(
+                        color = GFGStatusPending,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text(
+                            text = "Pending",
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GFGStatusPendingText
+                        )
                     }
                 }
-                Text(
-                    text = "${thread.repliesCount} replies",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = GFGStatusPendingText
-                )
             }
         }
     }
 }
 
-// EmptyState.kt
 @Composable
 private fun EmptyState(message: String) {
     Box(

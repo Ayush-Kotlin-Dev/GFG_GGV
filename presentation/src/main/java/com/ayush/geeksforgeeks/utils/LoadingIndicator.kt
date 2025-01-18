@@ -1,7 +1,5 @@
 package com.ayush.geeksforgeeks.utils
 
-import androidx.compose.runtime.Composable
-
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -15,22 +13,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ayush.geeksforgeeks.R
+import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
+
 @Composable
 fun LoadingIndicator() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clickable(enabled = false, onClick = {}) 
-        ,
+            .clickable(enabled = false, onClick = {}),
         contentAlignment = Alignment.Center
     ) {
         // Semi-transparent background scrim
@@ -63,12 +63,18 @@ fun LoadingIndicator() {
 
 @Composable
 fun SimpleLoadingIndicator(
-    color: Color = MaterialTheme.colorScheme.onPrimary
+    modifier: Modifier = Modifier,
+    color: Color = GFGStatusPendingText,
+    strokeWidth: Dp? = null,
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(color = color)
+        CircularProgressIndicator(
+            modifier = modifier,
+            color = color,
+            strokeWidth = strokeWidth ?: 4.dp
+        )
     }
 }

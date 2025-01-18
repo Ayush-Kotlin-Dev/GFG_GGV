@@ -17,15 +17,12 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import androidx.annotation.Keep
 import com.ayush.data.datastore.UserRole
-import com.google.firebase.encoders.annotations.Encodable.Field
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.PropertyName
 import com.google.firebase.firestore.snapshots
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Transient
 
 class MentorshipRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
@@ -169,7 +166,6 @@ class MentorshipRepository @Inject constructor(
             )
 
             retryIO {
-                // Add message
                 val messageRef = firestore.collection(MENTORSHIP_COLLECTION)
                     .document(teamId)
                     .collection(THREADS_COLLECTION)
@@ -178,21 +174,25 @@ class MentorshipRepository @Inject constructor(
                     .add(threadMessage)
                     .await()
 
-                // Update thread details atomically
                 val batch = firestore.batch()
-                
-                // Update thread document
+
+
                 val threadRef = firestore.collection(MENTORSHIP_COLLECTION)
                     .document(teamId)
                     .collection(THREADS_COLLECTION)
                     .document(threadId)
 
-                batch.update(threadRef, mapOf(
-                    "id" to threadId,  
+                val updates = mutableMapOf(
+                    "id" to threadId,
                     "repliesCount" to FieldValue.increment(1),
-                    "lastMessageAt" to threadMessage.createdAt,
-                    "isEnabled" to if (isTeamLead) true else FieldValue.delete()  
-                ))
+                    "lastMessageAt" to threadMessage.createdAt
+                )
+
+                if (isTeamLead) {
+                    updates["isEnabled"] = true
+                }
+
+                batch.update(threadRef, updates)
 
                 // Execute batch
                 batch.commit().await()

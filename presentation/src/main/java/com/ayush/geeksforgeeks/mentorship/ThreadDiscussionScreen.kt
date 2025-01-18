@@ -27,8 +27,9 @@ import com.ayush.data.repository.ThreadDetails
 import com.ayush.data.repository.ThreadMessage
 import com.ayush.geeksforgeeks.ui.theme.*
 
-class ThreadDiscussionScreen(
-    private val team: Team,
+data class ThreadDiscussionScreen(
+    private val teamId : String,
+    private val teamName : String,
     private val threadId: String
 ) : Screen {
     @Composable
@@ -38,7 +39,7 @@ class ThreadDiscussionScreen(
 
         LaunchedEffect(currentUser) {
             currentUser?.let {
-                viewModel.loadThread(team.id, threadId)
+                viewModel.loadThread(teamId, threadId)
             }
         }
 
@@ -52,7 +53,7 @@ class ThreadDiscussionScreen(
             ) {
                 ThreadDiscussionContent(
                     viewModel = viewModel,
-                    team = team,
+                    team = Team(teamId,teamName),
                     threadId = threadId,
                     isTeamLead = settings.role == UserRole.TEAM_LEAD
                 )
@@ -200,7 +201,7 @@ private fun DiscussionPost(
                             modifier = Modifier
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                                 .then(
-                                    if (isTeamLead || !isTeamLead) {
+                                    if (isTeamLead || !isTeamLead) { //TODO its for testing i will change it later
                                         Modifier.clickable { onThreadEnableClick.invoke() }
                                     } else {
                                         Modifier

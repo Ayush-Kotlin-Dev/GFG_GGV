@@ -399,7 +399,7 @@ fun ProfileMenuItem(
                 modifier = Modifier.weight(1f)
             )
             if (isLoading) {
-                CircularProgressIndicator(
+                SimpleLoadingIndicator(
                     modifier = Modifier.size(20.dp),
                     color = Color(0xFF4CAF50),
                     strokeWidth = 2.dp

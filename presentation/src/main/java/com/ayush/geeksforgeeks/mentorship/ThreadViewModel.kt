@@ -121,8 +121,8 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
-    fun enableThread() {
-        viewModelScope.launch {
+    fun enableThread() { //TODO it will be only for LEAD side , guest cant enable thread they just post their questions/doubts with title and description
+        viewModelScope.launch { // Made it just for testing
             try {
                 _isLoading.value = true
                 _error.value = null

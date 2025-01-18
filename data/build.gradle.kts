@@ -1,3 +1,4 @@
+//This is build.gradle.kts for data Module
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
