@@ -1,11 +1,16 @@
 package com.ayush.geeksforgeeks.mentorship.components
 
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.ayush.geeksforgeeks.ui.theme.GFGBlack
+import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 import kotlinx.coroutines.delay
 
@@ -29,22 +34,40 @@ fun CreateThreadDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ask a Question") },
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    "Ask a Question",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = GFGBlack
+                )
+                Text(
+                    "Share your doubts with mentors",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = GFGBlack.copy(alpha = 0.6f)
+                )
+            }
+        },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (showError && error != null) {
                     Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = MaterialTheme.shapes.small
+                        color = GFGStatusPending.copy(alpha = 0.1f),
+                        shape = MaterialTheme.shapes.small,
+                        border = BorderStroke(1.dp, GFGStatusPendingText.copy(alpha = 0.5f))
                     ) {
                         Text(
                             text = error,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(8.dp)
+                            color = GFGStatusPendingText,
+                            modifier = Modifier.padding(12.dp)
                         )
                     }
                 }
@@ -53,13 +76,22 @@ fun CreateThreadDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text("Question Title") },
+                    placeholder = { Text("Enter a clear, specific title") },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading,
                     singleLine = true,
                     isError = title.isBlank() && title.length > 0,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = GFGStatusPendingText,
+                        focusedLabelColor = GFGStatusPendingText,
+                        cursorColor = GFGStatusPendingText
+                    ),
                     supportingText = {
                         if (title.isBlank() && title.length > 0) {
-                            Text("Title cannot be empty")
+                            Text(
+                                "Title cannot be empty",
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 )
@@ -68,14 +100,23 @@ fun CreateThreadDialog(
                     value = message,
                     onValueChange = { message = it },
                     label = { Text("Description") },
+                    placeholder = { Text("Explain your question in detail") },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading,
                     minLines = 3,
                     maxLines = 5,
                     isError = message.isBlank() && message.length > 0,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = GFGStatusPendingText,
+                        focusedLabelColor = GFGStatusPendingText,
+                        cursorColor = GFGStatusPendingText
+                    ),
                     supportingText = {
                         if (message.isBlank() && message.length > 0) {
-                            Text("Description cannot be empty")
+                            Text(
+                                "Description cannot be empty",
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 )
@@ -86,25 +127,36 @@ fun CreateThreadDialog(
                 onClick = { onSubmit(title, message) },
                 enabled = title.isNotBlank() && message.isNotBlank() && !isLoading,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = GFGStatusPendingText
+                    containerColor = GFGStatusPendingText,
+                    contentColor = Color.White,
+                    disabledContainerColor = GFGStatusPendingText.copy(alpha = 0.3f)
                 ),
-                modifier = Modifier.widthIn(min = 88.dp)
+                modifier = Modifier.widthIn(min = 88.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Submit")
+                AnimatedContent(
+                    targetState = isLoading,
+                    label = "loading_button"
+                ) { loading ->
+                    if (loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Submit Question")
+                    }
                 }
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = GFGStatusPendingText
+                )
             ) {
                 Text("Cancel")
             }

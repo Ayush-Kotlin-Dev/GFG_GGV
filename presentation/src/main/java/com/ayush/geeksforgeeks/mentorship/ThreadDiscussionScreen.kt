@@ -1,5 +1,10 @@
 package com.ayush.geeksforgeeks.mentorship
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +32,7 @@ import com.ayush.data.model.Team
 import com.ayush.data.repository.ThreadDetails
 import com.ayush.data.repository.ThreadMessage
 import com.ayush.geeksforgeeks.ui.theme.*
+import kotlinx.coroutines.launch
 
 data class ThreadDiscussionScreen(
     private val teamId : String,
@@ -76,10 +83,11 @@ private fun ThreadDiscussionContent(
     val navigator = LocalNavigator.currentOrThrow
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
-    // Scroll to bottom when new message arrives
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
+        if (messages.isNotEmpty() &&
+            (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= messages.size - 2) {
             listState.animateScrollToItem(messages.size - 1)
         }
     }
@@ -89,33 +97,94 @@ private fun ThreadDiscussionContent(
             .fillMaxSize()
             .background(GFGBackground)
     ) {
-        // Header
         TopAppBar(
-            title = { Text(team.name) },
+            title = {
+                Column {
+                    Text(
+                        text = team.name,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = threadDetails?.title ?: "Loading...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GFGBlack.copy(alpha = 0.6f)
+                    )
+                }
+            },
             navigationIcon = {
                 IconButton(onClick = { navigator.pop() }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
-            }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = GFGBackground,
+                titleContentColor = GFGBlack
+            )
         )
 
-        // Messages
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            state = listState,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .background(Color(0xFFF8F9FA))
         ) {
-            // The original thread/discussion post
-            item {
-                threadDetails?.let { details ->
-                    DiscussionPost(details, isTeamLead, onThreadEnableClick = { viewModel.enableThread() })
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                item {
+                    threadDetails?.let { details ->
+                        DiscussionPost(
+                            details,
+                            isTeamLead,
+                            onThreadEnableClick = { viewModel.enableThread() }
+                        )
+                    }
+                }
+
+                items(
+                    items = messages,
+                    key = { it.id }
+                ) { message ->
+                    MessageItem(message)
+                }
+
+                item { Spacer(modifier = Modifier.height(60.dp)) }
+            }
+
+            // Calculate if we should show the scroll-to-bottom FAB
+            val showScrollToBottom by remember {
+                derivedStateOf {
+                    val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                    val totalItems = messages.size + 1 // +1 for the DiscussionPost item
+                    messages.isNotEmpty() && lastVisibleItem < totalItems - 2 // -2 to account for spacer and better threshold
                 }
             }
 
-            // Messages
-            items(messages) { message ->
-                MessageItem(message)
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showScrollToBottom,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        scope.launch {
+                            listState.animateScrollToItem(messages.size - 1)
+                        }
+                    },
+                    containerColor = GFGStatusPendingText,
+                    elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ArrowDownward,
+                        contentDescription = "Scroll to bottom",
+                        tint = Color.White
+                    )
+                }
             }
         }
 
@@ -130,17 +199,28 @@ private fun ThreadDiscussionContent(
                 isLoading = isLoading
             )
         } else {
-            // Show disabled state message
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = GFGStatusPending.copy(alpha = 0.1f)
+                color = GFGStatusPending.copy(alpha = 0.1f),
+                tonalElevation = 2.dp
             ) {
-                Text(
-                    text = "Waiting for mentor to start the discussion",
+                Row(
                     modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = GFGStatusPendingText
-                )
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = GFGStatusPendingText,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Waiting for mentor to start the discussion",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GFGStatusPendingText
+                    )
+                }
             }
         }
     }
@@ -163,7 +243,6 @@ private fun DiscussionPost(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Title
             Text(
                 text = threadDetails.title,
                 style = MaterialTheme.typography.titleLarge,
@@ -171,7 +250,6 @@ private fun DiscussionPost(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Main message/question
             Text(
                 text = threadDetails.message,
                 style = MaterialTheme.typography.bodyLarge,
@@ -179,7 +257,6 @@ private fun DiscussionPost(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Author info and status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -221,9 +298,9 @@ private fun DiscussionPost(
 private fun MessageItem(message: ThreadMessage) {
     val isCurrentUser = message.senderId == LocalUserProvider.current.userId
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isCurrentUser) Arrangement.End else Arrangement.Start
+        horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
         Card(
             modifier = Modifier.widthIn(max = 280.dp),
@@ -235,7 +312,7 @@ private fun MessageItem(message: ThreadMessage) {
             )
         ) {
             Column(
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(12.dp)
             ) {
                 Text(
                     text = message.message,
@@ -263,36 +340,49 @@ private fun ChatInput(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        tonalElevation = 2.dp
+        tonalElevation = 2.dp,
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom
         ) {
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Type a message") },
-                maxLines = 4
+                placeholder = { Text("Type your message...") },
+                maxLines = 4,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = GFGStatusPendingText,
+                    focusedLabelColor = GFGStatusPendingText,
+                    cursorColor = GFGStatusPendingText
+                )
             )
 
-            IconButton(
+            Spacer(modifier = Modifier.width(8.dp))
+
+            FilledIconButton(
                 onClick = onSend,
-                enabled = value.isNotBlank() && !isLoading
+                enabled = value.isNotBlank() && !isLoading,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = GFGStatusPendingText,
+                    contentColor = Color.White
+                )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = GFGStatusPendingText
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
                     )
                 } else {
                     Icon(
                         Icons.Default.Send,
                         contentDescription = "Send",
-                        tint = GFGStatusPendingText
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
