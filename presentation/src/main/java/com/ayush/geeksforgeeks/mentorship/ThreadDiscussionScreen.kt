@@ -1,5 +1,6 @@
 package com.ayush.geeksforgeeks.mentorship
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -24,6 +25,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -137,6 +141,7 @@ private fun ThreadDiscussionContent(
                 titleContentColor = GFGBlack
             )
         )
+        val context = LocalContext.current
 
         Box(
             modifier = Modifier
@@ -163,7 +168,13 @@ private fun ThreadDiscussionContent(
                     items = messages,
                     key = { it.id }
                 ) { message ->
-                    MessageItem(message)
+                    MessageItem(
+                        message = message,
+                        onDeleteMessage = { messageId ->
+//                            viewModel.deleteMessage(messageId)
+                            Toast.makeText(context, "Deleting message $messageId", Toast.LENGTH_SHORT).show()
+                        }
+                    )
                 }
 
                 item { Spacer(modifier = Modifier.height(60.dp)) }
@@ -309,89 +320,111 @@ private fun DiscussionPost(
         }
     }
 }
+
+data class MessageItemState(
+    val isOptionsVisible: Boolean = false,
+    val isDeleteDialogVisible: Boolean = false
+)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MessageItem(
     message: ThreadMessage,
+    onDeleteMessage: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isCurrentUser = message.senderId == LocalUserProvider.current.userId
     val haptics = LocalHapticFeedback.current
     val clipboardManager = LocalClipboardManager.current
-    var showOptions by remember { mutableStateOf(false) }
+    val state = remember { mutableStateOf(MessageItemState()) }
+    val interactionSource = remember { MutableInteractionSource() }
+
+    val containerColor = when {
+        isCurrentUser -> GFGPrimary.copy(alpha = 0.15f)
+        message.isTeamLead -> GFGSecondary.copy(alpha = 0.12f)
+        else -> GFGCardBackground
+    }
+
+    val contentColor = when {
+        isCurrentUser -> GFGTextPrimary
+        message.isTeamLead -> GFGTextPrimary
+        else -> GFGTextPrimary
+    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                start = if (isCurrentUser) 16.dp else 0.dp,
-                end = if (isCurrentUser) 0.dp else 16.dp,
-
+                start = if (isCurrentUser) 64.dp else 8.dp,
+                end = if (isCurrentUser) 8.dp else 64.dp,
+                top = 4.dp,
+                bottom = 4.dp
             ),
         horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
         Box {
             Card(
                 modifier = Modifier
-                    .widthIn(min = 100.dp) // Minimum width
+                    .widthIn(max = 280.dp)
                     .combinedClickable(
-                        interactionSource = remember { MutableInteractionSource() },
+                        interactionSource = interactionSource,
                         indication = null,
                         onLongClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            showOptions = true
+                            state.value = state.value.copy(isOptionsVisible = true)
                         },
                         onClick = {}
                     ),
                 shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (isCurrentUser) 16.dp else 4.dp,
-                    bottomEnd = if (isCurrentUser) 4.dp else 16.dp
+                    topStart = 20.dp,
+                    topEnd = 20.dp,
+                    bottomStart = if (isCurrentUser) 20.dp else 4.dp,
+                    bottomEnd = if (isCurrentUser) 4.dp else 20.dp
                 ),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isCurrentUser)
-                        GFGStatusPendingText.copy(alpha = 0.1f)
-                    else
-                        MaterialTheme.colorScheme.surface
+                    containerColor = containerColor,
+                    contentColor = contentColor
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
-                    modifier = Modifier
-                        .defaultMinSize(minWidth = 80.dp) // Ensures minimum content width
-                        .padding(
-                            horizontal = 12.dp,
-                            vertical = 8.dp
-                        )
+                    modifier = Modifier.padding(
+                        horizontal = 16.dp,
+                        vertical = 12.dp
+                    )
                 ) {
                     SelectionContainer {
                         Text(
                             text = message.message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = contentColor,
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
                     }
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = if (isCurrentUser) 
+                            Arrangement.End else Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (isCurrentUser) {
-                            MessageTime(message.createdAt)
+                            MessageTime(
+                                message.createdAt,
+                                contentColor.copy(alpha = 0.7f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             MessageSender(
                                 name = message.senderName,
-                                isTeamLead = message.isTeamLead
+                                isTeamLead = message.isTeamLead,
+                                contentColor = contentColor.copy(alpha = 0.7f)
                             )
                         } else {
                             MessageSender(
                                 name = message.senderName,
                                 isTeamLead = message.isTeamLead
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
                             MessageTime(message.createdAt)
                         }
                     }
@@ -399,74 +432,104 @@ private fun MessageItem(
             }
 
             DropdownMenu(
-                expanded = showOptions,
-                onDismissRequest = { showOptions = false },
-                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                expanded = state.value.isOptionsVisible,
+                onDismissRequest = { 
+                    state.value = state.value.copy(isOptionsVisible = false) 
+                },
+                modifier = Modifier.background(
+                    MaterialTheme.colorScheme.surface,
+                    MaterialTheme.shapes.medium
+                )
             ) {
                 DropdownMenuItem(
-                    text = {
-                        Text(
-                            "Copy",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    },
+                    text = { Text("Copy") },
                     onClick = {
                         clipboardManager.setText(AnnotatedString(message.message))
-                        showOptions = false
+                        state.value = state.value.copy(isOptionsVisible = false)
                     },
                     leadingIcon = {
                         Icon(
-                            Icons.Default.ContentCopy,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface
+                            Icons.Rounded.ContentCopy,
+                            contentDescription = null
                         )
                     }
                 )
                 if (isCurrentUser) {
                     DropdownMenuItem(
-                        text = {
-                            Text(
-                                "Delete",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        },
+                        text = { Text("Delete") },
                         onClick = {
-                            // TODO: Implement delete functionality
-                            showOptions = false
+                            state.value = state.value.copy(
+                                isOptionsVisible = false,
+                                isDeleteDialogVisible = true
+                            )
                         },
                         leadingIcon = {
                             Icon(
-                                Icons.Default.Delete,
+                                Icons.Rounded.Delete,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error
                             )
-                        }
+                        },
+                        colors = MenuDefaults.itemColors(
+                            textColor = MaterialTheme.colorScheme.error
+                        )
                     )
                 }
+            }
+
+            // Delete Confirmation Dialog
+            if (state.value.isDeleteDialogVisible) {
+                AlertDialog(
+                    onDismissRequest = {
+                        state.value = state.value.copy(isDeleteDialogVisible = false)
+                    },
+                    title = { Text("Delete Message") },
+                    text = { Text("Are you sure you want to delete this message?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                onDeleteMessage(message.id)
+                                state.value = state.value.copy(isDeleteDialogVisible = false)
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Delete")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                state.value = state.value.copy(isDeleteDialogVisible = false)
+                            }
+                        ) {
+                            Text("Cancel")
+                        }
+                    }
+                )
             }
         }
     }
 }
-
 @Composable
 private fun MessageSender(
     name: String,
-    isTeamLead: Boolean
+    isTeamLead: Boolean,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
 ) {
     Text(
-        text = name,
+        text = if (isTeamLead) "$name 👨‍🏫 | Mentor" else "$name 👤",
         style = MaterialTheme.typography.labelSmall,
-        color = if (isTeamLead)
-            GFGStatusPendingText
-        else
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        color = if (isTeamLead) GFGSecondary else contentColor
     )
 }
 
 @Composable
-private fun MessageTime(timestamp: Long) {
+private fun MessageTime(
+    timestamp: Long,
+    color: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+) {
     val time = remember(timestamp) {
         SimpleDateFormat("h:mm a", Locale.getDefault())
             .format(timestamp)
@@ -476,9 +539,10 @@ private fun MessageTime(timestamp: Long) {
     Text(
         text = time,
         style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+        color = color
     )
 }
+
 @Composable
 private fun ChatInput(
     value: String,
@@ -495,7 +559,7 @@ private fun ChatInput(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
                 value = value,

@@ -235,7 +235,8 @@ data class ThreadMessage(
     val senderName: String = "",
     val message: String = "",
     val createdAt: Long = 0,
-    val isTeamLead: Boolean = false
+    @get:PropertyName("isTeamLead") @set:PropertyName("isTeamLead")
+    var isTeamLead: Boolean = false
 )
 @Keep
 @Serializable

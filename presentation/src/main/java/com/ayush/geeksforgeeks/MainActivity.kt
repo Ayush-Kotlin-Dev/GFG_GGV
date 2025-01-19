@@ -41,9 +41,9 @@ import javax.inject.Inject
  *    - Implements Jetpack Compose UI
  *    - Contains ViewModels and UI states
  *    - Handles user interactions
- *
- * Note: Domain layer was intentionally omitted since this is a small,
- * fast-build application. The business logic is minimal and handled
+ * 
+ * Note: Domain layer was intentionally omitted since this is a small, 
+ * fast-build application. The business logic is minimal and handled 
  * directly between data and presentation layers.
  */
 
@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val splashScreen = installSplashScreen()
+        val splashScreen = splashScreenProvider.provideSplashScreen(this)
 
         requestRequiredPermissions()
 
@@ -71,27 +71,27 @@ class MainActivity : ComponentActivity() {
                 val viewModel: MainViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
 
-                if (uiState !is MainViewModel.UiState.Loading) {
-                    splashScreen.setKeepOnScreenCondition { false }
+                LaunchedEffect(uiState) {
+                    if (uiState !is MainViewModel.UiState.Loading) {
+                        splashScreen.setKeepOnScreenCondition { false }
+                    }
                 }
 
                 if (intent?.action == "UPDATE_APP") {
                     val downloadUrl = intent.getStringExtra("downloadUrl")
                     if (!downloadUrl.isNullOrEmpty()) {
-                        // Show your existing update dialog
                         Navigator(screen = SettingsScreen())
                     }
                 }
+
                 when (val state = uiState) {
                     MainViewModel.UiState.Loading -> {
-                        LoadingIndicator()
+                        // The splash screen will be shown
                     }
                     MainViewModel.UiState.NotLoggedIn -> {
                         Navigator(screen = AuthScreen())
                     }
                     is MainViewModel.UiState.LoggedIn -> {
-//                        Navigator(screen = SettingsScreen())
-
                         Navigator(screen = ContainerApp(userRole = state.userRole))
                     }
                     is MainViewModel.UiState.Error -> {
@@ -120,12 +120,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Filter only non-granted permissions
         val permissionsToRequest = permissions.filter {
             checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
         }
 
-        // Request permissions one by one since RequestPermission() only handles single permissions
         permissionsToRequest.forEach { permission ->
             requestPermissionLauncher.launch(arrayOf(permission))
         }
