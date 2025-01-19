@@ -5,22 +5,35 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -33,6 +46,9 @@ import com.ayush.data.repository.ThreadDetails
 import com.ayush.data.repository.ThreadMessage
 import com.ayush.geeksforgeeks.ui.theme.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 data class ThreadDiscussionScreen(
     private val teamId : String,
@@ -293,44 +309,176 @@ private fun DiscussionPost(
         }
     }
 }
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MessageItem(message: ThreadMessage) {
+private fun MessageItem(
+    message: ThreadMessage,
+    modifier: Modifier = Modifier
+) {
     val isCurrentUser = message.senderId == LocalUserProvider.current.userId
+    val haptics = LocalHapticFeedback.current
+    val clipboardManager = LocalClipboardManager.current
+    var showOptions by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(
+                start = if (isCurrentUser) 16.dp else 0.dp,
+                end = if (isCurrentUser) 0.dp else 16.dp,
+
+            ),
         horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
-        Card(
-            modifier = Modifier.widthIn(max = 280.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (isCurrentUser)
-                    GFGStatusPendingText.copy(alpha = 0.1f)
-                else
-                    Color.White
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
-                Text(
-                    text = message.message,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = message.senderName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (message.isTeamLead)
-                        GFGStatusPendingText
+        Box {
+            Card(
+                modifier = Modifier
+                    .widthIn(min = 100.dp) // Minimum width
+                    .combinedClickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onLongClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            showOptions = true
+                        },
+                        onClick = {}
+                    ),
+                shape = RoundedCornerShape(
+                    topStart = 16.dp,
+                    topEnd = 16.dp,
+                    bottomStart = if (isCurrentUser) 16.dp else 4.dp,
+                    bottomEnd = if (isCurrentUser) 4.dp else 16.dp
+                ),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isCurrentUser)
+                        GFGStatusPendingText.copy(alpha = 0.1f)
                     else
-                        GFGBlack.copy(alpha = 0.6f)
+                        MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 80.dp) // Ensures minimum content width
+                        .padding(
+                            horizontal = 12.dp,
+                            vertical = 8.dp
+                        )
+                ) {
+                    SelectionContainer {
+                        Text(
+                            text = message.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (isCurrentUser) {
+                            MessageTime(message.createdAt)
+                            MessageSender(
+                                name = message.senderName,
+                                isTeamLead = message.isTeamLead
+                            )
+                        } else {
+                            MessageSender(
+                                name = message.senderName,
+                                isTeamLead = message.isTeamLead
+                            )
+                            MessageTime(message.createdAt)
+                        }
+                    }
+                }
+            }
+
+            DropdownMenu(
+                expanded = showOptions,
+                onDismissRequest = { showOptions = false },
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "Copy",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(message.message))
+                        showOptions = false
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 )
+                if (isCurrentUser) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Delete",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        },
+                        onClick = {
+                            // TODO: Implement delete functionality
+                            showOptions = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
             }
         }
     }
 }
 
+@Composable
+private fun MessageSender(
+    name: String,
+    isTeamLead: Boolean
+) {
+    Text(
+        text = name,
+        style = MaterialTheme.typography.labelSmall,
+        color = if (isTeamLead)
+            GFGStatusPendingText
+        else
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    )
+}
+
+@Composable
+private fun MessageTime(timestamp: Long) {
+    val time = remember(timestamp) {
+        SimpleDateFormat("h:mm a", Locale.getDefault())
+            .format(timestamp)
+            .lowercase()
+    }
+
+    Text(
+        text = time,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+    )
+}
 @Composable
 private fun ChatInput(
     value: String,
