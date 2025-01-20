@@ -136,6 +136,9 @@ class MentorThreadsScreen(
                                         },
                                         onEnableThread = {
                                             viewModel.enableThread(thread.id)
+                                        },
+                                        onDeleteThread = {
+                                            viewModel.deleteThread(thread.id)
                                         }
                                     )
                                 }
@@ -185,6 +188,9 @@ class MentorThreadsScreen(
                                         },
                                         onEnableThread = {
                                             viewModel.enableThread(thread.id)
+                                        },
+                                        onDeleteThread = {
+                                            viewModel.deleteThread(thread.id)
                                         }
                                     )
                                 }

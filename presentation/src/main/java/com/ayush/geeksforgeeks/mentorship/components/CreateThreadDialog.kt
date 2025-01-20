@@ -25,6 +25,17 @@ fun CreateThreadDialog(
     var message by remember { mutableStateOf("") }
     var showError by remember(error) { mutableStateOf(error != null) }
 
+    // Define character limits
+    val titleMaxLength = 40
+    val titleMinLength = 10
+    val messageMaxLength = 200
+    val messageMinLength = 30
+
+    // Validation states
+    val isTitleValid = title.length in titleMinLength..titleMaxLength
+    val isMessageValid = message.length in messageMinLength..messageMaxLength
+    val canSubmit = isTitleValid && isMessageValid && !isLoading
+
     if (showError && error != null) {
         LaunchedEffect(error) {
             delay(3000)
@@ -34,7 +45,7 @@ fun CreateThreadDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.White,
         title = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -72,60 +83,96 @@ fun CreateThreadDialog(
                     }
                 }
 
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Question Title") },
-                    placeholder = { Text("Enter a clear, specific title") },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading,
-                    singleLine = true,
-                    isError = title.isBlank() && title.length > 0,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = GFGStatusPendingText,
-                        focusedLabelColor = GFGStatusPendingText,
-                        cursorColor = GFGStatusPendingText
-                    ),
-                    supportingText = {
-                        if (title.isBlank() && title.length > 0) {
-                            Text(
-                                "Title cannot be empty",
-                                color = MaterialTheme.colorScheme.error
-                            )
+                Column {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { if (it.length <= titleMaxLength) title = it },
+                        label = { Text("Question Title") },
+                        placeholder = { Text("Brief, specific title ($titleMinLength-$titleMaxLength chars)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
+                        singleLine = true,
+                        isError = title.isNotEmpty() && !isTitleValid,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GFGStatusPendingText,
+                            focusedLabelColor = GFGStatusPendingText,
+                            cursorColor = GFGStatusPendingText
+                        ),
+                        supportingText = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                if (title.isNotEmpty() && !isTitleValid) {
+                                    Text(
+                                        when {
+                                            title.length < titleMinLength -> "Title too short"
+                                            else -> "Title too long"
+                                        },
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                Text(
+                                    "${title.length}/$titleMaxLength",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (title.length > titleMaxLength)
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        GFGBlack.copy(alpha = 0.5f)
+                                )
+                            }
                         }
-                    }
-                )
+                    )
+                }
 
-                OutlinedTextField(
-                    value = message,
-                    onValueChange = { message = it },
-                    label = { Text("Description") },
-                    placeholder = { Text("Explain your question in detail") },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading,
-                    minLines = 3,
-                    maxLines = 5,
-                    isError = message.isBlank() && message.isNotEmpty(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = GFGStatusPendingText,
-                        focusedLabelColor = GFGStatusPendingText,
-                        cursorColor = GFGStatusPendingText
-                    ),
-                    supportingText = {
-                        if (message.isBlank() && message.isNotEmpty()) {
-                            Text(
-                                "Description cannot be empty",
-                                color = MaterialTheme.colorScheme.error
-                            )
+                Column {
+                    OutlinedTextField(
+                        value = message,
+                        onValueChange = { if (it.length <= messageMaxLength) message = it },
+                        label = { Text("Description") },
+                        placeholder = { Text("Detailed explanation ($messageMinLength-$messageMaxLength chars)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
+                        minLines = 3,
+                        maxLines = 5,
+                        isError = message.isNotEmpty() && !isMessageValid,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = GFGStatusPendingText,
+                            focusedLabelColor = GFGStatusPendingText,
+                            cursorColor = GFGStatusPendingText
+                        ),
+                        supportingText = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                if (message.isNotEmpty() && !isMessageValid) {
+                                    Text(
+                                        when {
+                                            message.length < messageMinLength -> "Description too short"
+                                            else -> "Description too long"
+                                        },
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                Text(
+                                    "${message.length}/$messageMaxLength",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (message.length > messageMaxLength)
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        GFGBlack.copy(alpha = 0.5f)
+                                )
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = { onSubmit(title, message) },
-                enabled = title.isNotBlank() && message.isNotBlank() && !isLoading,
+                enabled = canSubmit,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = GFGStatusPendingText,
                     contentColor = Color.White,

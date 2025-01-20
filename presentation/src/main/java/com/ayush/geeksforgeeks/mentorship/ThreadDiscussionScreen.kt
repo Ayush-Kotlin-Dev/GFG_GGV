@@ -492,8 +492,18 @@ private fun MessageItem(
                     onDismissRequest = {
                         state.value = state.value.copy(isDeleteDialogVisible = false)
                     },
-                    title = { Text("Delete Message") },
-                    text = { Text("Are you sure you want to delete this message?") },
+                    title = {
+                        Text(
+                            "Delete Message",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    text = {
+                        Text(
+                            "Are you sure you want to delete this message?",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -523,7 +533,10 @@ private fun MessageItem(
                         ) {
                             Text("Cancel")
                         }
-                    }
+                    },
+                    containerColor = Color.White,
+                    titleContentColor = GFGBlack,
+                    textContentColor = GFGBlack.copy(alpha = 0.7f)
                 )
             }
         }

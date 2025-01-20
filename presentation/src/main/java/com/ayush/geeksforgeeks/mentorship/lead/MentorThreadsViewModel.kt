@@ -54,6 +54,17 @@ class MentorThreadsViewModel @Inject constructor(
             }
         }
     }
+
+    fun deleteThread(threadId: String) {
+        viewModelScope.launch {
+            try {
+                mentorRepository.deleteThread(threadId)
+                // No need to reload as we're using Flow
+            } catch (e: Exception) {
+                // Handle error if needed
+            }
+        }
+    }
 }
 
 sealed interface MentorThreadsUiState {
