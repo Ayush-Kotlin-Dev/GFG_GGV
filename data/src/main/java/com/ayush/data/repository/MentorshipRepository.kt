@@ -6,19 +6,16 @@ import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.model.Team
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import androidx.annotation.Keep
 import com.ayush.data.datastore.UserRole
+import com.ayush.data.model.ThreadDetails
+import com.ayush.data.model.ThreadMessage
 import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.PropertyName
 import com.google.firebase.firestore.snapshots
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -226,30 +223,3 @@ class MentorshipRepository @Inject constructor(
     }
 }
 
-@Keep
-@Serializable
-data class ThreadMessage(
-    val id: String = "",
-    val threadId: String = "",
-    val senderId: String = "",
-    val senderName: String = "",
-    val message: String = "",
-    val createdAt: Long = 0,
-    @get:PropertyName("isTeamLead") @set:PropertyName("isTeamLead")
-    var isTeamLead: Boolean = false
-)
-@Keep
-@Serializable
-data class ThreadDetails(
-    val id: String = "",
-    val title: String = "",
-    val message: String = "",
-    val authorId: String = "",
-    val authorName: String = "",
-    val teamId: String = "",
-    val createdAt: Long = 0,
-    @get:PropertyName("isEnabled") @set:PropertyName("isEnabled")
-    var isEnabled: Boolean = false,
-    val lastMessageAt: Long = 0,
-    val repliesCount: Int = 0
-)

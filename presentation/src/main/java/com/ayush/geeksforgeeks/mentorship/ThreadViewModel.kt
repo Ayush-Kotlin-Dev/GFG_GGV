@@ -8,8 +8,8 @@ import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.datastore.UserSettings
 import com.ayush.data.repository.MentorshipRepository
-import com.ayush.data.repository.ThreadDetails
-import com.ayush.data.repository.ThreadMessage
+import com.ayush.data.model.ThreadDetails
+import com.ayush.data.model.ThreadMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*

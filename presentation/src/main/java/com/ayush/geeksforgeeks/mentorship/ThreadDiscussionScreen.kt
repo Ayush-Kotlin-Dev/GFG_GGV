@@ -46,9 +46,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.datastore.UserRole
 import com.ayush.data.model.Team
-import com.ayush.data.repository.ThreadDetails
-import com.ayush.data.repository.ThreadMessage
+import com.ayush.data.model.ThreadDetails
+import com.ayush.data.model.ThreadMessage
 import com.ayush.geeksforgeeks.ui.theme.*
+import com.ayush.geeksforgeeks.utils.VibratorService
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -334,7 +335,7 @@ private fun MessageItem(
     modifier: Modifier = Modifier
 ) {
     val isCurrentUser = message.senderId == LocalUserProvider.current.userId
-    val haptics = LocalHapticFeedback.current
+    val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val state = remember { mutableStateOf(MessageItemState()) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -370,7 +371,6 @@ private fun MessageItem(
                         interactionSource = interactionSource,
                         indication = null,
                         onLongClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             state.value = state.value.copy(isOptionsVisible = true)
                         },
                         onClick = {}
@@ -446,6 +446,11 @@ private fun MessageItem(
                     onClick = {
                         clipboardManager.setText(AnnotatedString(message.message))
                         state.value = state.value.copy(isOptionsVisible = false)
+                        Toast.makeText(context, "Text copied to clipboard", Toast.LENGTH_SHORT).show()
+                        VibratorService.vibrate(
+                            context,
+                            VibratorService.VibrationPattern.Success
+                        )
                     },
                     leadingIcon = {
                         Icon(
@@ -461,6 +466,10 @@ private fun MessageItem(
                             state.value = state.value.copy(
                                 isOptionsVisible = false,
                                 isDeleteDialogVisible = true
+                            )
+                            VibratorService.vibrate(
+                                context,
+                                VibratorService.VibrationPattern.HeavyClick
                             )
                         },
                         leadingIcon = {
@@ -490,6 +499,10 @@ private fun MessageItem(
                             onClick = {
                                 onDeleteMessage(message.id)
                                 state.value = state.value.copy(isDeleteDialogVisible = false)
+                                VibratorService.vibrateSequence(
+                                    context,
+                                    VibratorService.VibrationSequence.ErrorPattern
+                                )
                             },
                             colors = ButtonDefaults.textButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error
@@ -502,6 +515,10 @@ private fun MessageItem(
                         TextButton(
                             onClick = {
                                 state.value = state.value.copy(isDeleteDialogVisible = false)
+                                VibratorService.vibrate(
+                                    context,
+                                    VibratorService.VibrationPattern.Click
+                                )
                             }
                         ) {
                             Text("Cancel")
@@ -512,6 +529,7 @@ private fun MessageItem(
         }
     }
 }
+
 @Composable
 private fun MessageSender(
     name: String,

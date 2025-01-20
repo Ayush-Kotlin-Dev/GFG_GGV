@@ -105,14 +105,14 @@ fun CreateThreadDialog(
                     enabled = !isLoading,
                     minLines = 3,
                     maxLines = 5,
-                    isError = message.isBlank() && message.length > 0,
+                    isError = message.isBlank() && message.isNotEmpty(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = GFGStatusPendingText,
                         focusedLabelColor = GFGStatusPendingText,
                         cursorColor = GFGStatusPendingText
                     ),
                     supportingText = {
-                        if (message.isBlank() && message.length > 0) {
+                        if (message.isBlank() && message.isNotEmpty()) {
                             Text(
                                 "Description cannot be empty",
                                 color = MaterialTheme.colorScheme.error

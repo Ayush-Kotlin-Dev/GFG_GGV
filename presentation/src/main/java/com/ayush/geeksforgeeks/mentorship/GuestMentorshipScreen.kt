@@ -40,7 +40,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.model.Team
-import com.ayush.data.repository.ThreadDetails
+import com.ayush.data.model.ThreadDetails
 import com.ayush.geeksforgeeks.mentorship.components.CreateThreadDialog
 import com.ayush.geeksforgeeks.mentorship.components.getTeamDescription
 import com.ayush.geeksforgeeks.ui.theme.*
