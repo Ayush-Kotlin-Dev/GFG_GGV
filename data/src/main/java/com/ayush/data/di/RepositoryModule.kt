@@ -2,6 +2,7 @@ package com.ayush.data.di
 
 import com.ayush.data.datastore.UserPreferences
 import com.ayush.data.repository.AuthRepository
+import com.ayush.data.repository.MentorRepository
 import com.ayush.data.repository.MentorshipRepository
 import com.ayush.data.repository.QueryRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -55,5 +56,15 @@ object RepositoryModule {
         @IoDispatcher ioDispatcher: CoroutineDispatcher
     ): MentorshipRepository {
         return MentorshipRepository(firestore, userPreferences, ioDispatcher)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideMentorRepository(
+        firestore: FirebaseFirestore,
+        userPreferences: UserPreferences,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
+    ): MentorRepository {
+        return MentorRepository(firestore, userPreferences, ioDispatcher)
     }
 }

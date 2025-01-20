@@ -2,12 +2,6 @@
 package com.ayush.geeksforgeeks.mentorship
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.repeatable
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -15,24 +9,50 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,10 +62,12 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ayush.data.model.Team
 import com.ayush.data.model.ThreadDetails
 import com.ayush.geeksforgeeks.mentorship.components.CreateThreadDialog
+import com.ayush.geeksforgeeks.mentorship.components.ShimmerLoading
 import com.ayush.geeksforgeeks.mentorship.components.getTeamDescription
-import com.ayush.geeksforgeeks.ui.theme.*
-import com.ayush.geeksforgeeks.utils.SimpleLoadingIndicator
-
+import com.ayush.geeksforgeeks.ui.theme.GFGBackground
+import com.ayush.geeksforgeeks.ui.theme.GFGBlack
+import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
+import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 
 @Composable
 fun ErrorState(
@@ -118,7 +140,7 @@ class GuestMentorshipScreen : Screen {
                     .padding(horizontal = 16.dp)
             ) {
                 when (teamsUiState) {
-                    TeamsUiState.Loading -> SimpleLoadingIndicator()
+                    TeamsUiState.Loading -> ShimmerLoading()
                     is TeamsUiState.Error -> ErrorState(
                         message = (teamsUiState as TeamsUiState.Error).message,
                         onRetry = {
@@ -171,6 +193,7 @@ class GuestMentorshipScreen : Screen {
         team: Team,
         onClick: () -> Unit
     ) {
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -179,7 +202,8 @@ class GuestMentorshipScreen : Screen {
                 containerColor = Color.White
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
+                defaultElevation = 2.dp,
+                pressedElevation = 4.dp
             )
         ) {
             Row(
@@ -228,6 +252,7 @@ class GuestMentorshipScreen : Screen {
                 )
             }
         }
+
     }
 }
 
@@ -237,7 +262,7 @@ data class TeamThreadsScreen(
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    override fun Content() {
+    override fun Content() { //This is made previously for Juniour/Guest side screen
         val navigator = LocalNavigator.currentOrThrow
         val viewModel: MentorshipViewModel = hiltViewModel()
         val threadsUiState by viewModel.threadsUiState.collectAsState()
@@ -301,7 +326,7 @@ data class TeamThreadsScreen(
                     .padding(paddingValues)
             ) {
                 when (threadsUiState) {
-                    ThreadsUiState.Loading -> SimpleLoadingIndicator()
+                    ThreadsUiState.Loading -> ShimmerLoading()
                     is ThreadsUiState.Error -> ErrorState(
                         message = (threadsUiState as ThreadsUiState.Error).message,
                         onRetry = {

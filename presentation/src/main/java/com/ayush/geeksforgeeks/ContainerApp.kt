@@ -91,8 +91,15 @@ private fun BottomNavigationBar(
                         userRole = userRole
                     ))
                 }
-                UserRole.MEMBER, UserRole.ADMIN -> {
+                UserRole.MEMBER -> {
                     TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
+                }
+                UserRole.TEAM_LEAD, UserRole.ADMIN -> {
+                    TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
+                    TabNavigationItem(MentorshipTab(
+                        onNavigator = onNavigatorChange,
+                        userRole = userRole
+                    ))
                 }
                 else -> {} 
             }

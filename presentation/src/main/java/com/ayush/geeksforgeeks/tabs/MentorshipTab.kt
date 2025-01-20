@@ -12,6 +12,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.ayush.data.datastore.UserRole
 import com.ayush.geeksforgeeks.mentorship.GuestMentorshipScreen
+import com.ayush.geeksforgeeks.mentorship.lead.MentorThreadsScreen
 
 data class MentorshipTab(
     @Transient
@@ -22,7 +23,7 @@ data class MentorshipTab(
         @Composable
         get() {
             val title = when (userRole) {
-                UserRole.TEAM_LEAD -> "Mentorship Hub"
+                UserRole.TEAM_LEAD, UserRole.ADMIN -> "Mentorship Hub"
                 else -> "Ask Mentor"
             }
 
@@ -38,6 +39,7 @@ data class MentorshipTab(
         }
 
     private val initialScreen = when (userRole) {
+        UserRole.TEAM_LEAD, UserRole.ADMIN -> MentorThreadsScreen() // Using default values
         else -> GuestMentorshipScreen()
     }
 
@@ -46,7 +48,8 @@ data class MentorshipTab(
         Navigator(initialScreen) { navigator ->
             LaunchedEffect(navigator.lastItem) {
                 onNavigator(when (userRole) {
-//                    UserRole.TEAM_LEAD -> navigator.lastItem is TeamLeadMentorshipScreen
+                    UserRole.TEAM_LEAD, UserRole.ADMIN ->
+                        navigator.lastItem is MentorThreadsScreen
                     else -> navigator.lastItem is GuestMentorshipScreen
                 })
             }
