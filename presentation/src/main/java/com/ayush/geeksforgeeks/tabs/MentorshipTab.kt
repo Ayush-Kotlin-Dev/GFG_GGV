@@ -23,7 +23,7 @@ data class MentorshipTab(
         @Composable
         get() {
             val title = when (userRole) {
-                UserRole.TEAM_LEAD, UserRole.ADMIN -> "Mentorship Hub"
+                UserRole.TEAM_LEAD, UserRole.ADMIN -> "Mentorship"
                 else -> "Ask Mentor"
             }
 
