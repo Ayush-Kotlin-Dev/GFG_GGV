@@ -71,7 +71,9 @@ class MentorshipRepository @Inject constructor(
     suspend fun createThread(
         teamId: String,
         title: String,
-        message: String
+        message: String,
+        category: String = "General",
+        tags: List<String> = emptyList()
     ): Result<ThreadDetails> = withContext(ioDispatcher) {
         try {
             val userData = userPreferences.userData.first()
@@ -84,7 +86,9 @@ class MentorshipRepository @Inject constructor(
                 createdAt = System.currentTimeMillis(),
                 isEnabled = false,
                 lastMessageAt = System.currentTimeMillis(),
-                repliesCount = 0
+                repliesCount = 0,
+                category = category,
+                tags = tags
             )
 
             retryIO {
@@ -198,6 +202,39 @@ class MentorshipRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error sending message: ${e.message}")
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateThreadStatus(
+        teamId: String,
+        threadId: String,
+        isEnabled: Boolean? = null,
+        isPinned: Boolean? = null,
+        isResolved: Boolean? = null
+    ): Result<Unit> = withContext(ioDispatcher) {
+        try {
+            val updates = mutableMapOf<String, Any>()
+            isEnabled?.let { updates["isEnabled"] = it }
+            isPinned?.let { updates["isPinned"] = it }
+            isResolved?.let { updates["isResolved"] = it }
+            
+            if (updates.isEmpty()) {
+                return@withContext Result.success(Unit)
+            }
+            
+            retryIO {
+                firestore.collection(MENTORSHIP_COLLECTION)
+                    .document(teamId)
+                    .collection(THREADS_COLLECTION)
+                    .document(threadId)
+                    .update(updates)
+                    .await()
+                    
+                Result.success(Unit)
+            }
+        } catch (e: Exception) {
+            Log.e("MentorshipRepository", "Failed to update thread status: ${e.message}")
             Result.failure(e)
         }
     }

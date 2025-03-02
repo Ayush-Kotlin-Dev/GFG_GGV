@@ -29,7 +29,7 @@ class CreditRepository @Inject constructor(
                 .get()
                 .await()
 
-            querySnapshot.documents.sumBy { it.toObject(CreditLog::class.java)?.credits ?: 0 }
+            querySnapshot.documents.sumOf{ it.toObject(CreditLog::class.java)?.credits ?: 0 }
         } catch (e: Exception) {
             // Log the error or handle it as needed
             println("Error getting total club credits: ${e.message}")

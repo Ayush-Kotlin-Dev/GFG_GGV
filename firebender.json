@@ -1,0 +1,17 @@
+{
+  "rules": [
+    "Project is a coding club management app",
+    "Using Voyager library for navigation",
+    "Its a multimodule project having 3 modules: buildSrc, data, and presentation",
+    "Aiming to optimize the app for performance, user experience and Playstore Launch",
+    "Follow Material Design 3 guidelines and components",
+    "Use state management states for managing UI states and data",
+    "Integrate Firebase for cloud services including:",
+    "    - Firebase Authentication ",
+    "    - Cloud Firestore ",
+    "    - Firebase Cloud Messaging",
+    "    - Firebase Analytics",
+    "    - Firebase Crashlytics",
+    "Implement comprehensive error handling and offline capabilities"
+  ]
+}

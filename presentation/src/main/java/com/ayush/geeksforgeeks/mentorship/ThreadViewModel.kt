@@ -129,18 +129,71 @@ class ThreadViewModel @Inject constructor(
 
                 val teamId = _threadDetails.value?.teamId ?: return@launch
                 val threadId = _threadDetails.value?.id ?: return@launch
-                // Simulate thread enable success
-                delay(1000) // Simulate network delay
-                _threadDetails.value = _threadDetails.value?.copy(isEnabled = true)
-//                mentorshipRepository.updateThreadStatus(
-//                    teamId = teamId,
-//                    threadId = threadId,
-//                    isEnabled = true
-//                ).onSuccess {
-//                    _threadDetails.value = _threadDetails.value?.copy(isEnabled = true)
-//                }.onFailure { error ->
-//                    _error.value = error.message
-//                }
+
+                mentorshipRepository.updateThreadStatus(
+                    teamId = teamId,
+                    threadId = threadId,
+                    isEnabled = true
+                ).onSuccess {
+                    _threadDetails.value = _threadDetails.value?.copy(isEnabled = true)
+                }.onFailure { error ->
+                    _error.value = error.message
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+
+
+
+    fun resolveThread(resolved: Boolean) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _error.value = null
+
+                val teamId = _threadDetails.value?.teamId ?: return@launch
+                val threadId = _threadDetails.value?.id ?: return@launch
+
+                mentorshipRepository.updateThreadStatus(
+                    teamId = teamId,
+                    threadId = threadId,
+                    isResolved = resolved
+                ).onSuccess {
+                    _threadDetails.value = _threadDetails.value?.copy(isResolved = resolved)
+                }.onFailure { error ->
+                    _error.value = error.message
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun pinThread(pinned: Boolean) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _error.value = null
+
+                val teamId = _threadDetails.value?.teamId ?: return@launch
+                val threadId = _threadDetails.value?.id ?: return@launch
+
+                mentorshipRepository.updateThreadStatus(
+                    teamId = teamId,
+                    threadId = threadId,
+                    isPinned = pinned
+                ).onSuccess {
+                    _threadDetails.value = _threadDetails.value?.copy(isPinned = pinned)
+                }.onFailure { error ->
+                    _error.value = error.message
+                }
             } catch (e: Exception) {
                 _error.value = e.message
             } finally {

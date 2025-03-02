@@ -358,8 +358,8 @@ data class TeamThreadsScreen(
                     showCreateDialog = false
                     viewModel.resetCreateThreadState()
                 },
-                onSubmit = { title, message ->
-                    viewModel.createThread(title, message)
+                onSubmit = { title, message, category, tags ->
+                    viewModel.createThread(title, message, category, tags)
                 },
                 isLoading = createThreadUiState.isLoading,
                 error = createThreadUiState.error

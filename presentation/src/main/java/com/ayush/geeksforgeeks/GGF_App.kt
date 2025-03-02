@@ -30,9 +30,20 @@ class MyApplication : Application(){
         try {
             val crashlytics = FirebaseCrashlytics.getInstance()
             
-            // Disable Crashlytics for debug builds
-            crashlytics.isCrashlyticsCollectionEnabled = !BuildConfig.DEBUG
-            Log.d(TAG, "Crashlytics initialized with collection enabled: ${!BuildConfig.DEBUG}")
+            // Always enable Crashlytics for prod and dev flavors in release builds
+            // Only disable it in debug builds of both flavors
+            val isBuildTypeDebug = BuildConfig.DEBUG
+            
+            // Enable crashlytics for all flavors in release builds, disable for debug builds
+            crashlytics.isCrashlyticsCollectionEnabled = isBuildTypeDebug
+            
+            // Set custom key for build variant
+            crashlytics.setCustomKey("build_variant", BuildConfig.BUILD_VARIANT)
+            crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
+            crashlytics.setCustomKey("package_name", packageName)
+            
+            Log.d(TAG, "Crashlytics initialized for ${packageName}")
+            Log.d(TAG, "Crashlytics collection enabled: ${!isBuildTypeDebug}")
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing Firebase Crashlytics: ${e.message}", e)
         }

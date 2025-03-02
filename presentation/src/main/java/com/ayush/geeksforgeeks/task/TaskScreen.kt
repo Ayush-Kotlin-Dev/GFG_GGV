@@ -7,12 +7,11 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -27,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
@@ -37,8 +37,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
@@ -54,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -68,9 +69,7 @@ import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import com.ayush.geeksforgeeks.utils.formatDate
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
-import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
-import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 
 class TasksScreen : Screen {
     @Composable
@@ -133,7 +132,7 @@ fun TaskScreenHeader(uiState: TasksViewModel.TasksUiState) {
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
 
-        when (val state = uiState) {
+        when (uiState) {
             is TasksViewModel.TasksUiState.Success -> {
                 Row(
                     modifier = Modifier
@@ -142,17 +141,17 @@ fun TaskScreenHeader(uiState: TasksViewModel.TasksUiState) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     StatusCard(
-                        count = state.taskCounts.pending,
+                        count = uiState.taskCounts.pending,
                         label = "Pending",
                         color = Color(0xFFF57C00)
                     )
                     StatusCard(
-                        count = state.taskCounts.inProgress,
+                        count = uiState.taskCounts.inProgress,
                         label = "In Progress",
                         color = GFGPrimary
                     )
                     StatusCard(
-                        count = state.taskCounts.completed,
+                        count = uiState.taskCounts.completed,
                         label = "Completed",
                         color = Color(0xFF2E7D32)
                     )
@@ -219,19 +218,62 @@ fun TaskScreenContent(
     onTaskClick: (Task) -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var searchQuery by remember { mutableStateOf("") }
 
     Column {
+        // Search field
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Search tasks") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Task completion progress
+            if (tasks.isNotEmpty()) {
+                val completedPercentage = tasks.count { it.status == TaskStatus.COMPLETED } / tasks.size.toFloat()
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Task Completion", style = MaterialTheme.typography.bodyMedium)
+                        Text("${(completedPercentage * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = completedPercentage, 
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Filter tasks based on search query
+        val filteredTasks = remember(tasks, searchQuery, selectedTab) {
+            tasks.filter { it.title.contains(searchQuery, ignoreCase = true) || it.description.contains(searchQuery, ignoreCase = true) }
+        }
+
         TaskManagementSection(
             selectedTab = selectedTab,
             onTabSelected = { selectedTab = it },
             tasks = when (selectedTab) {
-                0 -> tasks
-                1 -> tasks.filter { it.status == TaskStatus.PENDING }
-                2 -> tasks.filter { it.status == TaskStatus.IN_PROGRESS }
-                3 -> tasks.filter { it.status == TaskStatus.COMPLETED }
+                0 -> filteredTasks
+                1 -> filteredTasks.filter { it.status == TaskStatus.PENDING }
+                2 -> filteredTasks.filter { it.status == TaskStatus.IN_PROGRESS }
+                3 -> filteredTasks.filter { it.status == TaskStatus.COMPLETED }
                 else -> emptyList()
             },
-            onTaskClick = onTaskClick
+            onTaskClick = onTaskClick,
+            searchQuery = searchQuery
         )
     }
 }
@@ -242,7 +284,8 @@ fun TaskManagementSection(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
     tasks: List<Task>,
-    onTaskClick: (Task) -> Unit
+    onTaskClick: (Task) -> Unit,
+    searchQuery: String = ""
 ) {
     Column {
         Card(
@@ -292,11 +335,11 @@ fun TaskManagementSection(
         }
 
         AnimatedVisibility(
-            visible = tasks.isEmpty(),
+            visible = tasks.isEmpty() || (searchQuery.isNotBlank() && tasks.none { it.title.contains(searchQuery, ignoreCase = true) || it.description.contains(searchQuery, ignoreCase = true) }),
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            EmptyStateMessage(selectedTab)
+            EmptyStateMessage(selectedTab, searchQuery)
         }
 
         LazyColumn(
@@ -304,8 +347,11 @@ fun TaskManagementSection(
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val visibleTasks = tasks.filter { task ->
+                searchQuery.isEmpty() || task.title.contains(searchQuery, ignoreCase = true) || task.description.contains(searchQuery, ignoreCase = true)
+            }
             items(
-                items = tasks,
+                items = visibleTasks,
                 key = { it.id }
             ) { task ->
                 EnhancedTaskItem(
@@ -326,6 +372,8 @@ fun EnhancedTaskItem(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val dueDate = formatDate(task.dueDate)
+    val isOverdue = task.status != TaskStatus.COMPLETED && task.dueDate.seconds < System.currentTimeMillis() / 1000
 
     Card(
         modifier = modifier
@@ -337,9 +385,9 @@ fun EnhancedTaskItem(
             ),
         colors = CardDefaults.cardColors(
             containerColor = when (task.status) {
-                TaskStatus.PENDING -> Color(0xFFF57C00)
-                TaskStatus.IN_PROGRESS -> GFGPrimary
-                TaskStatus.COMPLETED -> Color(0xFF2E7D32)
+                TaskStatus.PENDING -> Color(0xFFF57C00).copy(alpha = 0.05f)
+                TaskStatus.IN_PROGRESS -> GFGPrimary.copy(alpha = 0.05f)
+                TaskStatus.COMPLETED -> Color(0xFF2E7D32).copy(alpha = 0.05f)
                 else -> MaterialTheme.colorScheme.surface
             }.copy(alpha = 0.05f)
         ),
@@ -405,9 +453,9 @@ fun EnhancedTaskItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "Due: ${formatDate(task.dueDate)}",
+                            "Due: $dueDate",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isOverdue) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         OutlinedButton(
                             onClick = { onTaskClick(task) },
@@ -418,6 +466,46 @@ fun EnhancedTaskItem(
                             Text("View Details")
                         }
                     }
+                    
+                    // Show a warning if task is overdue
+                    if (isOverdue) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = "Warning",
+                                tint = Color.Red,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "This task is overdue",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Red
+                            )
+                        }
+                    }
+
+                    // Credits visualization
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Credit value: ", 
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        LinearProgressIndicator(
+                            progress = task.credits / 10f, 
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(4.dp)
+                        )
+                    }
                 }
             }
         }
@@ -425,7 +513,10 @@ fun EnhancedTaskItem(
 }
 
 @Composable
-fun EmptyStateMessage(selectedTab: Int) {
+fun EmptyStateMessage(
+    selectedTab: Int,
+    searchQuery: String = ""
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -446,11 +537,15 @@ fun EmptyStateMessage(selectedTab: Int) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = when (selectedTab) {
-                1 -> "No pending tasks"
-                2 -> "No tasks in progress"
-                3 -> "No completed tasks"
-                else -> "No tasks available"
+            text = if (searchQuery.isNotBlank()) {
+                "No matching tasks found for \"$searchQuery\""
+            } else {
+                when (selectedTab) {
+                    1 -> "No pending tasks"
+                    2 -> "No tasks in progress"
+                    3 -> "No completed tasks"
+                    else -> "No tasks available"
+                }
             },
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

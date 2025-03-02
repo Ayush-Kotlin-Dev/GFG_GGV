@@ -20,11 +20,14 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.ripple.rememberRipple
@@ -160,7 +163,9 @@ private fun ThreadDiscussionContent(
                         DiscussionPost(
                             details,
                             isTeamLead,
-                            onThreadEnableClick = { viewModel.enableThread() }
+                            onThreadEnableClick = { viewModel.enableThread() },
+                            onThreadPinClick = { viewModel.pinThread(it) },
+                            onThreadResolveClick = { viewModel.resolveThread(it) }
                         )
                     }
                 }
@@ -258,7 +263,9 @@ private fun ThreadDiscussionContent(
 private fun DiscussionPost(
     threadDetails: ThreadDetails,
     isTeamLead: Boolean,
-    onThreadEnableClick: () -> Unit
+    onThreadEnableClick: () -> Unit,
+    onThreadPinClick: (Boolean) -> Unit,
+    onThreadResolveClick: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -271,6 +278,92 @@ private fun DiscussionPost(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Thread category and tags
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SuggestionChip(
+                    onClick = { },
+                    label = { Text(threadDetails.category) },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = GFGPrimary.copy(alpha = 0.1f),
+                        labelColor = GFGPrimary
+                    )
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Status chips
+                if (threadDetails.isPinned) {
+                    AssistChip(
+                        onClick = { onThreadPinClick(false) },
+                        label = { Text("Pinned") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.PushPin,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = GFGStatusPendingText.copy(alpha = 0.1f),
+                            labelColor = GFGStatusPendingText,
+                            leadingIconContentColor = GFGStatusPendingText
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                if (threadDetails.isResolved) {
+                    AssistChip(
+                        onClick = { onThreadResolveClick(false) },
+                        label = { Text("Resolved") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = Color.Green.copy(alpha = 0.1f),
+                            labelColor = Color.Green.copy(alpha = 0.8f),
+                            leadingIconContentColor = Color.Green.copy(alpha = 0.8f)
+                        )
+                    )
+                }
+            }
+
+            // Display tags if present
+            if (threadDetails.tags.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    threadDetails.tags.take(5).forEach { tag ->
+                        SuggestionChip(
+                            onClick = { },
+                            label = {
+                                Text(
+                                    tag,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            },
+                            modifier = Modifier.padding(end = 4.dp),
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = GFGStatusPending.copy(alpha = 0.2f)
+                            )
+                        )
+                    }
+                }
+            }
+
             Text(
                 text = threadDetails.title,
                 style = MaterialTheme.typography.titleLarge,
@@ -315,6 +408,35 @@ private fun DiscussionPost(
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isTeamLead) Color.White else GFGStatusPendingText
                         )
+                    }
+                } else if (isTeamLead) {
+                    // Thread action buttons for mentors
+                    Row {
+                        if (!threadDetails.isResolved) {
+                            IconButton(
+                                onClick = { onThreadResolveClick(true) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = "Mark as resolved",
+                                    tint = Color.Green.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = { onThreadPinClick(!threadDetails.isPinned) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                if (threadDetails.isPinned) Icons.Default.PushPin else Icons.Outlined.PushPin,
+                                contentDescription = if (threadDetails.isPinned) "Unpin" else "Pin",
+                                tint = GFGStatusPendingText,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -404,7 +526,7 @@ private fun MessageItem(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = if (isCurrentUser) 
+                        horizontalArrangement = if (isCurrentUser)
                             Arrangement.End else Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -433,8 +555,8 @@ private fun MessageItem(
 
             DropdownMenu(
                 expanded = state.value.isOptionsVisible,
-                onDismissRequest = { 
-                    state.value = state.value.copy(isOptionsVisible = false) 
+                onDismissRequest = {
+                    state.value = state.value.copy(isOptionsVisible = false)
                 },
                 modifier = Modifier.background(
                     MaterialTheme.colorScheme.surface,

@@ -29,5 +29,9 @@ data class ThreadDetails(
     @get:PropertyName("isEnabled") @set:PropertyName("isEnabled")
     var isEnabled: Boolean = false,
     val lastMessageAt: Long = 0,
-    val repliesCount: Int = 0
+    val repliesCount: Int = 0,
+    val category: String = "General",
+    val tags: List<String> = emptyList(),
+    val isPinned: Boolean = false,
+    val isResolved: Boolean = false
 )

@@ -58,6 +58,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -75,6 +77,7 @@ import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import java.util.UUID
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.filled.AssignmentInd
 import androidx.compose.material.icons.filled.CheckCircle
@@ -83,6 +86,11 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalDensity
 
 class AdminScreen : Screen {
     @Composable
@@ -91,10 +99,25 @@ class AdminScreen : Screen {
         val teamMembers by viewModel.teamMembers.collectAsState()
         val tasks by viewModel.tasks.collectAsState()
         val stats by viewModel.taskStats.collectAsState()
+        val operationResult by viewModel.operationResult.collectAsState()
+        val context = LocalContext.current
 
         var showAddTaskDialog by remember { mutableStateOf(false) }
         var selectedTab by remember { mutableIntStateOf(0) }
         var showStatsDialog by remember { mutableStateOf(false) }
+        var editingTask by remember { mutableStateOf<Task?>(null) }
+        
+        // Handle operation results with LaunchedEffect
+        LaunchedEffect(operationResult) {
+            operationResult?.let {
+                when(it) {
+                    is AdminViewModel.OperationResult.Success -> android.widget.Toast.makeText(context, it.message, android.widget.Toast.LENGTH_SHORT).show()
+                    is AdminViewModel.OperationResult.Error -> android.widget.Toast.makeText(context, it.message, android.widget.Toast.LENGTH_LONG).show()
+                }
+                // Clear the result after showing
+                viewModel.clearOperationResult()
+            }
+        }
 
         Column(
             modifier = Modifier
@@ -127,7 +150,8 @@ class AdminScreen : Screen {
                         },
                         onAssign = { viewModel.showAssignTaskDialog(it) },
                         onDelete = { viewModel.deleteTask(it) },
-                        onUpdateStatus = { task, status -> viewModel.updateTaskStatus(task.id, status) }
+                        onUpdateStatus = { task, status -> viewModel.updateTaskStatus(task.id, status) },
+                        onEdit = { editingTask = it }
                     )
                 }
 
@@ -169,6 +193,23 @@ class AdminScreen : Screen {
                 onAssign = { memberId ->
                     viewModel.assignTask(task.id, memberId)
                     viewModel.dismissAssignTaskDialog()
+                }
+            )
+        }
+
+        editingTask?.let { task ->
+            EditTaskDialog(
+                task = task,
+                onDismiss = { editingTask = null },
+                onTaskUpdated = { updatedTask ->
+                    viewModel.updateTask(
+                        task.copy(
+                            title = updatedTask.title,
+                            description = updatedTask.description,
+                            credits = updatedTask.credits
+                        )
+                    )
+                    editingTask = null
                 }
             )
         }
@@ -332,12 +373,13 @@ fun TaskManagementSection(
     tasks: List<Task>,
     onAssign: (Task) -> Unit,
     onDelete: (Task) -> Unit,
-    onUpdateStatus: (Task, TaskStatus) -> Unit
+    onUpdateStatus: (Task, TaskStatus) -> Unit,
+    onEdit: (Task) -> Unit
 ) {
     Column {
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
-            containerColor = GFGPrimary,
+            containerColor = GFGCardBackground,
             edgePadding = 0.dp
         ) {
             listOf("All", "Unassigned", "In Progress", "Completed").forEachIndexed { index, title ->
@@ -351,8 +393,8 @@ fun TaskManagementSection(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
-                    selectedContentColor = Color.White,
-                    unselectedContentColor = Color.White.copy(alpha = 0.7f),
+                    selectedContentColor = GFGPrimary,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 12.dp)
                 )
             }
@@ -375,10 +417,11 @@ fun TaskManagementSection(
 
         Column {
             tasks.forEach { task ->
-                EnhancedTaskItem(
+                TaskItem(
                     task = task,
                     onAssign = onAssign,
                     onDelete = onDelete,
+                    onEdit = onEdit,
                     onUpdateStatus = onUpdateStatus
                 )
             }
@@ -388,21 +431,27 @@ fun TaskManagementSection(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EnhancedTaskItem(
+fun TaskItem(
     task: Task,
     onAssign: (Task) -> Unit,
     onDelete: (Task) -> Unit,
+    onEdit: (Task) -> Unit,
     onUpdateStatus: (Task, TaskStatus) -> Unit
 ) {
-    val viewModel: AdminViewModel = hiltViewModel()
-    val teamMembers by viewModel.teamMembers.collectAsState()
-
     var expanded by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
-    var menuOffset by remember { mutableStateOf(DpOffset.Zero) }
+    // Initialize with a default offset
+    var menuOffset by remember { mutableStateOf(DpOffset(8.dp, 8.dp)) }
+    val context = LocalContext.current
+    val density = LocalDensity.current
 
-    val assignedMemberName = remember(task.assignedTo, teamMembers) {
-        teamMembers.find { it.userId == task.assignedTo }?.name ?: "Unknown User"
+    // Use the parent AdminViewModel for team member lookup
+    val parentViewModel: AdminViewModel = hiltViewModel()
+    val teamMembers by parentViewModel.teamMembers.collectAsState()
+    
+    // Properly lookup the user name based on ID
+    val assignedUserName = remember(task.assignedTo, teamMembers) {
+        teamMembers.find { it.userId == task.assignedTo }?.name ?: "Unassigned"
     }
 
     Card(
@@ -410,15 +459,21 @@ fun EnhancedTaskItem(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .animateContentSize()
-            .combinedClickable(
-                onClick = { expanded = !expanded },
-                onLongClick = {
-                    if (task.status != TaskStatus.COMPLETED) {
-                        showMenu = true
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { expanded = !expanded },
+                    onLongPress = { offset ->
+                        // Calculate proper menu position
+                        if (task.status != TaskStatus.COMPLETED) {
+                            // Convert touch position to dp to set the menu position
+                            with(density) {
+                                menuOffset = DpOffset(offset.x.toDp(), offset.y.toDp())
+                            }
+                            showMenu = true
+                        }
                     }
-                },
-                onLongClickLabel = "More options"
-            ),
+                )
+            },
         colors = CardDefaults.cardColors(containerColor = GFGCardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -459,7 +514,7 @@ fun EnhancedTaskItem(
                     Spacer(modifier = Modifier.height(8.dp))
                     if (task.assignedTo.isNotEmpty()) {
                         Text(
-                            "Assigned to: $assignedMemberName",
+                            "Assigned to: $assignedUserName",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -515,7 +570,7 @@ fun EnhancedTaskItem(
         DropdownMenuItem(
             text = { Text("Edit") },
             onClick = {
-                // TODO: Implement edit functionality
+                onEdit(task)
                 showMenu = false
             }
         )
@@ -871,6 +926,110 @@ fun AssignTaskDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
             ) {
                 Text("Assign")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun EditTaskDialog(
+    task: Task,
+    onDismiss: () -> Unit,
+    onTaskUpdated: (Task) -> Unit
+) {
+    var title by remember { mutableStateOf(task.title) }
+    var description by remember { mutableStateOf(task.description) }
+    var credits by remember { mutableStateOf(task.credits.toString()) }
+    var showError by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Edit Task",
+                style = MaterialTheme.typography.headlineSmall,
+                color = GFGPrimary
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Task Title") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = showError && title.isBlank()
+                )
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 5,
+                    isError = showError && description.isBlank()
+                )
+
+                OutlinedTextField(
+                    value = credits,
+                    onValueChange = { newValue ->
+                        // Only allow digits
+                        if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                            credits = newValue
+                        }
+                    },
+                    label = { Text("Credits") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = showError && credits.isBlank()
+                )
+
+                if (showError) {
+                    Text(
+                        "Please fill in all fields",
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
+        },
+        containerColor = GFGBackground,
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isBlank() || description.isBlank() || credits.isBlank()) {
+                        showError = true
+                        return@Button
+                    }
+                    
+                    onTaskUpdated(
+                        Task(
+                            id = task.id,
+                            title = title,
+                            description = description,
+                            credits = credits.toInt(),
+                            status = task.status,
+                            assignedTo = task.assignedTo
+                        )
+                    )
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = GFGPrimary)
+            ) {
+                Text("Update Task")
             }
         },
         dismissButton = {

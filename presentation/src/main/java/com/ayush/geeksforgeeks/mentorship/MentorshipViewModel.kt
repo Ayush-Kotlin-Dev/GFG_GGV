@@ -91,7 +91,7 @@ class MentorshipViewModel @Inject constructor(
         }
     }
 
-    fun createThread(title: String, message: String) {
+    fun createThread(title: String, message: String, category: String = "General", tags: List<String> = emptyList()) {
         viewModelScope.launch {
             _createThreadUiState.update { it.copy(isLoading = true, error = null) }
 
@@ -110,7 +110,9 @@ class MentorshipViewModel @Inject constructor(
                 mentorshipRepository.createThread(
                     currentState.selectedTeam.id,
                     title,
-                    message
+                    message,
+                    category,
+                    tags
                 ).onSuccess {
                     _createThreadUiState.update {
                         it.copy(isLoading = false, isSuccess = true)

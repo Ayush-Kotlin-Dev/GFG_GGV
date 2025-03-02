@@ -46,6 +46,9 @@ class AdminViewModel @Inject constructor(
     private val _taskStats = MutableStateFlow<Map<String, Int>>(emptyMap())
     val taskStats: StateFlow<Map<String, Int>> = _taskStats
 
+    private val _operationResult = MutableStateFlow<OperationResult?>(null)
+    val operationResult: StateFlow<OperationResult?> = _operationResult
+
     private var currentUserDomainId: Int = 0
 
 
@@ -104,17 +107,22 @@ class AdminViewModel @Inject constructor(
     fun addTask(task: Task) {
         viewModelScope.launch {
             try {
+                // Use the task's status if it's already set, otherwise set it to NEW
+                val taskStatus = if (task.status == TaskStatus.PENDING) task.status else TaskStatus.NEW
+
                 val newTask = task.copy(
                     domainId = currentUserDomainId,
                     createdAt = Timestamp.now(),
                     updatedAt = Timestamp.now(),
-                    status = TaskStatus.PENDING,
+                    status = taskStatus,
                     dueDate = Timestamp(Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000))
                 )
                 taskRepository.addTask(newTask)
                 loadData()
+                _operationResult.value = OperationResult.Success("Task added successfully")
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error adding task: ${e.message}", e)
+                _operationResult.value = OperationResult.Error("Failed to add task: ${e.message}")
             }
         }
     }
@@ -132,8 +140,10 @@ class AdminViewModel @Inject constructor(
             try {
                 taskRepository.assignTask(taskId, userId)
                 loadData()
+                _operationResult.value = OperationResult.Success("Task assigned successfully")
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error assigning task: ${e.message}", e)
+                _operationResult.value = OperationResult.Error("Failed to assign task: ${e.message}")
             }
         }
     }
@@ -143,8 +153,10 @@ class AdminViewModel @Inject constructor(
             try {
                 taskRepository.updateTaskStatus(taskId, newStatus)
                 loadData()
+                _operationResult.value = OperationResult.Success("Task status updated successfully")
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error updating task status: ${e.message}", e)
+                _operationResult.value = OperationResult.Error("Failed to update task status: ${e.message}")
             }
         }
     }
@@ -154,8 +166,10 @@ class AdminViewModel @Inject constructor(
             try {
                 taskRepository.deleteTask(task.id)
                 loadData()
+                _operationResult.value = OperationResult.Success("Task deleted successfully")
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error deleting task: ${e.message}", e)
+                _operationResult.value = OperationResult.Error("Failed to delete task: ${e.message}")
             }
         }
     }
@@ -171,6 +185,22 @@ class AdminViewModel @Inject constructor(
         }
     }
 
+    fun clearOperationResult() {
+        _operationResult.value = null
+    }
+
+    fun updateTask(task: Task) {
+        viewModelScope.launch {
+            try {
+                taskRepository.updateTask(task)
+                loadData()
+                _operationResult.value = OperationResult.Success("Task updated successfully")
+            } catch (e: Exception) {
+                Log.e("AdminViewModel", "Error updating task: ${e.message}", e)
+                _operationResult.value = OperationResult.Error("Failed to update task: ${e.message}")
+            }
+        }
+    }
 
     fun generateWeeklyReport() {
         viewModelScope.launch {
@@ -297,5 +327,10 @@ class AdminViewModel @Inject constructor(
         } catch (e: Exception) {
             Log.e("AdminViewModel", "Error sharing file: ${e.message}")
         }
+    }
+
+    sealed class OperationResult {
+        data class Success(val message: String) : OperationResult()
+        data class Error(val message: String) : OperationResult()
     }
 }
