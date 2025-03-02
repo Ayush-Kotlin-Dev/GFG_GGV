@@ -8,6 +8,7 @@ plugins {
     kotlin("plugin.serialization") version "1.9.22"
     kotlin("kapt")
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics") version "3.0.3"
 }
 android {
     namespace = "com.ayush.geeksforgeeks"

@@ -1,16 +1,28 @@
 package com.ayush.geeksforgeeks
 
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -19,10 +31,10 @@ import cafe.adriel.voyager.navigator.Navigator
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
+import com.ayush.geeksforgeeks.utils.CrashlyticsTestActivity
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import dagger.hilt.android.AndroidEntryPoint
-import java.lang.reflect.Modifier
 import javax.inject.Inject
 
 /**
@@ -95,7 +107,14 @@ class MainActivity : ComponentActivity() {
                     }
                     uiState is MainViewModel.UiState.LoggedIn -> {
                         val userRole = (uiState as MainViewModel.UiState.LoggedIn).userRole
-                        Navigator(screen = ContainerApp(userRole = userRole))
+                        Box {
+                            Navigator(screen = ContainerApp(userRole = userRole))
+                            
+                            // Debug FAB for testing Crashlytics in debug builds
+                            if (BuildConfig.DEBUG) {
+                                DebugCrashlyticsFAB()
+                            }
+                        }
                     }
                     uiState is MainViewModel.UiState.Error -> {
                         val errorMessage = (uiState as MainViewModel.UiState.Error).message
@@ -109,6 +128,29 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+            }
+        }
+    }
+    
+    @Composable
+    private fun DebugCrashlyticsFAB() {
+        val context = LocalContext.current
+        
+        Box(
+            modifier = androidx.compose.ui.Modifier.padding(16.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    Toast.makeText(context, "Opening Crashlytics Test Screen", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(context, CrashlyticsTestActivity::class.java)
+                    context.startActivity(intent)
+                }
+            ) {
+                Icon(
+                    painter = painterResource(id = androidx.core.R.drawable.ic_call_answer), 
+                    contentDescription = "Test Crashlytics"
+                )
             }
         }
     }

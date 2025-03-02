@@ -40,6 +40,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Crashlytics Test Activity for testing only -->
+        <activity
+            android:name=".utils.CrashlyticsTestActivity"
+            android:exported="false"
+            android:label="Crashlytics Test" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

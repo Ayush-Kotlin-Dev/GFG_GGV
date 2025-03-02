@@ -42,6 +42,8 @@ object Dependencies {
     const val fireStore = "com.google.firebase:firebase-firestore-ktx:25.1.0"
     const val firebaseStorage = "com.google.firebase:firebase-storage-ktx:21.0.1"
     const val firebaseMessaging = "com.google.firebase:firebase-messaging-ktx:23.4.0"
+    const val firebaseCrashlytics = "com.google.firebase:firebase-crashlytics-ktx:18.6.0"
+    const val firebaseAnalytics = "com.google.firebase:firebase-analytics-ktx:21.5.0"
 
 
 
@@ -107,6 +109,9 @@ fun DependencyHandler.firebase() {
     implementation(Dependencies.fireStore)
     implementation(Dependencies.firebaseStorage)
     implementation(Dependencies.firebaseMessaging)
+    implementation(Dependencies.firebaseCrashlytics)
+    implementation(Dependencies.firebaseAnalytics)
+    
 
 }
 
