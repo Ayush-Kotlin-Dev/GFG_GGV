@@ -30,8 +30,9 @@ data class SettingsState(
     val isDarkMode: Boolean = false,
     val isNotificationsEnabled: Boolean = true,
     val isEventRemindersEnabled: Boolean = true,
-    val appVersion: String = BuildConfig.VERSION_NAME,
+    val appVersion: String = "${BuildConfig.VERSION_NAME} (${BuildConfig.BUILD_VARIANT})",
     val isLoading: Boolean = false,
+    val buildVariant: String = BuildConfig.BUILD_VARIANT,
 )
 
 sealed class SettingsEvent {

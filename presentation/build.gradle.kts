@@ -22,18 +22,55 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions("environment")
+    
+    productFlavors {
+        create("prod") {
+            dimension = "environment"
+            applicationId = "com.ayush.geeksforgeeks"
+            buildConfigField("String", "BUILD_VARIANT", "\"Prod\"")
+            resValue("string", "app_name", "GFG Prod")
+        }
+        create("dev") {
+            dimension = "environment"
+            applicationId = "com.ayush.geeksforgeeks.dev"
+            buildConfigField("String", "BUILD_VARIANT", "\"dev\"")
+            resValue("string", "app_name", "GFG GGV (Dev)")
+        }
+    }
+
     buildTypes {
         debug {
             isMinifyEnabled = false
+            isDebuggable = true
         }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            packaging {
+                resources {
+                    excludes += listOf(
+                        "META-INF/*.kotlin_module",
+                        "META-INF/DEPENDENCIES",
+                        "META-INF/LICENSE",
+                        "META-INF/LICENSE.txt",
+                        "META-INF/license.txt",
+                        "META-INF/NOTICE",
+                        "META-INF/NOTICE.txt",
+                        "META-INF/notice.txt",
+                        "META-INF/*.version",
+                        "META-INF/versions/**"
+                    )
+                }
+            }
         }
     }
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_18
@@ -87,6 +124,19 @@ dependencies {
 tasks.register("copyProguardRules", Copy::class) {
     from("proguard-rules.pro")
     into("$buildDir/intermediates/proguard-files/")
+}
+
+tasks.register("printBuildInfo") {
+    doLast {
+        println("=== Build Information ===")
+        android.applicationVariants.forEach { variant ->
+            println("Variant: ${variant.name}")
+            println("Application ID: ${variant.applicationId}")
+            println("Version Code: ${variant.versionCode}")
+            println("Version Name: ${variant.versionName}")
+            println("----------------------")
+        }
+    }
 }
 
 tasks.named("preBuild") {
