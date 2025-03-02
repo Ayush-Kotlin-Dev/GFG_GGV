@@ -28,24 +28,29 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
     @Composable
     override fun Content() {
         var showBottomBar by remember { mutableStateOf(true) }
-        val initialTab = remember { HomeTab(
-            isAdmin = userRole == UserRole.TEAM_LEAD || userRole == UserRole.ADMIN
-        ) }
+        
+        // Create initial tab only once using remember
+        val initialTab = remember { 
+            HomeTab(isAdmin = userRole.isAdmin())
+        }
 
-        // Add animated offset for content
+        // Animate bottom padding for content with smooth animation
         val bottomPadding by animateDpAsState(
             targetValue = if (showBottomBar) 73.dp else 0.dp,
             animationSpec = tween(300), 
             label = "bottom padding animation"
         )
 
+        // Setup tab navigator with initial tab
         TabNavigator(initialTab) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
-                    BottomNavigationBar(showBottomBar, userRole) { show ->
-                        showBottomBar = show
-                    }
+                    BottomNavigationBar(
+                        showBottomBar = showBottomBar,
+                        userRole = userRole,
+                        onNavigatorChange = { show -> showBottomBar = show }
+                    )
                 }
             ) { innerPadding ->
                 Box(
@@ -65,12 +70,24 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
     }
 }
 
+/**
+ * Extension function to check if a user role is admin or team lead
+ */
+private fun UserRole.isAdmin(): Boolean = 
+    this == UserRole.TEAM_LEAD || this == UserRole.ADMIN
+
+/**
+ * Animated bottom navigation bar
+ */
 @Composable
 private fun BottomNavigationBar(
     showBottomBar: Boolean,
     userRole: UserRole,
     onNavigatorChange: (Boolean) -> Unit
 ) {
+    // Pre-calculate which tabs to show based on user role
+    val tabItems = createTabItems(userRole, onNavigatorChange)
+    
     AnimatedVisibility(
         visible = showBottomBar,
         enter = slideInVertically(initialOffsetY = { it }, animationSpec = tween(300)),
@@ -81,34 +98,48 @@ private fun BottomNavigationBar(
             containerColor = Color.White,
             contentColor = Color.Black
         ) {
-            TabNavigationItem(HomeTab(isAdmin = userRole == UserRole.TEAM_LEAD || userRole == UserRole.ADMIN))
-            TabNavigationItem(DashboardTab(onNavigator = onNavigatorChange))
-
-            when (userRole) {
-                UserRole.GUEST -> {
-                    TabNavigationItem(MentorshipTab(
-                        onNavigator = onNavigatorChange,
-                        userRole = userRole
-                    ))
-                }
-                UserRole.MEMBER -> {
-                    TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
-                }
-                UserRole.TEAM_LEAD, UserRole.ADMIN -> {
-                    TabNavigationItem(TaskTab(onNavigator = onNavigatorChange, userRole = userRole))
-                    TabNavigationItem(MentorshipTab(
-                        onNavigator = onNavigatorChange,
-                        userRole = userRole
-                    ))
-                }
-                else -> {} 
+            // Render pre-calculated tab items
+            tabItems.forEach { tab ->
+                TabNavigationItem(tab)
             }
-
-            TabNavigationItem(ProfileTab(onNavigator = onNavigatorChange))
         }
     }
 }
 
+/**
+ * Create tab items list based on user role
+ */
+@Composable
+private fun createTabItems(userRole: UserRole, onNavigatorChange: (Boolean) -> Unit): List<Tab> {
+    val isAdmin = userRole.isAdmin()
+    
+    // Create base tabs that all users have
+    val homeTab = HomeTab(isAdmin = isAdmin)
+    val dashboardTab = DashboardTab(onNavigator = onNavigatorChange)
+    val profileTab = ProfileTab(onNavigator = onNavigatorChange)
+    
+    // Create role-specific tabs
+    val roleSpecificTabs = when (userRole) {
+        UserRole.GUEST -> listOf(
+            MentorshipTab(onNavigator = onNavigatorChange, userRole = userRole)
+        )
+        UserRole.MEMBER -> listOf(
+            TaskTab(onNavigator = onNavigatorChange, userRole = userRole)
+        )
+        UserRole.TEAM_LEAD, UserRole.ADMIN -> listOf(
+            TaskTab(onNavigator = onNavigatorChange, userRole = userRole),
+            MentorshipTab(onNavigator = onNavigatorChange, userRole = userRole)
+        )
+        else -> emptyList()
+    }
+    
+    // Combine all tabs in the correct order
+    return listOf(homeTab, dashboardTab) + roleSpecificTabs + listOf(profileTab)
+}
+
+/**
+ * Individual tab navigation item
+ */
 @Composable
 private fun RowScope.TabNavigationItem(tab: Tab) {
     val tabNavigator = LocalTabNavigator.current
@@ -132,32 +163,44 @@ private fun RowScope.TabNavigationItem(tab: Tab) {
     )
 }
 
+/**
+ * Tab icon with selection indicator
+ */
 @Composable
 private fun TabIcon(tab: Tab, selected: Boolean) {
+    val backgroundColor = if (selected) Color.Green.copy(alpha = 0.1f) else Color.Transparent
+    val iconTint = if (selected) GFGStatusPendingText else Color.Gray
+    
     Box(
         modifier = Modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(if (selected) Color.Green.copy(alpha = 0.1f) else Color.Transparent),
+            .background(backgroundColor),
         contentAlignment = Alignment.Center
     ) {
         tab.options.icon?.let { painter ->
             Icon(
                 painter = painter,
                 contentDescription = tab.options.title,
-                tint = if (selected) GFGStatusPendingText else Color.Gray,
+                tint = iconTint,
                 modifier = Modifier.size(20.dp)
             )
         }
     }
 }
 
+/**
+ * Tab label with selection indicator
+ */
 @Composable
 private fun TabLabel(tab: Tab, selected: Boolean) {
+    val fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+    val textColor = if (selected) GFGStatusPendingText else Color.Gray
+    
     Text(
         text = tab.options.title,
-        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+        fontWeight = fontWeight,
         fontSize = 10.sp,
-        color = if (selected) GFGStatusPendingText else Color.Gray
+        color = textColor
     )
 }

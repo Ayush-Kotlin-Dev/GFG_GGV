@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
 import com.ayush.geeksforgeeks.auth.AuthScreen
 import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
@@ -21,6 +22,7 @@ import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import dagger.hilt.android.AndroidEntryPoint
+import java.lang.reflect.Modifier
 import javax.inject.Inject
 
 /**
@@ -63,40 +65,42 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val splashScreen = splashScreenProvider.provideSplashScreen(this)
-
+        
         requestRequiredPermissions()
+        
+        val specialRoute = handleSpecialIntents()
 
         setContent {
             GFGGGVTheme {
                 val viewModel: MainViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
 
+                // Remove splash screen when we have content to show
                 LaunchedEffect(uiState) {
                     if (uiState !is MainViewModel.UiState.Loading) {
                         splashScreen.setKeepOnScreenCondition { false }
                     }
                 }
 
-                if (intent?.action == "UPDATE_APP") {
-                    val downloadUrl = intent.getStringExtra("downloadUrl")
-                    if (!downloadUrl.isNullOrEmpty()) {
-                        Navigator(screen = SettingsScreen())
+                // Use special route if available, otherwise follow normal flow
+                when {
+                    specialRoute != null -> {
+                        Navigator(screen = specialRoute)
                     }
-                }
-
-                when (val state = uiState) {
-                    MainViewModel.UiState.Loading -> {
+                    uiState is MainViewModel.UiState.Loading -> {
                         // The splash screen will be shown
                     }
-                    MainViewModel.UiState.NotLoggedIn -> {
+                    uiState is MainViewModel.UiState.NotLoggedIn -> {
                         Navigator(screen = AuthScreen())
                     }
-                    is MainViewModel.UiState.LoggedIn -> {
-                        Navigator(screen = ContainerApp(userRole = state.userRole))
+                    uiState is MainViewModel.UiState.LoggedIn -> {
+                        val userRole = (uiState as MainViewModel.UiState.LoggedIn).userRole
+                        Navigator(screen = ContainerApp(userRole = userRole))
                     }
-                    is MainViewModel.UiState.Error -> {
+                    uiState is MainViewModel.UiState.Error -> {
+                        val errorMessage = (uiState as MainViewModel.UiState.Error).message
                         ErrorScreen(
-                            errorMessage = state.message,
+                            errorMessage = errorMessage,
                             contactDetails = listOf(
                                 "gfgstudentchapterggv@gmail.com",
                                 "7408047420",
@@ -107,6 +111,19 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    
+    /**
+     * Handle special intents like app updates and return the appropriate screen if needed
+     */
+    private fun handleSpecialIntents(): Screen? {
+        if (intent?.action == "UPDATE_APP") {
+            val downloadUrl = intent.getStringExtra("downloadUrl")
+            if (!downloadUrl.isNullOrEmpty()) {
+                return SettingsScreen()
+            }
+        }
+        return null
     }
 
     private fun requestRequiredPermissions() {
@@ -124,12 +141,15 @@ class MainActivity : ComponentActivity() {
             checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
         }
 
-        permissionsToRequest.forEach { permission ->
-            requestPermissionLauncher.launch(arrayOf(permission))
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
         }
     }
 }
 
+/**
+ * Provider class for splash screen instance
+ */
 class SplashScreenProvider @Inject constructor() {
     fun provideSplashScreen(activity: Activity): SplashScreen {
         return activity.installSplashScreen().apply {

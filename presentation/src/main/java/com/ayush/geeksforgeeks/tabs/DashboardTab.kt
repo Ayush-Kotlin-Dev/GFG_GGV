@@ -13,8 +13,12 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.ayush.geeksforgeeks.dashboard.DashboardScreen
 
+/**
+ * Dashboard tab implementation for analytics and statistics
+ * @param onNavigator Callback for bottom navigation visibility
+ */
 class DashboardTab(
-     onNavigator: (Boolean) -> Unit
+    private val onNavigator: (Boolean) -> Unit
 ) : Tab {
 
     override val options: TabOptions

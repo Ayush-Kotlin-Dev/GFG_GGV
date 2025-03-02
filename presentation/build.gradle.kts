@@ -1,3 +1,5 @@
+import com.android.build.gradle.ProguardFiles.getDefaultProguardFile
+
 //This is build.gradle.kts for presentation Module
 plugins {
     id("com.android.application")
@@ -38,6 +40,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_18
     }
     kotlinOptions {
+        jvmTarget = "18"
         freeCompilerArgs += listOf("-Xjvm-default=all")
     }
     buildFeatures {
