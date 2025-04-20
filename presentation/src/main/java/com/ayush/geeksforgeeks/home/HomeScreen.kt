@@ -131,7 +131,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddEventDialog by remember { mutableStateOf(false) }
-    val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
         topBar = {
@@ -144,12 +143,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 // Reset the top padding to 0 to avoid excess space
-                .padding(
-                    start = paddingValues.calculateLeftPadding(layoutDirection),
-                    end = paddingValues.calculateRightPadding(layoutDirection),
-                    bottom = paddingValues.calculateBottomPadding(),
-                    top = 0.dp // Override top padding to avoid double spacing
-                ),
+                .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
