@@ -18,7 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.ayush.geeksforgeeks.MyApplication
+import com.ayush.geeksforgeeks.GFG_App
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -71,14 +71,14 @@ class CrashlyticsTestActivity : ComponentActivity() {
             list[5] // This will throw IndexOutOfBoundsException
         } catch (e: Exception) {
             // Log the non-fatal exception to Crashlytics
-            MyApplication.logException(e, "Accessing invalid index in test activity")
+            GFG_App.logException(e, "Accessing invalid index in test activity")
         }
     }
     
     private fun logCustomMessage() {
         // Log a custom event to Crashlytics
-        MyApplication.logEvent("User testing Crashlytics from test activity")
-        MyApplication.setCustomKey("test_performed", "true")
+        GFG_App.logEvent("User testing Crashlytics from test activity")
+        GFG_App.setCustomKey("test_performed", "true")
     }
 }
 

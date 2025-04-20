@@ -1,11 +1,9 @@
-import com.android.build.gradle.ProguardFiles.getDefaultProguardFile
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.dagger)
     alias(libs.plugins.kotlin.serialization)
-    id("org.jetbrains.kotlin.kapt")
+    kotlin("kapt")
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
@@ -79,12 +77,19 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-Xopt-in=kotlin.RequiresOptIn",
+            "-Xjvm-default=all"
+        )
     }
     buildFeatures {
         compose = true
         buildConfig = true
     }
 
+    kapt {
+        correctErrorTypes = true
+    }
 }
 
 dependencies {
@@ -105,8 +110,12 @@ dependencies {
     
     implementation(libs.bundles.compose)
     implementation(libs.coil.compose)
-    implementation(libs.bundles.hilt)
-    kapt(libs.hilt.compiler)
+
+    // Updated Dagger Hilt configuration
+    implementation(libs.dagger.hilt)
+    implementation(libs.hilt.compose.navigation)
+    kapt(libs.dagger.kapt)
+    
     implementation(libs.bundles.serialization)
     implementation(libs.bundles.voyager)
     implementation(libs.lottie)
@@ -123,11 +132,6 @@ dependencies {
     implementation(libs.fig)
 }
 
-tasks.register("copyProguardRules", Copy::class) {
-    from("proguard-rules.pro")
-    into("$buildDir/intermediates/proguard-files/")
-}
-
 tasks.register("printBuildInfo") {
     doLast {
         println("=== Build Information ===")
@@ -141,6 +145,3 @@ tasks.register("printBuildInfo") {
     }
 }
 
-tasks.named("preBuild") {
-    dependsOn("copyProguardRules")
-}
