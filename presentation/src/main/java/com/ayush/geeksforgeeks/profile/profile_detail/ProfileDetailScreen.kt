@@ -67,7 +67,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import coil.compose.AsyncImage
-import com.ayush.data.datastore.UserSettings
+import com.ayush.geeksforgeeks.data.datastore.UserSettings
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.profile.ProfileViewModel
 import com.ayush.geeksforgeeks.profile.ProfileViewModel.ProfileUiState

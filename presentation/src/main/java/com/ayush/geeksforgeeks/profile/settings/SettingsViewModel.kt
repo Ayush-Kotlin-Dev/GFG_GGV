@@ -1,16 +1,14 @@
 package com.ayush.geeksforgeeks.profile.settings
 
-import android.app.AlertDialog
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ayush.data.repository.AuthRepository
+import com.ayush.geeksforgeeks.data.repository.AuthRepository
 import com.ayush.geeksforgeeks.BuildConfig
 import com.ayush.geeksforgeeks.auth.ResetPasswordState
 import com.ayush.geeksforgeeks.utils.GithubRelease
-import com.ayush.geeksforgeeks.utils.UpdateManager
 import com.github.theapache64.fig.Fig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext

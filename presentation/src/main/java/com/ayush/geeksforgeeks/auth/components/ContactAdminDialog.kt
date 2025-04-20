@@ -18,9 +18,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import com.ayush.data.model.Team
-import com.ayush.data.model.TeamMember
-import com.ayush.data.repository.AuthRepository
+import com.ayush.geeksforgeeks.data.model.Team
+import com.ayush.geeksforgeeks.data.model.TeamMember
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 
 @Composable

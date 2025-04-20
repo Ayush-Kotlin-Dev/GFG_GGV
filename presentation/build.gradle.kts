@@ -1,29 +1,30 @@
 import com.android.build.gradle.ProguardFiles.getDefaultProguardFile
 
-//This is build.gradle.kts for presentation Module
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.dagger.hilt.android")
-    kotlin("plugin.serialization") version "1.9.22"
-    kotlin("kapt")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics") version "3.0.3"
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.kotlin.serialization)
+    id("kotlin-kapt")
+    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
 }
+
 android {
     namespace = "com.ayush.geeksforgeeks"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.ayush.geeksforgeeks"
         minSdk = 28
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 2
         versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    flavorDimensions("environment")
+    flavorDimensions += listOf("environment")
     
     productFlavors {
         create("prod") {
@@ -74,52 +75,50 @@ android {
 
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_18
-        targetCompatibility = JavaVersion.VERSION_18
-    }
-    kotlinOptions {
-        jvmTarget = "18"
-        freeCompilerArgs += listOf("-Xjvm-default=all")
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
         buildConfig = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
-    }
+
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("androidx.activity:activity-compose:1.9.2")
-    implementation("androidx.palette:palette-ktx:1.0.0")
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.03"))
-    implementation(platform("androidx.compose:compose-bom:2024.09.03"))
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.palette.ktx)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.compose.bom))
+    implementation(platform(libs.compose.bom))
 
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
-    val coroutinesVersion = "1.8.1"
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
-    compose()
-    coil()
-    hilt()
-    serialization()
-    voyagerNavigator()
-    lottie()
-    data()
-    firebase()
-    implementation("com.patrykandpatrick.vico:compose:1.6.5")
-    implementation ("org.apache.poi:poi-ooxml:5.2.4")
-    implementation ("org.apache.poi:poi:5.2.4")
-    implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.compose.material:material-icons-extended:1.7.6")
-    implementation("com.github.theapache64:fig:0.0.3")
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
+    implementation(libs.kotlinx.coroutines.core)
+    
+    implementation(libs.bundles.compose)
+    implementation(libs.coil.compose)
+    implementation(libs.bundles.hilt)
+    kapt(libs.hilt.compiler)
+    implementation(libs.bundles.serialization)
+    implementation(libs.bundles.voyager)
+    implementation(libs.lottie)
+    
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.bundles.firebase)
+    
+    implementation(libs.vico.compose)
+    implementation(libs.apache.poi.ooxml)
+    implementation(libs.apache.poi)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.compose.material.icons.extended)
+    implementation(libs.preferences.datastore)
+    implementation(libs.fig)
 }
 
 tasks.register("copyProguardRules", Copy::class) {

@@ -1,14 +1,11 @@
 package com.ayush.geeksforgeeks
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ayush.data.datastore.UserPreferences
-import com.ayush.data.datastore.UserRole
-import com.ayush.data.datastore.UserSettings
+import com.ayush.geeksforgeeks.data.datastore.UserPreferences
+import com.ayush.geeksforgeeks.data.datastore.UserRole
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel

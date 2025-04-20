@@ -38,7 +38,6 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,7 +75,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import coil.compose.AsyncImage
-import com.ayush.data.model.Event
+import com.ayush.geeksforgeeks.data.model.Event
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.home.components.EventDetailsDialog
 import com.ayush.geeksforgeeks.home.components.SectionHeader
@@ -90,7 +89,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.animation.core.tween
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.graphicsLayer
 

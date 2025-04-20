@@ -2,16 +2,14 @@ package com.ayush.geeksforgeeks.mentorship.lead
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ayush.data.datastore.UserPreferences
-import com.ayush.data.datastore.UserSettings
-import com.ayush.data.model.ThreadDetails
-import com.ayush.data.repository.MentorRepository
+import com.ayush.geeksforgeeks.data.datastore.UserPreferences
+import com.ayush.geeksforgeeks.data.datastore.UserSettings
+import com.ayush.geeksforgeeks.data.model.ThreadDetails
+import com.ayush.geeksforgeeks.data.repository.MentorRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch

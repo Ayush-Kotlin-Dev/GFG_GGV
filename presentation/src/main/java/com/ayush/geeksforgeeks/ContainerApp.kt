@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.tab.*
-import com.ayush.data.datastore.UserRole
+import com.ayush.geeksforgeeks.data.datastore.UserRole
 import com.ayush.geeksforgeeks.tabs.*
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 

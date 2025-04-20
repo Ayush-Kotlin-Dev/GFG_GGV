@@ -6,11 +6,11 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ayush.data.datastore.User
-import com.ayush.data.model.Task
-import com.ayush.data.model.TaskStatus
-import com.ayush.data.repository.TaskRepository
-import com.ayush.data.repository.UserRepository
+import com.ayush.geeksforgeeks.data.datastore.User
+import com.ayush.geeksforgeeks.data.model.Task
+import com.ayush.geeksforgeeks.data.model.TaskStatus
+import com.ayush.geeksforgeeks.data.repository.TaskRepository
+import com.ayush.geeksforgeeks.data.repository.UserRepository
 import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

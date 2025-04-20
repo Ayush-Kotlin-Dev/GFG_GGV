@@ -1,7 +1,6 @@
 package com.ayush.geeksforgeeks.tabs
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -11,7 +10,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
-import com.ayush.data.datastore.UserRole
+import com.ayush.geeksforgeeks.data.datastore.UserRole
 import com.ayush.geeksforgeeks.admin.AdminScreen
 import com.ayush.geeksforgeeks.task.TasksScreen
 

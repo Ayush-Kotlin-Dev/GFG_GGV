@@ -3,19 +3,16 @@ package com.ayush.geeksforgeeks.home
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ayush.data.model.Event
-import com.ayush.data.repository.HomeRepository
+import com.ayush.geeksforgeeks.data.model.Event
+import com.ayush.geeksforgeeks.data.repository.HomeRepository
 import com.ayush.geeksforgeeks.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import kotlin.random.Random
 
 
 @HiltViewModel

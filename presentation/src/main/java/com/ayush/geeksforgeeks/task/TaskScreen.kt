@@ -62,8 +62,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.ayush.data.model.Task
-import com.ayush.data.model.TaskStatus
+import com.ayush.geeksforgeeks.data.model.Task
+import com.ayush.geeksforgeeks.data.model.TaskStatus
 import com.ayush.geeksforgeeks.admin.TaskStatusChip
 import com.ayush.geeksforgeeks.utils.ErrorScreen
 import com.ayush.geeksforgeeks.utils.LoadingIndicator

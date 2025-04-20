@@ -28,7 +28,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Person
@@ -66,9 +65,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
-import com.ayush.data.datastore.User
-import com.ayush.data.model.Task
-import com.ayush.data.model.TaskStatus
+import com.ayush.geeksforgeeks.data.datastore.User
+import com.ayush.geeksforgeeks.data.model.Task
+import com.ayush.geeksforgeeks.data.model.TaskStatus
 import com.ayush.geeksforgeeks.R
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGCardBackground
@@ -76,7 +75,6 @@ import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.ui.theme.GFGTextPrimary
 import java.util.UUID
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.filled.AssignmentInd
@@ -86,11 +84,9 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.unit.DpOffset
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
+import com.google.firebase.Timestamp
 
 class AdminScreen : Screen {
     @Composable
@@ -802,7 +798,7 @@ fun AddTaskDialog(
                             credits = credits.toInt(),
                             status = TaskStatus.NEW,
                             assignedTo = "",
-                            createdAt = com.google.firebase.Timestamp.now(),
+                            createdAt = Timestamp.now(),
                         )
                     )
                 },

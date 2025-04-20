@@ -7,11 +7,11 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ayush.data.datastore.UserSettings
-import com.ayush.data.model.ContributorData
-import com.ayush.data.repository.AuthRepository
-import com.ayush.data.repository.QueryRepository
-import com.ayush.data.repository.UserRepository
+import com.ayush.geeksforgeeks.data.datastore.UserSettings
+import com.ayush.geeksforgeeks.data.model.ContributorData
+import com.ayush.geeksforgeeks.data.repository.AuthRepository
+import com.ayush.geeksforgeeks.data.repository.QueryRepository
+import com.ayush.geeksforgeeks.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers

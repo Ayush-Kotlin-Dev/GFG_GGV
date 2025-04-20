@@ -12,8 +12,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
-import com.ayush.data.model.Task
-import com.ayush.data.model.TaskStatus
+import com.ayush.geeksforgeeks.data.model.Task
+import com.ayush.geeksforgeeks.data.model.TaskStatus
 import com.ayush.geeksforgeeks.taskdetail.TaskDetailViewModel
 import com.ayush.geeksforgeeks.ui.theme.GFGPrimary
 import com.ayush.geeksforgeeks.utils.ErrorScreen

@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
-import com.ayush.data.model.Event
+import com.ayush.geeksforgeeks.data.model.Event
 
 @Composable
 fun EventDetailsDialog(

@@ -8,12 +8,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ayush.data.datastore.UserRole
-import com.ayush.data.model.Team
-import com.ayush.data.model.TeamMember
-import com.ayush.data.repository.AuthRepository
-import com.ayush.data.repository.AuthState
-import com.ayush.geeksforgeeks.profile.components.CoreTeamMember
+import com.ayush.geeksforgeeks.data.datastore.UserRole
+import com.ayush.geeksforgeeks.data.model.Team
+import com.ayush.geeksforgeeks.data.model.TeamMember
+import com.ayush.geeksforgeeks.data.repository.AuthRepository
+import com.ayush.geeksforgeeks.data.repository.AuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

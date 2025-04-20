@@ -22,9 +22,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ayush.data.model.Team
-import com.ayush.data.model.TeamMember
-import com.ayush.data.repository.AuthRepository
+import com.ayush.geeksforgeeks.data.model.Team
+import com.ayush.geeksforgeeks.data.model.TeamMember
 import com.ayush.geeksforgeeks.auth.TeamSection
 import com.ayush.geeksforgeeks.ui.theme.GFGBlack
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
