@@ -20,7 +20,11 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.tab.*
 import com.ayush.geeksforgeeks.data.datastore.UserRole
-import com.ayush.geeksforgeeks.tabs.*
+import com.ayush.geeksforgeeks.presentation.tabs.DashboardTab
+import com.ayush.geeksforgeeks.presentation.tabs.HomeTab
+import com.ayush.geeksforgeeks.presentation.tabs.MentorshipTab
+import com.ayush.geeksforgeeks.presentation.tabs.ProfileTab
+import com.ayush.geeksforgeeks.presentation.tabs.TaskTab
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPendingText
 
 data class ContainerApp(private val userRole: UserRole) : Screen {
@@ -29,7 +33,7 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
         var showBottomBar by remember { mutableStateOf(true) }
         
         // Create initial tab only once using remember
-        val initialTab = remember { 
+        val initialTab = remember {
             HomeTab(isAdmin = userRole.isAdmin())
         }
 

@@ -19,7 +19,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -28,12 +27,11 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
-import com.ayush.geeksforgeeks.auth.AuthScreen
-import com.ayush.geeksforgeeks.profile.settings.SettingsScreen
+import com.ayush.geeksforgeeks.presentation.auth.AuthScreen
+import com.ayush.geeksforgeeks.presentation.profile.settings.SettingsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGGGVTheme
 import com.ayush.geeksforgeeks.utils.CrashlyticsTestActivity
 import com.ayush.geeksforgeeks.utils.ErrorScreen
-import com.ayush.geeksforgeeks.utils.LoadingIndicator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
