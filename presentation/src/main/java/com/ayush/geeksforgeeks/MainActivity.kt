@@ -111,9 +111,9 @@ class MainActivity : ComponentActivity() {
                             Navigator(screen = ContainerApp(userRole = userRole))
                             
                             // Debug FAB for testing Crashlytics in debug builds
-                            if (BuildConfig.DEBUG) {
-                                DebugCrashlyticsFAB()
-                            }
+//                            if (BuildConfig.DEBUG) {
+//                                DebugCrashlyticsFAB()
+//                            }
                         }
                     }
                     uiState is MainViewModel.UiState.Error -> {

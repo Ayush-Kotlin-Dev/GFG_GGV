@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -38,6 +41,7 @@ android {
             resValue("string", "app_name", "GFG GGV (Dev)")
         }
     }
+
 
     buildTypes {
         debug {

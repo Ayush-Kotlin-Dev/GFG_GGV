@@ -82,3 +82,8 @@
     private void readObject(java.io.ObjectInputStream);
     private void readObjectNoData();
 }
+
+# Rules for kotlin.uuid classes
+-dontwarn kotlin.uuid.ExperimentalUuidApi
+-dontwarn kotlin.uuid.Uuid$Companion
+-dontwarn kotlin.uuid.Uuid
