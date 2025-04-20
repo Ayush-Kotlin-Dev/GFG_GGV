@@ -186,7 +186,7 @@ private fun ThreadDiscussionContent(
                 }
             }
 
-            AnimatedVisibility(
+            androidx.compose.animation.AnimatedVisibility(
                 visible = showScrollToBottom,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)

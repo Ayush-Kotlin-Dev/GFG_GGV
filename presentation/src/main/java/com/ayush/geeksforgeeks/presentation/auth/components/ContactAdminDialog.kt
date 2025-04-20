@@ -92,7 +92,7 @@ private fun buildWhatsAppMessage(
 
 private fun launchWhatsApp(context: Context, message: String) {
     val intent = Intent(Intent.ACTION_VIEW).apply {
-        Intent.setData = Uri.parse("https://wa.me/${Constants.ADMIN_WHATSAPP}?text=${Uri.encode(message)}")
+        data = Uri.parse("https://wa.me/${Constants.ADMIN_WHATSAPP}?text=${Uri.encode(message)}")
     }
     context.startActivity(intent)
 }

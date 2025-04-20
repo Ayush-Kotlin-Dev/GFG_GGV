@@ -163,12 +163,12 @@ fun ProfileContent(
             val releaseUrl = releaseState.release?.htmlUrl ?: "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
             val version = releaseState.release?.tagName?.let { " (Version $it)" } ?: ""
             val sendIntent = Intent().apply {
-                Intent.setAction = Intent.ACTION_SEND
+                action = Intent.ACTION_SEND
                 putExtra(
                     Intent.EXTRA_TEXT,
                     "Check out this app of our coding club: $releaseUrl$version"
                 )
-                Intent.setType = "text/plain"
+                type = "text/plain"
             }
             val shareIntent = Intent.createChooser(sendIntent, null)
             context.startActivity(shareIntent)
@@ -241,12 +241,12 @@ fun ProfileContent(
                         val releaseUrl = releaseState.release?.htmlUrl ?: "https://github.com/Ayush-Kotlin-Dev/GFG_GGV/releases/"
                         val version = releaseState.release?.tagName?.let { " (Version $it)" } ?: ""
                         val sendIntent = Intent().apply {
-                            Intent.setAction = Intent.ACTION_SEND
+                            action = Intent.ACTION_SEND
                             putExtra(
                                 Intent.EXTRA_TEXT,
                                 "Check out this app of our coding club : $releaseUrl $version"
                             )
-                            Intent.setType = "text/plain"
+                            type = "text/plain"
                         }
                         val shareIntent = Intent.createChooser(sendIntent, null)
                         context.startActivity(shareIntent)
@@ -313,7 +313,7 @@ fun ProfileContent(
             onDismiss = { showContactDialog = false },
             onCall = {
                 val intent = Intent(Intent.ACTION_DIAL).apply {
-                    Intent.setData = Uri.parse("tel:+917408047420")
+                    data = Uri.parse("tel:+917408047420")
                 }
                 context.startActivity(intent)
                 showContactDialog = false
@@ -330,7 +330,7 @@ fun ProfileContent(
             },
             onWhatsApp = {
                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                    Intent.setData = Uri.parse("https://wa.me/+916264450423")
+                    data = Uri.parse("https://wa.me/+916264450423")
                 }
                 context.startActivity(intent)
                 showContactDialog = false
