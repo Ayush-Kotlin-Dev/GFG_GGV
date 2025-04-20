@@ -39,7 +39,6 @@ fig = "0.0.3"
 palette = "1.0.0"
 firebase-crashlytics-plugin = "3.0.3"
 compose-compiler = "1.5.11"
-javapoet = "1.13.0"
 
 [libraries]
 # AndroidX Core
@@ -108,8 +107,6 @@ kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 # Coil
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
-# JavaPoet
-javapoet = { group = "com.squareup", name = "javapoet", version.ref = "javapoet" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

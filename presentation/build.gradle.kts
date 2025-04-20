@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.serialization)
-    id("kotlin-kapt")
+    id("org.jetbrains.kotlin.kapt")
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
@@ -84,6 +84,7 @@ android {
         compose = true
         buildConfig = true
     }
+
 }
 
 dependencies {
@@ -120,7 +121,6 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     implementation(libs.preferences.datastore)
     implementation(libs.fig)
-    implementation(libs.javapoet)
 }
 
 tasks.register("copyProguardRules", Copy::class) {
