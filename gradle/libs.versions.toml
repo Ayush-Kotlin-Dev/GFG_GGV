@@ -15,7 +15,6 @@ coil = "2.7.0"
 hilt = "2.52"
 hilt-compose = "1.2.0"
 serialization = "1.8.0"
-room = "2.7.0"
 preferences-datastore = "1.1.4"
 voyager = "1.1.0-beta03"
 apollo = "4.0.0"
@@ -66,11 +65,6 @@ dagger-hilt = { module = "com.google.dagger:hilt-android", version.ref = "hilt" 
 dagger-kapt = { module = 'com.google.dagger:hilt-android-compiler', version.ref = "hilt" }
 hilt-compose-navigation = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hilt-compose" }
 
-# Room
-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
 
 # Preferences Datastore
 preferences-datastore = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "preferences-datastore" }

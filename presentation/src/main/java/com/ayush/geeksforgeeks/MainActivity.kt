@@ -107,14 +107,15 @@ class MainActivity : ComponentActivity() {
                     }
                     uiState is MainViewModel.UiState.LoggedIn -> {
                         val userRole = (uiState as MainViewModel.UiState.LoggedIn).userRole
-                        Box {
-                            Navigator(screen = ContainerApp(userRole = userRole))
-                            
+                        Navigator(screen = ContainerApp(userRole = userRole))
+
+//                        Box {
+
                             // Debug FAB for testing Crashlytics in debug builds
 //                            if (BuildConfig.DEBUG) {
 //                                DebugCrashlyticsFAB()
 //                            }
-                        }
+//                        }
                     }
                     uiState is MainViewModel.UiState.Error -> {
                         val errorMessage = (uiState as MainViewModel.UiState.Error).message
