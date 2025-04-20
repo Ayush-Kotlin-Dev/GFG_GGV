@@ -73,16 +73,17 @@ android {
         }
     }
 
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
         buildConfig = true
     }
-
 }
 
 dependencies {
@@ -119,6 +120,7 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     implementation(libs.preferences.datastore)
     implementation(libs.fig)
+    implementation(libs.javapoet)
 }
 
 tasks.register("copyProguardRules", Copy::class) {

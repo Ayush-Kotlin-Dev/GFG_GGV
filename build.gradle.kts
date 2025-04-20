@@ -6,3 +6,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.google.services) apply false
 }
+
+allprojects {
+    configurations.all {
+        resolutionStrategy.force("com.squareup:javapoet:1.13.0")
+    }
+}
