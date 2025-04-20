@@ -1,7 +1,6 @@
 package com.ayush.geeksforgeeks
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -34,15 +33,16 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
             HomeTab(isAdmin = userRole.isAdmin())
         }
 
-        // Animate bottom padding for content with smooth animation
-        val bottomPadding by animateDpAsState(
-            targetValue = if (showBottomBar) 73.dp else 0.dp,
-            animationSpec = tween(300), 
-            label = "bottom padding animation"
-        )
-
         // Setup tab navigator with initial tab
         TabNavigator(initialTab) {
+            val currentTab = LocalTabNavigator.current.current
+            
+            // Track if current tab needs status bar padding
+            // HomeTab doesn't need additional top padding as it has its own
+            val applyTopPadding = remember(currentTab) {
+                currentTab !is HomeTab
+            }
+            
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
@@ -58,9 +58,9 @@ data class ContainerApp(private val userRole: UserRole) : Screen {
                         .fillMaxSize()
                         .padding(
                             start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
-                            top = innerPadding.calculateTopPadding(),
+                            top = if (applyTopPadding) innerPadding.calculateTopPadding() else 0.dp,
                             end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
-                            bottom = bottomPadding
+                            bottom = if (showBottomBar) 73.dp else 0.dp
                         )
                 ) {
                     CurrentTab()
@@ -94,7 +94,6 @@ private fun BottomNavigationBar(
         exit = slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300))
     ) {
         NavigationBar(
-            modifier = Modifier.height(73.dp),
             containerColor = Color.White,
             contentColor = Color.Black
         ) {
@@ -130,7 +129,6 @@ private fun createTabItems(userRole: UserRole, onNavigatorChange: (Boolean) -> U
             TaskTab(onNavigator = onNavigatorChange, userRole = userRole),
             MentorshipTab(onNavigator = onNavigatorChange, userRole = userRole)
         )
-        else -> emptyList()
     }
     
     // Combine all tabs in the correct order

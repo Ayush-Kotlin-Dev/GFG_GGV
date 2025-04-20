@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -130,18 +131,25 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddEventDialog by remember { mutableStateOf(false) }
+    val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
         topBar = {
             HomeTopBar(
                 onNotificationClick = onNotificationClick,
             )
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                // Reset the top padding to 0 to avoid excess space
+                .padding(
+                    start = paddingValues.calculateLeftPadding(layoutDirection),
+                    end = paddingValues.calculateRightPadding(layoutDirection),
+                    bottom = paddingValues.calculateBottomPadding(),
+                    top = 0.dp // Override top padding to avoid double spacing
+                ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
