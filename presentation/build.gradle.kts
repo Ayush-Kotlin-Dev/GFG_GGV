@@ -12,6 +12,13 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
+// Load signing configuration
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.ayush.geeksforgeeks"
     compileSdk = 35
@@ -23,6 +30,19 @@ android {
         versionCode = 2
         versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables.useSupportLibrary = true
+    }
+
+    // Signing configuration for release builds
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
     }
 
     flavorDimensions += listOf("environment")
@@ -39,6 +59,7 @@ android {
             applicationId = "com.ayush.geeksforgeeks.dev"
             buildConfigField("String", "BUILD_VARIANT", "\"dev\"")
             resValue("string", "app_name", "GFG GGV (Dev)")
+            versionNameSuffix = "-dev"
         }
     }
 
@@ -52,6 +73,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -78,7 +100,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Enable core library desugaring for better backward compatibility
+        isCoreLibraryDesugaringEnabled = true
     }
+    
     kotlinOptions {
         jvmTarget = "17"
         freeCompilerArgs += listOf(
@@ -93,6 +118,26 @@ android {
 
     kapt {
         correctErrorTypes = true
+    }
+    
+    // Configure bundle for Play Store
+    bundle {
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
+    }
+    
+    // Lint options for release builds
+    lint {
+        abortOnError = true
+        checkReleaseBuilds = true
+        disable += "MissingTranslation"
     }
 }
 
@@ -134,6 +179,9 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     implementation(libs.preferences.datastore)
     implementation(libs.fig)
+    
+    // Add core library desugaring for backward compatibility
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
 tasks.register("printBuildInfo") {

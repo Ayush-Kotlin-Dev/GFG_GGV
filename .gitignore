@@ -14,3 +14,9 @@
 .cxx
 local.properties
 /presentation/google-services.json
+
+# Keystore files
+*.jks
+*.keystore
+keystore.properties
+/keystore
