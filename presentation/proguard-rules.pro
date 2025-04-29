@@ -37,6 +37,17 @@
 # See also https://github.com/Kotlin/kotlinx.serialization/issues/1900
 -dontnote kotlinx.serialization.**
 
+# Keep all model classes from obfuscation
+-keep class com.ayush.geeksforgeeks.data.model.** { *; }
+
+# Specifically keep classes with PropertyName annotations
+-keepclassmembers class com.ayush.geeksforgeeks.data.model.ThreadMessage { 
+    boolean isTeamLead;
+}
+-keepclassmembers class com.ayush.geeksforgeeks.data.model.ThreadDetails { 
+    boolean isEnabled; 
+}
+
 # Serialization core uses `java.lang.ClassValue` for caching inside these specified classes.
 # If there is no `java.lang.ClassValue` (for example, in Android), then R8/ProGuard will print a warning.
 # However, since in this case they will not be used, we can disable these warnings
