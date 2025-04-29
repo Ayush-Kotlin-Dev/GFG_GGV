@@ -39,7 +39,7 @@ data class MentorshipTab(
         }
 
     private val initialScreen = when (userRole) {
-        UserRole.TEAM_LEAD, UserRole.ADMIN -> MentorThreadsScreen() // Using default values
+        UserRole.TEAM_LEAD, UserRole.ADMIN -> MentorThreadsScreen() 
         else -> GuestMentorshipScreen()
     }
 

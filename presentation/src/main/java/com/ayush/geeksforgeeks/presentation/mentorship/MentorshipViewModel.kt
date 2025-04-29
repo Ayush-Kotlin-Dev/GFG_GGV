@@ -6,10 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.ayush.geeksforgeeks.data.model.Team
 import com.ayush.geeksforgeeks.data.model.ThreadDetails
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.ayush.geeksforgeeks.data.repository.MentorshipRepository
@@ -50,21 +49,44 @@ class MentorshipViewModel @Inject constructor(
     private val _createThreadUiState = MutableStateFlow(CreateThreadUiState())
     val createThreadUiState: StateFlow<CreateThreadUiState> = _createThreadUiState.asStateFlow()
 
+    // Expose simple states for convenience in UI
+    private val _threads = MutableStateFlow<List<ThreadDetails>>(emptyList())
+    val threads: StateFlow<List<ThreadDetails>> = _threads.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private var loadThreadsJob: Job? = null
+    private var selectedTeamId: String? = null
+
     init {
         loadTeams()
     }
 
-    fun loadTeams() {
+    fun loadTeams(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _teamsUiState.value = TeamsUiState.Loading
+            _isLoading.value = true
+
             try {
                 val teams = mentorshipRepository.getTeams()
                 _teamsUiState.value = TeamsUiState.Success(teams)
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+
                 Log.e("MentorshipViewModel", "Error loading teams: ${e.message}")
                 _teamsUiState.value = TeamsUiState.Error(
                     e.message ?: "Failed to load teams"
                 )
+                _errorMessage.value = e.message ?: "Failed to load teams"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -74,67 +96,187 @@ class MentorshipViewModel @Inject constructor(
     }
 
     private fun loadThreads(team: Team) {
-        viewModelScope.launch {
+        loadThreadsJob?.cancel()
+        selectedTeamId = team.id
+
+        loadThreadsJob = viewModelScope.launch {
             _threadsUiState.value = ThreadsUiState.Loading
+            _isLoading.value = true
+
             try {
                 val threads = mentorshipRepository.getThreads(team.id)
                 _threadsUiState.value = ThreadsUiState.Success(
                     threads = threads,
                     selectedTeam = team
                 )
+                _threads.value = threads
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+
                 Log.e("MentorshipViewModel", "Error loading threads: ${e.message}")
                 _threadsUiState.value = ThreadsUiState.Error(
                     e.message ?: "Failed to load discussions"
                 )
+                _errorMessage.value = e.message ?: "Failed to load discussions"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    fun createThread(title: String, message: String, category: String = "General", tags: List<String> = emptyList()) {
-        viewModelScope.launch {
-            _createThreadUiState.update { it.copy(isLoading = true, error = null) }
+    fun loadThreads(teamId: String) {
+        loadThreadsJob?.cancel()
+        selectedTeamId = teamId
+
+        loadThreadsJob = viewModelScope.launch {
+            _isLoading.value = true
 
             try {
-                val currentState = _threadsUiState.value
-                if (currentState !is ThreadsUiState.Success) {
-                    _createThreadUiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "No team selected"
-                        )
-                    }
-                    return@launch
-                }
-
-                mentorshipRepository.createThread(
-                    currentState.selectedTeam.id,
-                    title,
-                    message,
-                    category,
-                    tags
-                ).onSuccess {
-                    _createThreadUiState.update {
-                        it.copy(isLoading = false, isSuccess = true)
-                    }
-                    // Reload threads after successful creation
-                    loadThreads(currentState.selectedTeam)
-                }.onFailure { error ->
-                    _createThreadUiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to create thread"
-                        )
-                    }
-                }
+                val threads = mentorshipRepository.getThreads(teamId)
+                _threads.value = threads
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+
+                Log.e("MentorshipViewModel", "Error loading threads: ${e.message}")
+                _errorMessage.value = e.message ?: "Failed to load discussions"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun refreshThreads() {
+        selectedTeamId?.let { teamId ->
+            loadThreadsJob?.cancel()
+
+            loadThreadsJob = viewModelScope.launch {
+                _isRefreshing.value = true
+
+                try {
+                    val threads = mentorshipRepository.getThreads(teamId)
+                    _threads.value = threads
+
+                    // Also update the threadsUiState if it's in Success state
+                    val currentState = _threadsUiState.value
+                    if (currentState is ThreadsUiState.Success) {
+                        _threadsUiState.value = currentState.copy(threads = threads)
+                    }
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+
+                    Log.e("MentorshipViewModel", "Error refreshing threads: ${e.message}")
+                    _errorMessage.value = e.message ?: "Failed to refresh discussions"
+                } finally {
+                    _isRefreshing.value = false
+                }
+            }
+        }
+    }
+
+    fun createThread(
+        teamId: String,
+        title: String,
+        message: String,
+        category: String = "General",
+        tags: List<String> = emptyList()
+    ): Flow<Result<ThreadDetails>> = flow {
+        _createThreadUiState.update { it.copy(isLoading = true, error = null) }
+        _isLoading.value = true
+
+        try {
+            val result = mentorshipRepository.createThread(
+                teamId,
+                title,
+                message,
+                category,
+                tags
+            )
+
+            result.onSuccess {
+                _createThreadUiState.update {
+                    it.copy(isLoading = false, isSuccess = true)
+                }
+                // Refresh threads list after creating a new thread
+                refreshThreads()
+            }.onFailure { error ->
                 _createThreadUiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Unknown error occurred"
+                        error = error.message ?: "Failed to create thread"
                     )
                 }
+                _errorMessage.value = error.message ?: "Failed to create thread"
             }
+
+            emit(result)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+
+            val errorMsg = e.message ?: "Unknown error occurred"
+            _createThreadUiState.update {
+                it.copy(
+                    isLoading = false,
+                    error = errorMsg
+                )
+            }
+            _errorMessage.value = errorMsg
+            emit(Result.failure(e))
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    fun updateThreadStatus(
+        teamId: String,
+        threadId: String,
+        isEnabled: Boolean? = null,
+        isPinned: Boolean? = null,
+        isResolved: Boolean? = null
+    ): Flow<Result<Unit>> = flow {
+        _isLoading.value = true
+
+        try {
+            val result = mentorshipRepository.updateThreadStatus(
+                teamId,
+                threadId,
+                isEnabled,
+                isPinned,
+                isResolved
+            )
+
+            result.onSuccess {
+                // Update the local threads list to reflect changes immediately
+                val updatedThreads = _threads.value.map { thread ->
+                    if (thread.id == threadId) {
+                        thread.copy(
+                            isEnabled = isEnabled ?: thread.isEnabled,
+                            isPinned = isPinned ?: thread.isPinned,
+                            isResolved = isResolved ?: thread.isResolved
+                        )
+                    } else {
+                        thread
+                    }
+                }
+                _threads.value = updatedThreads
+
+                // Also update ThreadsUiState if needed
+                val currentState = _threadsUiState.value
+                if (currentState is ThreadsUiState.Success) {
+                    _threadsUiState.value = currentState.copy(threads = updatedThreads)
+                }
+            }.onFailure { error ->
+                _errorMessage.value = error.message ?: "Failed to update thread status"
+            }
+
+            emit(result)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+
+            val errorMsg = e.message ?: "Unknown error occurred while updating thread"
+            _errorMessage.value = errorMsg
+            emit(Result.failure(e))
+        } finally {
+            _isLoading.value = false
         }
     }
 
@@ -143,6 +285,8 @@ class MentorshipViewModel @Inject constructor(
     }
 
     fun clearError() {
+        _errorMessage.value = null
+
         when (val currentTeamsState = _teamsUiState.value) {
             is TeamsUiState.Error -> loadTeams()
             else -> Unit
@@ -150,14 +294,21 @@ class MentorshipViewModel @Inject constructor(
 
         when (val currentThreadsState = _threadsUiState.value) {
             is ThreadsUiState.Error -> {
-                val currentState = _threadsUiState.value
-                if (currentState is ThreadsUiState.Success) {
-                    loadThreads(currentState.selectedTeam)
+                val state = _threadsUiState.value
+                if (state is ThreadsUiState.Success) {
+                    loadThreads(state.selectedTeam)
+                } else if (selectedTeamId != null) {
+                    loadThreads(selectedTeamId!!)
                 }
             }
             else -> Unit
         }
 
         _createThreadUiState.update { it.copy(error = null) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        loadThreadsJob?.cancel()
     }
 }

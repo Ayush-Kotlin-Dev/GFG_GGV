@@ -30,11 +30,20 @@ class ThreadViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
     private val _currentUser = MutableStateFlow<UserSettings?>(null)
     val currentUser: StateFlow<UserSettings?> = _currentUser.asStateFlow()
+
+    private var messagesJob: Job? = null
+    private var threadDetailsJob: Job? = null
+
+    private var currentTeamId: String? = null
+    private var currentThreadId: String? = null
 
     init {
         viewModelScope.launch {
@@ -48,45 +57,90 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
-    private var messagesJob: Job? = null
-
     fun loadThread(teamId: String, threadId: String) {
+        currentTeamId = teamId
+        currentThreadId = threadId
+
+        // Cancel any existing jobs
+        threadDetailsJob?.cancel()
+        messagesJob?.cancel()
+
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                
+                _error.value = null
+
                 // Load thread details using Flow
-                launch {
+                threadDetailsJob = launch {
                     mentorshipRepository.getThreadDetailsFlow(teamId, threadId)
                         .catch { e ->
+                            if (e is CancellationException) throw e
+
                             Log.e("ThreadViewModel", "Error loading thread details: ${e.message}")
-                            _error.value = e.message
+                            _error.value = "Failed to load thread details: ${e.message}"
                         }
                         .collect { details ->
-                            _threadDetails.value = details
+                            // Don't update with null if we already have details (helps with offline support)
+                            if (details != null || _threadDetails.value == null) {
+                                _threadDetails.value = details
+                            }
                             Log.d("ThreadViewModel", "Thread details loaded: $details")
                         }
                 }
-
-                // Cancel existing messages subscription if any
-                messagesJob?.cancel()
 
                 // Start listening to messages
                 messagesJob = launch {
                     mentorshipRepository.getMessages(teamId, threadId)
                         .catch { e ->
+                            if (e is CancellationException) throw e
+
                             Log.e("ThreadViewModel", "Error loading messages: ${e.message}")
-                            _error.value = e.message
+                            _error.value = "Failed to load messages: ${e.message}"
                         }
                         .collect { messagesList ->
                             _messages.value = messagesList
                         }
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+
                 Log.e("ThreadViewModel", "Error loading thread: ${e.message}")
-                _error.value = e.message
+                _error.value = "Error loading thread: ${e.message}"
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    fun refreshThread() {
+        val teamId = currentTeamId ?: return
+        val threadId = currentThreadId ?: return
+
+        viewModelScope.launch {
+            try {
+                _isRefreshing.value = true
+                _error.value = null
+
+                // Reload thread details directly
+                try {
+                    val threadDetails = mentorshipRepository.getThreadDetails(teamId, threadId)
+                    if (threadDetails != null) {
+                        _threadDetails.value = threadDetails
+                    }
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    Log.e("ThreadViewModel", "Error refreshing thread details: ${e.message}")
+                    // Don't set error here, as we might still get messages
+                }
+
+                // We don't need to explicitly refresh messages, as they're already coming from a Flow
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+
+                Log.e("ThreadViewModel", "Error refreshing thread: ${e.message}")
+                _error.value = "Error refreshing thread: ${e.message}"
+            } finally {
+                _isRefreshing.value = false
             }
         }
     }
@@ -94,116 +148,141 @@ class ThreadViewModel @Inject constructor(
     suspend fun isTeamLead(): Boolean = 
         userPreferences.userData.first().role == UserRole.TEAM_LEAD
 
-    fun sendMessage(message: String) {
-        if (message.isBlank()) return
+    fun sendMessage(message: String): Flow<Result<ThreadMessage>> = flow {
+        if (message.isBlank()) {
+            emit(Result.failure(IllegalArgumentException("Message cannot be empty")))
+            return@flow
+        }
 
-        viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _error.value = null
+        _isLoading.value = true
+        _error.value = null
 
-                val teamId = _threadDetails.value?.teamId ?: return@launch
-                val threadId = _threadDetails.value?.id ?: return@launch
+        try {
+            val teamId = currentTeamId ?: throw IllegalStateException("No team selected")
+            val threadId = currentThreadId ?: throw IllegalStateException("No thread selected")
 
-                mentorshipRepository.sendMessage(
-                    teamId = teamId,
-                    threadId = threadId,
-                    message = message.trim()
-                ).onFailure { error ->
-                    _error.value = error.message ?: "Failed to send message"
-                }
-            } catch (e: Exception) {
-                Log.e("ThreadViewModel", "Error sending message: ${e.message}")
-                _error.value = e.message
-            } finally {
-                _isLoading.value = false
+            val result = mentorshipRepository.sendMessage(
+                teamId = teamId,
+                threadId = threadId,
+                message = message.trim()
+            )
+
+            result.onFailure { error ->
+                _error.value = error.message ?: "Failed to send message"
             }
+
+            emit(result)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+
+            Log.e("ThreadViewModel", "Error sending message: ${e.message}")
+            _error.value = e.message
+            emit(Result.failure(e))
+        } finally {
+            _isLoading.value = false
         }
     }
 
-    fun enableThread() { //TODO it will be only for LEAD side , guest cant enable thread they just post their questions/doubts with title and description
-        viewModelScope.launch { // Made it just for testing
-            try {
-                _isLoading.value = true
-                _error.value = null
+    fun enableThread(): Flow<Result<Unit>> = flow {
+        _isLoading.value = true
+        _error.value = null
 
-                val teamId = _threadDetails.value?.teamId ?: return@launch
-                val threadId = _threadDetails.value?.id ?: return@launch
+        try {
+            val teamId = currentTeamId ?: throw IllegalStateException("No team selected")
+            val threadId = currentThreadId ?: throw IllegalStateException("No thread selected")
 
-                mentorshipRepository.updateThreadStatus(
-                    teamId = teamId,
-                    threadId = threadId,
-                    isEnabled = true
-                ).onSuccess {
-                    _threadDetails.value = _threadDetails.value?.copy(isEnabled = true)
-                }.onFailure { error ->
-                    _error.value = error.message
-                }
-            } catch (e: Exception) {
-                _error.value = e.message
-            } finally {
-                _isLoading.value = false
+            val result = mentorshipRepository.updateThreadStatus(
+                teamId = teamId,
+                threadId = threadId,
+                isEnabled = true
+            )
+
+            result.onSuccess {
+                _threadDetails.value = _threadDetails.value?.copy(isEnabled = true)
+            }.onFailure { error ->
+                _error.value = error.message ?: "Failed to enable thread"
             }
+
+            emit(result)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+
+            _error.value = e.message
+            emit(Result.failure(e))
+        } finally {
+            _isLoading.value = false
         }
     }
 
+    fun resolveThread(resolved: Boolean): Flow<Result<Unit>> = flow {
+        _isLoading.value = true
+        _error.value = null
 
+        try {
+            val teamId = currentTeamId ?: throw IllegalStateException("No team selected")
+            val threadId = currentThreadId ?: throw IllegalStateException("No thread selected")
 
+            val result = mentorshipRepository.updateThreadStatus(
+                teamId = teamId,
+                threadId = threadId,
+                isResolved = resolved
+            )
 
-    fun resolveThread(resolved: Boolean) {
-        viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _error.value = null
-
-                val teamId = _threadDetails.value?.teamId ?: return@launch
-                val threadId = _threadDetails.value?.id ?: return@launch
-
-                mentorshipRepository.updateThreadStatus(
-                    teamId = teamId,
-                    threadId = threadId,
-                    isResolved = resolved
-                ).onSuccess {
-                    _threadDetails.value = _threadDetails.value?.copy(isResolved = resolved)
-                }.onFailure { error ->
-                    _error.value = error.message
-                }
-            } catch (e: Exception) {
-                _error.value = e.message
-            } finally {
-                _isLoading.value = false
+            result.onSuccess {
+                _threadDetails.value = _threadDetails.value?.copy(isResolved = resolved)
+            }.onFailure { error ->
+                _error.value = error.message ?: "Failed to update thread status"
             }
+
+            emit(result)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+
+            _error.value = e.message ?: "Error updating thread"
+            emit(Result.failure(e))
+        } finally {
+            _isLoading.value = false
         }
     }
 
-    fun pinThread(pinned: Boolean) {
-        viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _error.value = null
+    fun pinThread(pinned: Boolean): Flow<Result<Unit>> = flow {
+        _isLoading.value = true
+        _error.value = null
 
-                val teamId = _threadDetails.value?.teamId ?: return@launch
-                val threadId = _threadDetails.value?.id ?: return@launch
+        try {
+            val teamId = currentTeamId ?: throw IllegalStateException("No team selected")
+            val threadId = currentThreadId ?: throw IllegalStateException("No thread selected")
 
-                mentorshipRepository.updateThreadStatus(
-                    teamId = teamId,
-                    threadId = threadId,
-                    isPinned = pinned
-                ).onSuccess {
-                    _threadDetails.value = _threadDetails.value?.copy(isPinned = pinned)
-                }.onFailure { error ->
-                    _error.value = error.message
-                }
-            } catch (e: Exception) {
-                _error.value = e.message
-            } finally {
-                _isLoading.value = false
+            val result = mentorshipRepository.updateThreadStatus(
+                teamId = teamId,
+                threadId = threadId,
+                isPinned = pinned
+            )
+
+            result.onSuccess {
+                _threadDetails.value = _threadDetails.value?.copy(isPinned = pinned)
+            }.onFailure { error ->
+                _error.value = error.message ?: "Failed to update pinned status"
             }
+
+            emit(result)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+
+            _error.value = e.message ?: "Error updating thread"
+            emit(Result.failure(e))
+        } finally {
+            _isLoading.value = false
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 
     override fun onCleared() {
         super.onCleared()
         messagesJob?.cancel()
+        threadDetailsJob?.cancel()
     }
 }

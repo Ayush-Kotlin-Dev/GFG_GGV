@@ -64,6 +64,7 @@ import com.ayush.geeksforgeeks.data.model.ThreadDetails
 import com.ayush.geeksforgeeks.presentation.mentorship.components.CreateThreadDialog
 import com.ayush.geeksforgeeks.presentation.mentorship.components.ShimmerLoading
 import com.ayush.geeksforgeeks.presentation.mentorship.components.getTeamDescription
+import com.ayush.geeksforgeeks.presentation.mentorship.mentee.MenteeThreadsScreen
 import com.ayush.geeksforgeeks.ui.theme.GFGBackground
 import com.ayush.geeksforgeeks.ui.theme.GFGBlack
 import com.ayush.geeksforgeeks.ui.theme.GFGStatusPending
@@ -156,7 +157,7 @@ class GuestMentorshipScreen : Screen {
                             TeamsContent(
                                 teams = teams,
                                 onTeamClick = { team ->
-                                    navigator.push(TeamThreadsScreen(team.id, team.name))
+                                    navigator.push(MenteeThreadsScreen(team))
                                 }
                             )
                         }
@@ -253,201 +254,6 @@ class GuestMentorshipScreen : Screen {
             }
         }
 
-    }
-}
-
-data class TeamThreadsScreen(
-    private val teamId: String,
-    private val teamName: String
-) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    override fun Content() { //This is made previously for Juniour/Guest side screen
-        val navigator = LocalNavigator.currentOrThrow
-        val viewModel: MentorshipViewModel = hiltViewModel()
-        val threadsUiState by viewModel.threadsUiState.collectAsState()
-        val createThreadUiState by viewModel.createThreadUiState.collectAsState()
-        var showCreateDialog by remember { mutableStateOf(false) }
-
-        LaunchedEffect(teamId) {
-            viewModel.selectTeam(Team(id = teamId, name = teamName))
-        }
-
-        LaunchedEffect(createThreadUiState.isSuccess) {
-            if (createThreadUiState.isSuccess) {
-                showCreateDialog = false
-                viewModel.resetCreateThreadState()
-            }
-        }
-
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text(teamName)
-                            Text(
-                                "Discussion Forum",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = GFGBlack.copy(alpha = 0.6f)
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = GFGBackground,
-                        titleContentColor = GFGBlack
-                    )
-                )
-            },
-            floatingActionButton = {
-                AnimatedVisibility(
-                    visible = threadsUiState !is ThreadsUiState.Loading,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut()
-                ) {
-                    FloatingActionButton( //TODO add ripple effect fab explosion effect
-                        onClick = { showCreateDialog = true },
-                        containerColor = GFGStatusPendingText,
-                        contentColor = Color.White
-                    ) {
-                        Icon(Icons.Default.Add, "Ask Question")
-                    }
-                }
-            }
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                when (threadsUiState) {
-                    ThreadsUiState.Loading -> ShimmerLoading()
-                    is ThreadsUiState.Error -> ErrorState(
-                        message = (threadsUiState as ThreadsUiState.Error).message,
-                        onRetry = {
-                            viewModel.clearError()
-                            viewModel.selectTeam(Team(id = teamId, name = teamName))
-                        }
-                    )
-                    is ThreadsUiState.Success -> {
-                        val threads = (threadsUiState as ThreadsUiState.Success).threads
-                        if (threads.isEmpty()) {
-                            EmptyState("Start the first discussion\nin this team!")
-                        } else {
-                            ThreadsContent(
-                                threads = threads,
-                                onThreadClick = { threadId ->
-                                    navigator.push(ThreadDiscussionScreen(teamId, teamName, threadId))
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Inside TeamThreadsScreen Content
-        if (showCreateDialog) {
-            CreateThreadDialog(
-                onDismiss = {
-                    showCreateDialog = false
-                    viewModel.resetCreateThreadState()
-                },
-                onSubmit = { title, message, category, tags ->
-                    viewModel.createThread(title, message, category, tags)
-                },
-                isLoading = createThreadUiState.isLoading,
-                error = createThreadUiState.error
-            )
-        }
-
-    }
-}
-
-@Composable
-private fun ThreadsContent(
-    threads: List<ThreadDetails>,
-    onThreadClick: (String) -> Unit
-) {
-    if (threads.isEmpty()) {
-        EmptyState("Start the first discussion\nin this team!")
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(
-                items = threads,
-                key = { it.id }
-            ) { thread ->
-                ThreadItem(
-                    thread = thread,
-                    onClick = { onThreadClick(thread.id) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThreadItem(
-    thread: ThreadDetails,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = thread.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = GFGBlack
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = thread.message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = GFGBlack.copy(alpha = 0.7f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "By ${thread.authorName}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = GFGBlack.copy(alpha = 0.5f)
-                )
-                if (!thread.isEnabled) {
-                    Surface(
-                        color = GFGStatusPending,
-                        shape = MaterialTheme.shapes.small
-                    ) {
-                        Text(
-                            text = "Pending",
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = GFGStatusPendingText
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
