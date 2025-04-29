@@ -179,7 +179,8 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     implementation(libs.preferences.datastore)
     implementation(libs.fig)
-    
+     // For handling runtime permissions - Replace with actual version if needed
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")     // For swipe-to-refresh layout (deprecated, prefer material/material3 pullRefresh) - Replace with actual version if needed
     // Add core library desugaring for backward compatibility
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
